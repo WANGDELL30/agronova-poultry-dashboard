@@ -1,0 +1,64 @@
+name: agronova-poultry
+
+services:
+  database:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agronova}
+      POSTGRES_USER: ${POSTGRES_USER:-agronova}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - agronova_timescaledb_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - agronova_network
+
+  mqtt:
+    image: eclipse-mosquitto:2.0.20
+    restart: unless-stopped
+    ports:
+      - '${MQTT_PORT:-1883}:1883'
+    volumes:
+      - ./infrastructure/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - agronova_mosquitto_data:/mosquitto/data
+      - agronova_mosquitto_log:/mosquitto/log
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mosquitto_pub',
+          '-h',
+          'localhost',
+          '-p',
+          '1883',
+          '-t',
+          'agronova/healthcheck',
+          '-m',
+          'ping',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - agronova_network
+
+networks:
+  agronova_network:
+    name: agronova-poultry-network
+
+volumes:
+  agronova_timescaledb_data:
+    name: agronova-poultry-timescaledb-data
+  agronova_mosquitto_data:
+    name: agronova-poultry-mosquitto-data
+  agronova_mosquitto_log:
+    name: agronova-poultry-mosquitto-log
