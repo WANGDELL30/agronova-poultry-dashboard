@@ -1,0 +1,17 @@
+# Local environment files must never be uploaded.
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Upload only the frontend and its shared workspace dependency.
+apps/api/
+apps/simulator/
+infrastructure/
+docs/
+docker-compose.yml
+AGENTS.md
+
+# Local build and TypeScript cache output.
+**/dist/
+**/*.tsbuildinfo

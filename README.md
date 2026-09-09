@@ -144,6 +144,27 @@ interfaces behind the existing typed data-source boundary.
 | `/exports`     | Polished future-module placeholder     |
 | `/settings`    | Polished future-module placeholder     |
 
+### Deploy the frontend to Vercel
+
+Create one Vercel project for `apps/web`; the API, simulator, PostgreSQL, and MQTT services are not
+part of this frontend deployment. Vercel installs from the repository's pnpm workspace, and the web
+package builds the shared telemetry schema before the Next.js production build.
+
+Use these public frontend settings in Vercel when an explicit deployment configuration is needed:
+
+```env
+NEXT_PUBLIC_DATA_MODE=mock
+NEXT_PUBLIC_MOCK_SCENARIO=normal
+NEXT_PUBLIC_MOCK_INTERVAL_MS=5000
+```
+
+The same values are already the application defaults, so no secret variables are required for the
+F1 mock dashboard. Run a direct production deployment from the repository root with:
+
+```bash
+corepack pnpm dlx vercel@latest deploy --prod
+```
+
 ## Checks and builds
 
 ```bash

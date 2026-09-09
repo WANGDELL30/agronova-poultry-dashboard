@@ -20,6 +20,7 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+.vercel/
 
 # Runtime data
 infrastructure/data/
