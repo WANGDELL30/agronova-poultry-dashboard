@@ -5,6 +5,18 @@ review of sensor-data integrity rules before the next begins.
 
 ## Phase 1 — Project foundation (current)
 
+### Authorized extension: mortality model integration (2026-09-16)
+
+The user requested backend/frontend integration of `model_mortalitas_lstm.h5` and a Vercel update.
+This bounded extension adds shared server inference, model readiness, and explicit technical input
+tests. The training notebook confirms 24 hourly steps, 9 ordered features, and the classes Normal,
+Waspada, and Bahaya. Two required gas inputs are deferred, the fitted scaler is absent, and notebook
+evaluation has zero recall for both risk classes. Operational predictions remain disabled. The page
+focuses on readiness of the seven non-gas fields. This does not activate telemetry ingestion, farm
+records, alerts, or other later phases.
+
+See [mortality-model.md](mortality-model.md) for the contract, limits, and deployment procedure.
+
 - pnpm TypeScript monorepo and consistent quality tooling
 - Next.js web shell with honest backend health rendering
 - NestJS/Fastify API with PostgreSQL-aware health endpoint

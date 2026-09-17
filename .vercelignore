@@ -4,13 +4,18 @@
 **/.env
 **/.env.*
 
-# Upload only the frontend and its shared workspace dependency.
+# Upload the frontend and shared runtime packages.
 apps/api/
 apps/simulator/
 infrastructure/
 docs/
 docker-compose.yml
 AGENTS.md
+.local/
+scripts/
+packages/mortality-model/artifacts/
+packages/mortality-model/src/reference-fixtures.json
+**/__pycache__/
 
 # Local build and TypeScript cache output.
 **/dist/

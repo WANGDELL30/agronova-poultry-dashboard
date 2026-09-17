@@ -865,6 +865,238 @@ summary {
   box-shadow: var(--shadow-sm);
 }
 
+.mortality-hero,
+.mortality-overview {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: linear-gradient(115deg, var(--surface-green), var(--surface));
+}
+
+.mortality-model-icon {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #bbd9c5;
+  border-radius: 14px;
+  color: var(--green);
+  background: var(--surface);
+}
+
+.mortality-model-copy,
+.mortality-overview > div:nth-child(2) {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.mortality-hero h2,
+.mortality-overview h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+}
+
+.mortality-hero p,
+.mortality-overview p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-soft);
+}
+
+.mortality-hero .section-eyebrow,
+.mortality-overview .section-eyebrow {
+  margin-bottom: 5px;
+  color: var(--green);
+}
+
+.mortality-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 7px 11px;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.mortality-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mortality-facts .panel {
+  display: flex;
+  flex-direction: column;
+  color: var(--text-soft);
+}
+
+.mortality-facts strong {
+  font-size: 34px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.mortality-facts small {
+  color: var(--muted);
+}
+
+.mortality-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.mortality-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.mortality-notice p {
+  margin: 0;
+}
+
+.mortality-available-notice {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.mortality-danger-notice {
+  margin-top: 10px;
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.mortality-checklist {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 26px;
+}
+
+.mortality-checklist li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--text-soft);
+}
+
+.mortality-pending-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.mortality-diagnostics summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  cursor: pointer;
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.mortality-diagnostics summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 22px;
+}
+
+.mortality-diagnostics[open] summary::after {
+  content: '−';
+}
+
+.mortality-diagnostics p {
+  color: var(--text-soft);
+}
+
+.mortality-file-label {
+  display: block;
+  margin: 22px 0 8px;
+  font-weight: 600;
+}
+
+.mortality-diagnostics input[type='file'] {
+  max-width: 100%;
+  font: inherit;
+}
+
+.mortality-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 20px 0;
+}
+
+.mortality-consent input {
+  margin-top: 4px;
+  accent-color: var(--green);
+}
+
+.mortality-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mortality-diagnostics .mortality-error {
+  color: var(--red);
+}
+
+.mortality-result {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.mortality-result h3 {
+  margin-top: 0;
+}
+
+.mortality-result dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mortality-result dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.mortality-result small {
+  color: var(--muted);
+}
+
+@media (max-width: 767px) {
+  .mortality-facts,
+  .mortality-checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .mortality-hero,
+  .mortality-overview {
+    gap: 14px;
+  }
+}
+
 .trend-panel {
   min-height: 430px;
 }

@@ -24,6 +24,7 @@ import { DeviceHealthCard } from './device-health-card';
 import { SensorCard, SensorUnavailableCard } from './sensor-card';
 import { SummaryCard } from './summary-card';
 import { TrendChart } from './trend-chart';
+import { MortalityOverviewCard } from '../mortality/mortality-overview-card';
 
 export function OverviewDashboard() {
   const { locale, t } = useLanguage();
@@ -227,6 +228,8 @@ export function OverviewDashboard() {
           />
         </div>
       </section>
+
+      <MortalityOverviewCard />
 
       <TrendChart history={snapshot.history} />
 

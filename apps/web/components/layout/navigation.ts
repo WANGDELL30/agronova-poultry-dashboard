@@ -1,5 +1,6 @@
 import {
   BellRing,
+  BrainCircuit,
   ChartNoAxesCombined,
   FlaskConical,
   Gauge,
@@ -21,6 +22,7 @@ export interface NavigationItem {
 
 export const navigationItems: NavigationItem[] = [
   { href: '/overview', labelKey: 'nav.overview', icon: Gauge },
+  { href: '/mortality', labelKey: 'nav.mortality', icon: BrainCircuit },
   { href: '/live', labelKey: 'nav.live', icon: RadioTower },
   { href: '/history', labelKey: 'nav.history', icon: History },
   { href: '/alerts', labelKey: 'nav.alerts', icon: BellRing },
@@ -35,7 +37,7 @@ export const mobilePrimaryItems = navigationItems.filter(({ href }) =>
 );
 
 export const mobileMoreItems = navigationItems.filter(({ href }) =>
-  ['/history', '/calibration', '/exports', '/settings'].includes(href),
+  ['/mortality', '/history', '/calibration', '/exports', '/settings'].includes(href),
 );
 
 export function pageTitleKey(pathname: string): TranslationKey {

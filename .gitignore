@@ -21,6 +21,8 @@ Thumbs.db
 .idea/
 .vscode/
 .vercel/
+.local/
+__pycache__/
 
 # Runtime data
 infrastructure/data/

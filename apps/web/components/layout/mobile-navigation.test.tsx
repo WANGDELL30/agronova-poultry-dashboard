@@ -22,6 +22,9 @@ describe('MobileNavigation', () => {
       'page',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Lainnya' }));
+    expect(screen.getByRole('link', { name: 'Mortalitas AI' }).getAttribute('href')).toBe(
+      '/mortality',
+    );
     expect(screen.getByRole('link', { name: 'Analisis Historis' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Kalibrasi' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Ekspor Data' })).toBeTruthy();

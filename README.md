@@ -8,6 +8,12 @@ MQTT infrastructure.
 This phase does **not** ingest MQTT telemetry, persist sensor readings or alert acknowledgements,
 operate real ESP32 devices, deliver notifications, or export CSV files.
 
+The authorized mortality-model extension installs and verifies the supplied LSTM in the backend and
+Vercel server runtime. Open `/mortality` for non-gas data readiness and the model's evaluation limits.
+Operational prediction is disabled because the H5 requires two deferred gas features, its fitted
+scaler is absent, and its notebook evaluation has zero recall for Waspada and Bahaya. See
+[the mortality integration guide](docs/mortality-model.md).
+
 ## Repository layout
 
 ```text
@@ -17,6 +23,7 @@ apps/
   web/                      Next.js App Router frontend
 packages/
   telemetry-schema/         Versioned telemetry types, validation, example, and tests
+  mortality-model/          Shared server LSTM runtime, weights, and numerical verification
 infrastructure/
   mosquitto/config/         Local MQTT broker configuration
 docs/
@@ -102,7 +109,7 @@ corepack pnpm infra:down
 Infrastructure and the backend are not required when the frontend uses its default mock data source:
 
 ```bash
-corepack pnpm --filter @agronova/telemetry-schema build
+corepack pnpm --filter @agronova/telemetry-schema --filter @agronova/mortality-model build
 corepack pnpm --filter @agronova/web dev
 ```
 
@@ -133,22 +140,23 @@ interfaces behind the existing typed data-source boundary.
 
 ### Frontend routes
 
-| Route          | F1 state                               |
-| -------------- | -------------------------------------- |
-| `/overview`    | Complete responsive overview dashboard |
-| `/live`        | Polished future-module placeholder     |
-| `/history`     | Polished future-module placeholder     |
-| `/alerts`      | Polished future-module placeholder     |
-| `/devices`     | Polished future-module placeholder     |
-| `/calibration` | Polished future-module placeholder     |
-| `/exports`     | Polished future-module placeholder     |
-| `/settings`    | Polished future-module placeholder     |
+| Route          | F1 state                                                         |
+| -------------- | ---------------------------------------------------------------- |
+| `/overview`    | Complete responsive overview dashboard                           |
+| `/mortality`   | Seven-feature non-gas readiness; existing H5 prediction inactive |
+| `/live`        | Polished future-module placeholder                               |
+| `/history`     | Polished future-module placeholder                               |
+| `/alerts`      | Polished future-module placeholder                               |
+| `/devices`     | Polished future-module placeholder                               |
+| `/calibration` | Polished future-module placeholder                               |
+| `/exports`     | Polished future-module placeholder                               |
+| `/settings`    | Polished future-module placeholder                               |
 
 ### Deploy the frontend to Vercel
 
-Create one Vercel project for `apps/web`; the API, simulator, PostgreSQL, and MQTT services are not
-part of this frontend deployment. Vercel installs from the repository's pnpm workspace, and the web
-package builds the shared telemetry schema before the Next.js production build.
+Use the existing Vercel project for `apps/web`; NestJS, the simulator, PostgreSQL, and MQTT services
+are not part of this deployment. The mortality server endpoints run as Next.js Route Handlers on
+Vercel. The web package builds the shared telemetry schema and mortality runtime before Next.js.
 
 Use these public frontend settings in Vercel when an explicit deployment configuration is needed:
 

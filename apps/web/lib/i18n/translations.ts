@@ -1,4 +1,60 @@
 export const id = {
+  'nav.mortality': 'Mortalitas AI',
+  'mortality.eyebrow': 'Analisis kesehatan ternak',
+  'mortality.title': 'Model mortalitas ayam',
+  'mortality.description': 'Kesiapan data non-gas dan status model LSTM untuk analisis mortalitas.',
+  'mortality.installed': 'Model berhasil dimuat',
+  'mortality.loading': 'Memuat model di server…',
+  'mortality.unavailable': 'Model belum dapat diakses',
+  'mortality.awaiting':
+    'Data non-gas dapat disiapkan sekarang. Prediksi menunggu model 7 fitur dilatih ulang; data gas akan menyusul.',
+  'mortality.runtimeReady': 'Model tersimpan · prediksi nonaktif',
+  'mortality.window': 'Jendela input',
+  'mortality.steps': 'jam data historis',
+  'mortality.inputFeatures': 'Fitur per langkah',
+  'mortality.orderUnknown': '7 non-gas tersedia · 2 gas ditunda',
+  'mortality.output': 'Kelas output',
+  'mortality.labelsUnknown': 'Normal · Waspada · Bahaya',
+  'mortality.readiness': 'Fokus tahap sekarang',
+  'mortality.readinessDescription':
+    'Siapkan alur data non-gas tanpa mengarang nilai untuk sensor yang belum tersedia.',
+  'mortality.availableTitle': 'Data yang dapat difokuskan sekarang',
+  'mortality.availableDescription':
+    'Tujuh fitur non-gas tersedia pada contoh CSV dan dapat digunakan untuk menyiapkan alur data.',
+  'mortality.availableFeatures':
+    'Suhu kandang, kelembapan kandang, suhu air minum, TDS air minum, level air, konsumsi pakan, dan aktivitas telur.',
+  'mortality.noPrediction':
+    'Model H5 saat ini tetap membutuhkan 9 fitur, termasuk amonia dan level relatif MQ-5. Model tidak dapat menerima 7 fitur saja, dan nilai gas yang belum tersedia tidak boleh diganti dengan nol. Prediksi operasional tetap dinonaktifkan sampai model non-gas dilatih ulang.',
+  'mortality.need.features': 'Nama, urutan, satuan, dan sumber kesembilan fitur input',
+  'mortality.need.scaler': 'Kode preprocessing dan file scaler yang dipakai saat training',
+  'mortality.need.interval': 'Interval pengambilan data dan cara menyusun 24 langkah waktu',
+  'mortality.need.classes': 'Arti dan urutan label kelas 0, 1, dan 2',
+  'mortality.need.horizon': 'Periode atau rentang waktu yang diprediksi model',
+  'mortality.need.validation':
+    'Perbaiki dan uji kemampuan mendeteksi Waspada serta Bahaya sebelum dipakai untuk peringatan',
+  'mortality.need.gas': 'Amonia dan level relatif MQ-5 ditunda sampai data gas tersedia',
+  'mortality.need.retraining':
+    'Untuk memakai data sekarang, latih model baru dengan 7 fitur non-gas dan scaler baru',
+  'mortality.evaluationWarning':
+    'Evaluasi notebook mencapai akurasi sekitar 94%, tetapi recall Waspada dan Bahaya sama-sama 0%. Model pada pengujian itu hanya berhasil mengenali kelas Normal dan belum layak untuk peringatan kandang.',
+  'mortality.technical': 'Uji teknis model lama (9 fitur)',
+  'mortality.technicalDescription':
+    'Untuk pengembang atau pembuat model: jalankan hanya input 9 fitur yang sudah melalui preprocessing asli. Fitur gas tetap wajib pada uji ini. Hasil hanya memeriksa mesin inferensi.',
+  'mortality.fileFormat':
+    'Unggah file JSON berupa matriks 24 baris × 9 angka. Maksimum 16 KB. Nilai kosong dan teks ditolak; urutan baris harus sama dengan training.',
+  'mortality.chooseFile': 'File input yang sudah diproses (.json)',
+  'mortality.confirmPreprocessed':
+    'Input ini sudah mengikuti preprocessing training. Saya memahami skor uji ini belum dapat ditafsirkan sebagai risiko mortalitas.',
+  'mortality.run': 'Jalankan uji teknis',
+  'mortality.running': 'Menghitung skor…',
+  'mortality.fileError':
+    'File tidak valid. Gunakan JSON 24 × 9 angka terbatas (−1.000.000 hingga 1.000.000), tanpa null, maksimum 16 KB.',
+  'mortality.requestError': 'Uji model gagal. Periksa koneksi atau coba kembali.',
+  'mortality.rawScores': 'Skor kelas tanpa interpretasi',
+  'mortality.scoreNotice':
+    'Label berasal dari notebook, tetapi skor softmax 0–1 bukan persentase mortalitas atau akurasi. Evaluasi notebook tidak mendeteksi contoh Waspada dan Bahaya pada data uji.',
+  'mortality.classIndex': 'Kelas {{index}} · {{label}}',
+  'mortality.open': 'Lihat model',
   'app.name': 'AgroNova Poultry AI IoT',
   'app.shortName': 'AgroNova',
   'app.tagline': 'Operasional peternakan berbasis data',
@@ -155,6 +211,62 @@ export const id = {
 export type TranslationKey = keyof typeof id;
 
 export const en: Record<TranslationKey, string> = {
+  'nav.mortality': 'Mortality AI',
+  'mortality.eyebrow': 'Flock health analysis',
+  'mortality.title': 'Poultry mortality model',
+  'mortality.description': 'Non-gas data readiness and LSTM model status for mortality analysis.',
+  'mortality.installed': 'Model loaded successfully',
+  'mortality.loading': 'Loading the model on the server…',
+  'mortality.unavailable': 'Model is unavailable',
+  'mortality.awaiting':
+    'Non-gas data can be prepared now. Predictions await a retrained 7-feature model; gas data will follow later.',
+  'mortality.runtimeReady': 'Model stored · prediction inactive',
+  'mortality.window': 'Input window',
+  'mortality.steps': 'hours of historical data',
+  'mortality.inputFeatures': 'Features per step',
+  'mortality.orderUnknown': '7 non-gas available · 2 gas deferred',
+  'mortality.output': 'Output classes',
+  'mortality.labelsUnknown': 'Normal · Warning · Danger',
+  'mortality.readiness': 'Current focus',
+  'mortality.readinessDescription':
+    'Prepare the non-gas data flow without inventing values for unavailable sensors.',
+  'mortality.availableTitle': 'Data available to focus on now',
+  'mortality.availableDescription':
+    'Seven non-gas features are present in the sample CSV and can be used to prepare the data flow.',
+  'mortality.availableFeatures':
+    'House temperature, house humidity, drinking-water temperature, drinking-water TDS, water level, feed consumption, and egg activity.',
+  'mortality.noPrediction':
+    'The current H5 model still requires 9 features, including ammonia and relative MQ-5 level. It cannot accept only 7 features, and unavailable gas readings must not be replaced with zero. Operational prediction remains disabled until a non-gas model is retrained.',
+  'mortality.need.features': 'Names, order, units, and sources of all nine input features',
+  'mortality.need.scaler': 'Preprocessing code and the scaler used during training',
+  'mortality.need.interval': 'Sampling interval and how the 24 time steps are assembled',
+  'mortality.need.classes': 'Meanings and order of class labels 0, 1, and 2',
+  'mortality.need.horizon': 'The time period or horizon the model predicts',
+  'mortality.need.validation':
+    'Improve and test Warning and Danger detection before using the model for alerts',
+  'mortality.need.gas': 'Ammonia and relative MQ-5 level are deferred until gas data is available',
+  'mortality.need.retraining':
+    'To use the current data, train a new model and scaler with the 7 non-gas features',
+  'mortality.evaluationWarning':
+    'The notebook evaluation reached about 94% accuracy, but Warning and Danger recall were both 0%. That test only recognized the Normal class, so the model is not suitable for farm alerts.',
+  'mortality.technical': 'Legacy model technical test (9 features)',
+  'mortality.technicalDescription':
+    'For developers or the model author: only run 9-feature inputs prepared by the original training pipeline. Gas features remain required for this test. Results only verify the inference engine.',
+  'mortality.fileFormat':
+    'Upload a JSON matrix of 24 rows × 9 numbers, up to 16 KB. Missing values and text are rejected; row order must match training.',
+  'mortality.chooseFile': 'Preprocessed input file (.json)',
+  'mortality.confirmPreprocessed':
+    'This input follows the training preprocessing. I understand these test scores cannot yet be interpreted as mortality risk.',
+  'mortality.run': 'Run technical test',
+  'mortality.running': 'Computing scores…',
+  'mortality.fileError':
+    'Invalid file. Use a 24 × 9 JSON matrix of finite numbers (−1,000,000 to 1,000,000), without nulls, up to 16 KB.',
+  'mortality.requestError': 'Model test failed. Check the connection or try again.',
+  'mortality.rawScores': 'Class scores without interpretation',
+  'mortality.scoreNotice':
+    'Labels come from the notebook, but softmax scores from 0–1 are not mortality percentages or model accuracy. The notebook evaluation did not detect Warning or Danger test examples.',
+  'mortality.classIndex': 'Class {{index}} · {{label}}',
+  'mortality.open': 'View model',
   'app.name': 'AgroNova Poultry AI IoT',
   'app.shortName': 'AgroNova',
   'app.tagline': 'Data-driven farm operations',

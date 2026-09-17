@@ -4,3 +4,5 @@ dist
 node_modules
 pnpm-lock.yaml
 **/next-env.d.ts
+.local
+packages/mortality-model/src/model-artifact.json
