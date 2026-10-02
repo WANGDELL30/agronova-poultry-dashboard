@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import fastifyMultipart from '@fastify/multipart';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { AppModule } from './app.module.js';
@@ -29,9 +28,8 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     origin: allowedOrigins,
-    methods: ['GET', 'POST'],
+    methods: ['GET'],
   });
-  await app.register(fastifyMultipart);
   app.enableShutdownHooks();
   app.setGlobalPrefix('api/v1');
 
