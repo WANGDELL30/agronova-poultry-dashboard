@@ -23,3 +23,7 @@ Thumbs.db
 
 # Runtime data
 infrastructure/data/
+
+.venv/
+__pycache__/
+*.pyc
