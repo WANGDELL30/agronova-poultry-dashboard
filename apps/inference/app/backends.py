@@ -41,12 +41,12 @@ class RealBackend:
         from peft import PeftModel
         from transformers import AutoProcessor
 
-        if not settings.hf_token:
-            raise RuntimeError("HF_TOKEN is required in real mode (adapter repo is private).")
+        #if not settings.hf_token:
+            #raise RuntimeError("HF_TOKEN is required in real mode (adapter repo is private).")
         self._torch = torch
         self._lock = threading.Lock()
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        dtype = torch.float16 if device == "cuda" else torch.bfloat16
+        dtype = torch.float16 if device == "cuda" else torch.float32
         self._processor = AutoProcessor.from_pretrained(
             settings.base_model, min_pixels=256 * 28 * 28, max_pixels=512 * 28 * 28
         )
