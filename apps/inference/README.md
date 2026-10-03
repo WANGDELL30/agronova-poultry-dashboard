@@ -9,13 +9,13 @@ INFERENCE_MODE=mock python -m uvicorn app.main:app --port 8000   # no GPU
 python -m pytest
 ```
 
-Real mode (GPU, ~8-9 GB VRAM): `pip install -r requirements-real.txt`, set `INFERENCE_MODE=real` and
-`HF_TOKEN` (read-only, never commit), or use `docker compose --profile gpu up inference-gpu`.
+Real mode (GPU, ~8-9 GB VRAM): `pip install -r requirements-real.txt`, set `INFERENCE_MODE=real`
+(`HF_TOKEN` is only needed if the adapter repo is private; never commit it), or use `docker compose --profile gpu up inference-gpu`.
 `GET /health` returns 503 until the model is loaded. `POST /v1/classify` takes a multipart `file`.
 
-## Real model without a local GPU (Kaggle)
+## Real model without a local GPU (Kaggle / Colab)
 
-Only mock mode runs on a laptop. The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.
+Real mode on a laptop CPU is very slow (tens of minutes per image). The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.
 Add `HF_TOKEN` (read) as a Kaggle Secret and zip this folder (`apps/inference`) as a Kaggle Dataset.
 
 **A. Parity check** (proves the service matches the notebook):
@@ -34,7 +34,5 @@ Add `HF_TOKEN` (read) as a Kaggle Secret and zip this folder (`apps/inference`) 
 3. Copy the printed `INFERENCE_URL` and `INFERENCE_API_KEY` into `apps/api/.env`
    (plus `INFERENCE_TIMEOUT_MS=120000`) and restart the API.
 
-If the adapter repo is private, add `HF_TOKEN` in Colab's Secrets panel (key icon).
-The tunnel URL changes every run and free Colab sessions end when idle, so this is for
-demos, not production. Without any GPU the service still runs on CPU, but a single image
-can take tens of minutes.
+The tunnel URL changes every run and free Colab sessions end when idle, so this is for demos,
+not production.
