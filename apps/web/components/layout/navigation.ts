@@ -1,5 +1,6 @@
 import {
   BellRing,
+  Camera,
   ChartNoAxesCombined,
   FlaskConical,
   Gauge,
@@ -25,6 +26,7 @@ export const navigationItems: NavigationItem[] = [
   { href: '/history', labelKey: 'nav.history', icon: History },
   { href: '/alerts', labelKey: 'nav.alerts', icon: BellRing },
   { href: '/devices', labelKey: 'nav.devices', icon: ChartNoAxesCombined },
+  { href: '/vision', labelKey: 'nav.vision', icon: Camera },
   { href: '/calibration', labelKey: 'nav.calibration', icon: FlaskConical },
   { href: '/exports', labelKey: 'nav.exports', icon: Upload },
   { href: '/settings', labelKey: 'nav.settings', icon: Settings },
@@ -35,7 +37,7 @@ export const mobilePrimaryItems = navigationItems.filter(({ href }) =>
 );
 
 export const mobileMoreItems = navigationItems.filter(({ href }) =>
-  ['/history', '/calibration', '/exports', '/settings'].includes(href),
+  ['/history', '/vision', '/calibration', '/exports', '/settings'].includes(href),
 );
 
 export function pageTitleKey(pathname: string): TranslationKey {
