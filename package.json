@@ -16,7 +16,9 @@
     "format:check": "prettier --check .",
     "test": "corepack pnpm -r --if-present test",
     "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "inference:mock": "cd apps/inference && python -m uvicorn app.main:app --port 8000",
+    "inference:test": "cd apps/inference && python -m pytest"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
