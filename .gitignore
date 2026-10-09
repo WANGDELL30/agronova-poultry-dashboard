@@ -26,3 +26,17 @@ __pycache__/
 
 # Runtime data
 infrastructure/data/
+
+.venv/
+__pycache__/
+*.pyc
+
+# Vision runtime data (uploaded frames) and local model/cache artifacts
+apps/api/data/
+*.pkl
+*.safetensors
+.cache/
+.pytest_cache/
+# Archives and bulky training outputs (dataset, checkpoints live on Roboflow / Hugging Face)
+*.zip
+training/results/

@@ -51,6 +51,75 @@ services:
     networks:
       - agronova_network
 
+  # Vision inference. Not started by `docker compose up -d` (profiles).
+  #   Mock (no GPU):  docker compose --profile inference up -d --build inference
+  #   Real (NVIDIA):  docker compose --profile gpu up -d --build inference-gpu
+  # Both bind the same host port: run only one at a time.
+  inference:
+    profiles: ['inference']
+    build:
+      context: ./apps/inference
+    restart: unless-stopped
+    environment:
+      INFERENCE_MODE: mock
+      INFERENCE_API_KEY: ${INFERENCE_API_KEY:-}
+    ports:
+      - '${INFERENCE_PORT:-8000}:8000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - agronova_network
+
+  inference-gpu:
+    profiles: ['gpu']
+    build:
+      context: ./apps/inference
+      args:
+        INSTALL_REAL: '1'
+    restart: unless-stopped
+    environment:
+      INFERENCE_MODE: real
+      INFERENCE_API_KEY: ${INFERENCE_API_KEY:-}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_ADAPTER_REPO: ${HF_ADAPTER_REPO:-Arga23/chickenstress-vlm-lora}
+      HF_BASE_MODEL: ${HF_BASE_MODEL:-Qwen/Qwen3-VL-4B-Instruct}
+    ports:
+      - '${INFERENCE_PORT:-8000}:8000'
+    volumes:
+      - agronova_hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # /health returns 503 until the model is fully loaded (several minutes on first run).
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    networks:
+      - agronova_network
+
 networks:
   agronova_network:
     name: agronova-poultry-network
@@ -62,3 +131,5 @@ volumes:
     name: agronova-poultry-mosquitto-data
   agronova_mosquitto_log:
     name: agronova-poultry-mosquitto-log
+  agronova_hf_cache:
+    name: agronova-poultry-hf-cache

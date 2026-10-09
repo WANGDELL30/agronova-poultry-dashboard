@@ -8,15 +8,17 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "dev": "corepack pnpm --filter @agronova/telemetry-schema --filter @agronova/mortality-model build && corepack pnpm --parallel --filter @agronova/api --filter @agronova/web --filter @agronova/simulator dev",
+    "dev": "corepack pnpm --filter @agronova/telemetry-schema --filter @agronova/mortality-model --filter @agronova/vision-schema build && corepack pnpm --parallel --filter @agronova/api --filter @agronova/web --filter @agronova/simulator dev",
     "build": "corepack pnpm -r --if-present build",
-    "typecheck": "corepack pnpm --filter @agronova/telemetry-schema --filter @agronova/mortality-model build && corepack pnpm -r --if-present typecheck",
+    "typecheck": "corepack pnpm --filter @agronova/telemetry-schema --filter @agronova/mortality-model --filter @agronova/vision-schema build && corepack pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "corepack pnpm -r --if-present test",
     "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "inference:mock": "cd apps/inference && python -m uvicorn app.main:app --port 8000",
+    "inference:test": "cd apps/inference && python -m pytest"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

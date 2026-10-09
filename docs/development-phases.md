@@ -3,7 +3,7 @@
 Work must remain inside the active phase. Each phase should finish with tests, documentation, and a
 review of sensor-data integrity rules before the next begins.
 
-## Phase 1 — Project foundation (current)
+## Phase 1 — Project foundation (complete)
 
 ### Authorized extension: mortality model integration (2026-09-16)
 
@@ -27,6 +27,33 @@ See [mortality-model.md](mortality-model.md) for the contract, limits, and deplo
 
 No telemetry ingestion, persistence schema, authentication, alerts, exports, or physical device
 integration is part of this phase.
+
+## Vision track — chicken stress detection (in progress)
+
+A parallel track that does not depend on MQTT ingestion. It reuses the same rules for UTC
+timestamps, nullable values, and explicit status enums.
+
+Delivered:
+
+- Model training and evaluation notebooks (`training/`) and the LoRA adapter on Hugging Face
+- `packages/vision-schema` contract with validation and tests
+- `apps/inference` FastAPI service (quality gate, Qwen3-VL + LoRA, SCS rule) with mock and real
+  modes, tests, and a parity check against the training notebook
+- API vision module: upload, inference client with timeout and API key, temporal voter, image
+  store, and results endpoints
+- Web `/vision` page with upload, per-indicator results, quality status, vote status, and mock mode
+- Docker Compose profiles and Colab notebook for running the real model
+
+Next:
+
+- Replace the in-memory repository with PostgreSQL through a migration
+- Authentication and authorization for the vision endpoints
+- Connect vote alerts to the Phase 4 alert lifecycle
+- Camera or edge capture path (frame capture, on-device quality scoring, retries)
+- Model monitoring: confidence distribution, skipped-frame rate, and re-evaluation on new farm data
+
+Out of scope until separately approved: automated actions based on vision output, and any claim of
+diagnostic accuracy beyond the evaluation reported with the model.
 
 ## Phase 2 — Simulated telemetry ingestion
 

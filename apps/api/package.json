@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@agronova/mortality-model": "workspace:*",
+    "@agronova/vision-schema": "workspace:*",
+    "@fastify/multipart": "9.0.3",
+    "fastify": "5.4.0",
     "@nestjs/common": "11.1.6",
     "@nestjs/core": "11.1.6",
     "@nestjs/platform-fastify": "11.1.6",

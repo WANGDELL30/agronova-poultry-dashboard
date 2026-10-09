@@ -1,0 +1,40 @@
+# Dependencies and package-manager state
+node_modules/
+.pnpm-store/
+
+# Build and test output
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment files (examples are intentionally tracked)
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Logs and local tooling
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Runtime data
+infrastructure/data/
+
+.venv/
+__pycache__/
+*.pyc
+
+# Vision runtime data (uploaded frames) and local model/cache artifacts
+apps/api/data/
+*.pkl
+*.safetensors
+.cache/
+.pytest_cache/
+
+# Archives and bulky training outputs (dataset, checkpoints live on Roboflow / Hugging Face)
+*.zip
+training/results/

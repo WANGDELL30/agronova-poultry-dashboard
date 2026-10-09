@@ -108,6 +108,42 @@ Scenarios are selected with `NEXT_PUBLIC_MOCK_SCENARIO`:
 `ApiTelemetrySource` deliberately returns an unavailable error in F1. A later implementation can use
 REST and WebSocket without changing dashboard components. No browser-side MQTT dependency exists.
 
+## Vision page
+
+`/vision` lets an operator upload a photo of a chicken and see how the model scored it. It is
+available alongside F1 and follows the same layout, bilingual dictionary, and status conventions.
+
+The page shows:
+
+- an upload form: camera ID, optional house (kandang) ID, and an image file (JPEG, PNG, or WebP);
+- the latest result card: label (`stress`, `not_stress`, or `undefined`), confidence, the seven SCS
+  indicators with `YA` / `TIDAK` / `TIDAK_TERLIHAT`, quality-gate status and issues, model
+  information, and inference time;
+- the temporal vote status, including the `waiting N/5 frames` state and the stress alert; and
+- a history list of recent results with the stored image.
+
+Status is not conveyed by color alone. Frames that were skipped for quality, failed to parse, or hit
+an inference error are shown with their own status and never as "not stress". `undefined` shows no
+confidence number. Known API failures (unreachable, timeout, not ready, bad response, invalid
+metadata) map to localized messages. Capture time uses the file modification time in UTC and is
+displayed in Asia/Jakarta.
+
+### Vision data-source boundary
+
+`VisionDashboard` depends only on the `VisionClient` interface, mirroring the telemetry boundary.
+
+```text
+VisionDashboard -> VisionClient
+                   |- MockVisionClient (canned scenarios covering every status)
+                   `- ApiVisionClient (REST: /api/v1/vision/*)
+```
+
+`NEXT_PUBLIC_DATA_MODE=api` selects `ApiVisionClient`; any other value selects the mock client, and
+the page shows a banner while mock data is in use. Note that this variable also switches the
+overview to `ApiTelemetrySource`, which is intentionally unavailable in F1, so the overview and the
+real vision page cannot currently be shown with live data at the same time. A separate variable for
+vision is the straightforward fix if both are needed.
+
 ## Frontend roadmap
 
 1. **F1 — shell and simulated overview:** current phase.
