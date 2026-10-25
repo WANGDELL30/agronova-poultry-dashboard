@@ -1,8 +1,12 @@
-"""SCS prompt + rule. Copied UNCHANGED from notebook 04 (cell 7). Do not edit logic here."""
+"""SCS prompt + rule. Copied UNCHANGED from notebook 04 (the inference notebook, cell 7). Do not edit logic here.
+
+NOTE: the system prompt built here is a shortened version of the TRAINING prompt (no final-rule block,
+shorter TIDAK_TERLIHAT text). It is not identical to the prompt used for fine-tuning and evaluation
+(see report item B18)."""
 import json
 import re
 
-# --- 7 indikator SCS + aturan (identik dgn Kaggle 02_models.ipynb) ---
+# --- 7 indikator SCS + aturan (indikator, ambang, dan aturan sama dengan notebook training; PROMPT SISTEM berupa versi ringkas dan TIDAK sama dengan prompt training: tanpa blok aturan penilaian akhir, penjelasan TIDAK_TERLIHAT lebih pendek -- lihat B18 pada laporan) ---
 SCS_INDICATORS = [
     {"key": "posisi_ekor", "name": "Posisi Ekor", "question": "Apakah ekor ayam menurun atau terkulai?",
      "stres": "Ekor terlihat menurun atau terkulai.", "tidak_stres": "Ekor tegak / posisi normal."},
