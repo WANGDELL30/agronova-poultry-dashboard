@@ -41,7 +41,7 @@ export interface DashboardSnapshot {
   installedSensorCount: number;
   calibratingSensorCount: number;
   disconnectedSensorCount: number;
-  scenario: SimulationScenario;
+  scenario: SimulationScenario | null;
 }
 
 export interface TelemetrySource {

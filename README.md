@@ -9,11 +9,12 @@ notebooks used to train and evaluate the model, and local TimescaleDB plus MQTT 
 
 | Area                        | Status                                                                           |
 | --------------------------- | -------------------------------------------------------------------------------- |
-| Overview dashboard          | Complete, runs on deterministic mock telemetry                                   |
+| Overview dashboard          | Live API polling by default; waits without fabricating values until data arrives |
+| HTTP telemetry ingestion    | `POST /api/v1/telemetry`, schema-v1 validated; latest reading kept in memory     |
 | Vision (stress detection)   | Working end to end: upload frame → quality gate → VLM → SCS rule → temporal vote |
 | MQTT ingestion, persistence | **Not implemented.** Simulator does not publish; no sensor data is stored        |
 | Vision result persistence   | **In-memory only.** Results are lost when the API restarts                       |
-| Real ESP32 devices, alerts  | Not implemented (placeholders only)                                              |
+| Real ESP32 devices, alerts  | HTTP contract ready; ESP32 firmware still needs to post telemetry                |
 | Notifications, CSV exports  | Not implemented                                                                  |
 
 ## How stress detection works
@@ -110,7 +111,7 @@ should be committed.
 
 ## Run locally
 
-### 1. Frontend only (mock data, no backend)
+### 1. Frontend only (live waiting state)
 
 ```bash
 corepack pnpm --filter @agronova/telemetry-schema build
@@ -118,8 +119,10 @@ corepack pnpm --filter @agronova/vision-schema build
 corepack pnpm --filter @agronova/web dev
 ```
 
-With `NEXT_PUBLIC_DATA_MODE=mock` (the default in `apps/web/.env.example`), `/overview` and
-`/vision` both use deterministic mock data. Open `http://localhost:3000`.
+The default is `NEXT_PUBLIC_DATA_MODE=api`. Without a reachable API or device reading, `/overview`
+shows “waiting for device & sensors” and never substitutes mock values or zeroes. Explicitly set
+`NEXT_PUBLIC_DATA_MODE=mock` only for deterministic local UI development; production builds always
+use live API mode.
 
 ### 2. Full stack with the mock inference service (no GPU)
 
@@ -129,12 +132,9 @@ corepack pnpm inference:mock          # separate terminal; needs: pip install -r
 corepack pnpm dev
 ```
 
-Set `NEXT_PUBLIC_DATA_MODE=api` in `apps/web/.env.local` and restart the web server.
-The mock backend is deterministic and **does not classify real images**; it only exercises the
-pipeline.
-
-> In `api` mode the telemetry overview shows its "unavailable" state, because backend telemetry
-> belongs to a later phase. Only `/vision` uses the real API.
+The web app polls `GET /api/v1/telemetry/latest` every three seconds. A device or gateway sends the
+shared schema-v1 JSON payload to `POST /api/v1/telemetry`. The API preserves device `captured_at`
+and backend `received_at` separately and derives online state from `last_seen_at`.
 
 ### 3. Real model
 
@@ -226,13 +226,14 @@ Vercel. The web package builds the shared telemetry schema, vision schema, and m
 Use these public frontend settings in Vercel when an explicit deployment configuration is needed:
 
 ```env
-NEXT_PUBLIC_DATA_MODE=mock
-NEXT_PUBLIC_MOCK_SCENARIO=normal
-NEXT_PUBLIC_MOCK_INTERVAL_MS=5000
+NEXT_PUBLIC_DATA_MODE=api
+NEXT_PUBLIC_API_BASE_URL=https://your-public-api.example
+NEXT_PUBLIC_DEVICE_ID=AGRONOVA-ESP32-01
+NEXT_PUBLIC_LIVE_INTERVAL_MS=3000
 ```
 
-The same values are already the application defaults, so no secret variables are required for the
-F1 mock dashboard. Run a direct production deployment from the repository root with:
+If the public API URL is not configured, the deployed UI remains in its honest waiting state. Run a
+direct production deployment from the repository root with:
 
 ```bash
 corepack pnpm dlx vercel@latest deploy --prod
@@ -289,7 +290,10 @@ connect to MQTT or publish telemetry.
 | `HF_TOKEN`                     | Hugging Face token, only if the adapter is private    | Never commit                        |
 | `PORT`                         | Next.js web port                                      | `3000`                              |
 | `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL                          | `http://localhost:4000`             |
-| `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `mock` or `api`                 | `mock`                              |
+| `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`    | `api`                               |
+| `NEXT_PUBLIC_DEVICE_ID`        | Optional live device filter                           | all devices                         |
+| `NEXT_PUBLIC_LIVE_INTERVAL_MS` | Live telemetry polling interval                       | `3000`                              |
+| `DEVICE_OFFLINE_AFTER_MS`      | API threshold derived from `last_seen_at`             | `30000`                             |
 | `NEXT_PUBLIC_MOCK_SCENARIO`    | Deterministic frontend simulation scenario            | `normal`                            |
 | `NEXT_PUBLIC_MOCK_INTERVAL_MS` | Mock snapshot interval in milliseconds                | `5000`                              |
 | `MQTT_BROKER_URL`              | Future simulator broker URL                           | `mqtt://localhost:1883`             |

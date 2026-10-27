@@ -38,6 +38,9 @@ importers:
       '@agronova/mortality-model':
         specifier: workspace:*
         version: link:../../packages/mortality-model
+      '@agronova/telemetry-schema':
+        specifier: workspace:*
+        version: link:../../packages/telemetry-schema
       '@agronova/vision-schema':
         specifier: workspace:*
         version: link:../../packages/vision-schema

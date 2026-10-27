@@ -1,4 +1,4 @@
-import { SensorQuality } from '@agronova/telemetry-schema';
+import { SensorQuality, validTelemetryV1Example } from '@agronova/telemetry-schema';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiTelemetrySource } from './api-telemetry-source';
@@ -89,15 +89,41 @@ describe('MockTelemetrySource', () => {
 
 describe('telemetry source selection', () => {
   it('uses safe defaults for invalid public configuration', () => {
-    expect(resolveDataMode(undefined)).toBe('mock');
-    expect(resolveDataMode('unexpected')).toBe('mock');
+    expect(resolveDataMode(undefined)).toBe('api');
+    expect(resolveDataMode('unexpected')).toBe('api');
+    expect(resolveDataMode('mock', 'development')).toBe('mock');
+    expect(resolveDataMode('mock', 'production')).toBe('api');
     expect(resolveScenario('unexpected')).toBe('normal');
     expect(resolveInterval('50')).toBe(5_000);
   });
 
-  it('keeps API mode explicitly unavailable during F1', async () => {
-    const source = new ApiTelemetrySource();
+  it('waits without inventing readings when the live API has no telemetry', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const source = new ApiTelemetrySource('', { fetcher });
 
-    await expect(source.getInitialSnapshot()).rejects.toMatchObject({ kind: 'unavailable' });
+    await expect(source.getInitialSnapshot()).resolves.toBeNull();
+  });
+
+  it('validates live receipts and keeps null sensor readings null', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          telemetry: validTelemetryV1Example,
+          received_at: '2026-10-27T04:00:05.000Z',
+          last_seen_at: '2026-10-27T04:00:05.000Z',
+          device_online: true,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const source = new ApiTelemetrySource('https://api.example.test', { fetcher });
+    const snapshot = await source.getInitialSnapshot();
+
+    expect(snapshot?.telemetry.message_id).toBe(validTelemetryV1Example.message_id);
+    expect(snapshot?.telemetry.readings.ammonia_adc).toBeNull();
+    expect(snapshot?.history).toHaveLength(1);
+    expect(fetcher).toHaveBeenCalledWith('https://api.example.test/api/v1/telemetry/latest', {
+      cache: 'no-store',
+    });
   });
 });

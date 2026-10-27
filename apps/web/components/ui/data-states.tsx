@@ -1,6 +1,6 @@
 'use client';
 
-import { DatabaseZap, Inbox, RefreshCw, TriangleAlert } from 'lucide-react';
+import { DatabaseZap, RadioTower, RefreshCw, TriangleAlert } from 'lucide-react';
 
 import { useLanguage } from '../../lib/i18n/language-provider';
 
@@ -31,11 +31,12 @@ export function EmptyState({ compact = false }: Readonly<{ compact?: boolean }>)
   return (
     <div className={`empty-state${compact ? ' is-compact' : ''}`} role="status">
       <span className="state-icon neutral" aria-hidden="true">
-        <Inbox size={23} />
+        <RadioTower size={23} />
       </span>
       <div>
         <strong>{compact ? t('trend.emptyTitle') : t('state.emptyTitle')}</strong>
         <p>{compact ? t('trend.emptyDescription') : t('state.emptyDescription')}</p>
+        {!compact && <small>{t('state.emptyHint')}</small>}
       </div>
     </div>
   );

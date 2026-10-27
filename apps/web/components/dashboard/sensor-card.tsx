@@ -8,7 +8,7 @@ import { useLanguage } from '../../lib/i18n/language-provider';
 import type { TranslationKey } from '../../lib/i18n/translations';
 import { CalibrationBadge, StatusBadge } from '../ui/status-badge';
 
-type TrendDirection = 'rising' | 'falling' | 'stable';
+type TrendDirection = 'rising' | 'falling' | 'stable' | 'unknown';
 type RelativeStatus = 'normal' | 'warning' | 'elevated' | 'offline';
 
 interface SensorDetail {
@@ -107,10 +107,12 @@ export function SensorUnavailableCard({
   icon: Icon = PackageOpen,
   titleKey,
   descriptionKey,
+  quality = SensorQuality.NOT_INSTALLED,
 }: Readonly<{
   icon?: LucideIcon;
   titleKey: TranslationKey;
   descriptionKey: TranslationKey;
+  quality?: SensorQuality;
 }>) {
   const { t } = useLanguage();
 
@@ -122,16 +124,22 @@ export function SensorUnavailableCard({
         </span>
         <div>
           <h3>{t(titleKey)}</h3>
-          <span className="relative-status relative-unavailable">
+          <span
+            className={`relative-status relative-${quality === SensorQuality.DEVICE_OFFLINE ? 'offline' : 'unavailable'}`}
+          >
             <span aria-hidden="true" />
-            {t('relative.unavailable')}
+            {t(
+              quality === SensorQuality.DEVICE_OFFLINE
+                ? 'relative.offline'
+                : 'relative.unavailable',
+            )}
           </span>
         </div>
       </div>
       <div className="unavailable-value" aria-label={t('sensor.notAvailable')}>
         —
       </div>
-      <StatusBadge status={SensorQuality.NOT_INSTALLED} />
+      <StatusBadge status={quality} />
       <p className="unavailable-copy">{t(descriptionKey)}</p>
     </article>
   );

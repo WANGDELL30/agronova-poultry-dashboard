@@ -9,8 +9,12 @@ const VALID_SCENARIOS = new Set<SimulationScenario>([
   'device-offline',
 ]);
 
-export function resolveDataMode(value: string | undefined): DataMode {
-  return value === 'api' ? 'api' : 'mock';
+export function resolveDataMode(
+  value: string | undefined,
+  runtime = process.env.NODE_ENV,
+): DataMode {
+  if (runtime === 'production') return 'api';
+  return value === 'mock' ? 'mock' : 'api';
 }
 
 export function resolveScenario(value: string | undefined): SimulationScenario {
@@ -27,7 +31,10 @@ export function resolveInterval(value: string | undefined): number {
 export function createTelemetrySource(): TelemetrySource {
   const mode = resolveDataMode(process.env.NEXT_PUBLIC_DATA_MODE);
   if (mode === 'api') {
-    return new ApiTelemetrySource();
+    return new ApiTelemetrySource(process.env.NEXT_PUBLIC_API_BASE_URL ?? '', {
+      deviceId: process.env.NEXT_PUBLIC_DEVICE_ID,
+      intervalMs: resolveInterval(process.env.NEXT_PUBLIC_LIVE_INTERVAL_MS ?? '3000'),
+    });
   }
 
   return new MockTelemetrySource({

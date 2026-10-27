@@ -91,7 +91,17 @@ export const telemetryV1Schema = z
   })
   .strict();
 
+export const telemetryReceiptV1Schema = z
+  .object({
+    telemetry: telemetryV1Schema,
+    received_at: z.string().datetime({ offset: false }),
+    last_seen_at: z.string().datetime({ offset: false }),
+    device_online: z.boolean(),
+  })
+  .strict();
+
 export type TelemetryV1 = z.infer<typeof telemetryV1Schema>;
+export type TelemetryReceiptV1 = z.infer<typeof telemetryReceiptV1Schema>;
 export type TelemetryDevice = TelemetryV1['device'];
 export type TelemetryReadings = TelemetryV1['readings'];
 export type TelemetryQuality = TelemetryV1['quality'];

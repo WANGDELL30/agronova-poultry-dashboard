@@ -23,7 +23,7 @@ export function DashboardHeader() {
 
   const receivedAt = state.kind === 'ready' ? state.snapshot.received_at : null;
   const deviceId =
-    state.kind === 'ready' ? state.snapshot.telemetry.device_id : 'AGRONOVA-ESP32-01';
+    state.kind === 'ready' ? state.snapshot.telemetry.device_id : t('header.waitingDevice');
   const modeLabel = mode === 'mock' ? t('header.simulation') : t('header.live');
   const scenarioLabel = scenario ? t(`scenario.${scenario}`) : null;
 

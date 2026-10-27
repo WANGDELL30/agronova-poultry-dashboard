@@ -35,7 +35,11 @@ Browser -> Next.js web -> NestJS/Fastify API -> Inference service (FastAPI) -> H
                                 |
                                 +-> image store (disk) + vision result repository
 
-Future telemetry path:
+Current live telemetry path:
+ESP32 or gateway -> HTTP POST -> API shared-schema validation -> volatile latest-reading store
+Browser -> HTTP polling -> API latest-reading endpoint
+
+Target persistent telemetry path:
 Simulator or ESP32 -> Mosquitto -> API ingestion -> shared validation -> TimescaleDB
 ```
 
@@ -123,8 +127,9 @@ MQ-5 data is deliberately limited to raw ADC, filtered ADC, ADC voltage, relativ
 quality/calibration status. No ppm representation is permitted before certified reference-gas
 calibration.
 
-When ingestion is implemented, the backend will add and preserve `received_at` in UTC. Device
-online/offline state will be derived from `last_seen_at`, not trusted from a device payload.
+The HTTP ingestion endpoint adds and preserves `received_at` in UTC. Device online/offline state is
+derived from `last_seen_at`, not trusted from a device payload. The current latest-reading store is
+volatile; durable history still requires a migration and TimescaleDB repository.
 
 ## Infrastructure
 

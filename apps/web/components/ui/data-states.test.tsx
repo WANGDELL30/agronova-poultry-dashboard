@@ -21,14 +21,15 @@ describe('dashboard data states', () => {
         <EmptyState />
       </LanguageProvider>,
     );
-    expect(screen.getByText('Belum ada telemetri')).toBeTruthy();
+    expect(screen.getByText('Menunggu perangkat & sensor')).toBeTruthy();
+    expect(screen.getByText(/angka tidak akan dibuat-buat/i)).toBeTruthy();
 
     rerender(
       <LanguageProvider>
         <ErrorState unavailable onRetry={retry} />
       </LanguageProvider>,
     );
-    expect(screen.getByText('Sumber data belum tersedia')).toBeTruthy();
+    expect(screen.getByText('Menunggu koneksi telemetri')).toBeTruthy();
 
     rerender(
       <LanguageProvider>

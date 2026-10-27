@@ -8,6 +8,7 @@ import {
   Droplets,
   FlaskConical,
   Gauge,
+  RadioTower,
   Thermometer,
   Waves,
   Weight,
@@ -17,6 +18,7 @@ import {
 import { formatNumber, formatRelativeTime } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
+import type { TrendMetric, TrendPoint } from '../../lib/telemetry/types';
 import { EmptyState, ErrorState, LoadingSkeleton } from '../ui/data-states';
 import { SectionHeader } from '../ui/section-header';
 import { AlertPanel } from './alert-panel';
@@ -26,9 +28,23 @@ import { SummaryCard } from './summary-card';
 import { TrendChart } from './trend-chart';
 import { MortalityOverviewCard } from '../mortality/mortality-overview-card';
 
+function trendFromHistory(
+  history: TrendPoint[],
+  metric: TrendMetric,
+): 'rising' | 'falling' | 'stable' | 'unknown' {
+  const values = history.flatMap((point) => {
+    const reading = point[metric];
+    return reading ? [reading.filtered] : [];
+  });
+  if (values.length < 2) return 'unknown';
+  const delta = values.at(-1)! - values.at(-2)!;
+  if (Math.abs(delta) < 0.05) return 'stable';
+  return delta > 0 ? 'rising' : 'falling';
+}
+
 export function OverviewDashboard() {
   const { locale, t } = useLanguage();
-  const { state, acknowledgeAlert, retry } = useTelemetry();
+  const { state, mode, acknowledgeAlert, retry } = useTelemetry();
 
   if (state.kind === 'loading') {
     return <LoadingSkeleton />;
@@ -119,7 +135,7 @@ export function OverviewDashboard() {
           description={t('overview.sensorsDescription')}
         />
         <div className="sensor-grid">
-          {airTemperature && (
+          {airTemperature ? (
             <SensorCard
               icon={Thermometer}
               titleKey="sensor.airTemperature"
@@ -134,12 +150,19 @@ export function OverviewDashboard() {
               quality={telemetry.quality.air_temperature}
               calibration={telemetry.calibration.dht22}
               receivedAt={snapshot.received_at}
-              trend="rising"
+              trend={trendFromHistory(snapshot.history, 'air_temperature_c')}
               relativeStatus={offline ? 'offline' : 'normal'}
+            />
+          ) : (
+            <SensorUnavailableCard
+              icon={Thermometer}
+              titleKey="sensor.airTemperature"
+              descriptionKey="sensor.awaitingReading"
+              quality={telemetry.quality.air_temperature}
             />
           )}
 
-          {airHumidity && (
+          {airHumidity ? (
             <SensorCard
               icon={Droplets}
               titleKey="sensor.airHumidity"
@@ -154,10 +177,17 @@ export function OverviewDashboard() {
               quality={telemetry.quality.air_humidity}
               calibration={telemetry.calibration.dht22}
               receivedAt={snapshot.received_at}
-              trend="stable"
+              trend={trendFromHistory(snapshot.history, 'air_humidity_pct')}
               relativeStatus={
                 offline ? 'offline' : airHumidity.filtered >= 70 ? 'warning' : 'normal'
               }
+            />
+          ) : (
+            <SensorUnavailableCard
+              icon={Droplets}
+              titleKey="sensor.airHumidity"
+              descriptionKey="sensor.awaitingReading"
+              quality={telemetry.quality.air_humidity}
             />
           )}
 
@@ -176,18 +206,19 @@ export function OverviewDashboard() {
               quality={telemetry.quality.water_temperature}
               calibration={telemetry.calibration.ds18b20}
               receivedAt={snapshot.received_at}
-              trend="stable"
+              trend={trendFromHistory(snapshot.history, 'water_temperature_c')}
               relativeStatus={offline ? 'offline' : 'normal'}
             />
           ) : (
             <SensorUnavailableCard
               icon={Waves}
               titleKey="sensor.waterTemperature"
-              descriptionKey="sensor.waterTemperatureHardware"
+              descriptionKey="sensor.awaitingReading"
+              quality={telemetry.quality.water_temperature}
             />
           )}
 
-          {mq5 && (
+          {mq5 ? (
             <SensorCard
               icon={Gauge}
               titleKey="sensor.mq5"
@@ -205,9 +236,16 @@ export function OverviewDashboard() {
               quality={telemetry.quality.mq5}
               calibration={telemetry.calibration.mq5}
               receivedAt={snapshot.received_at}
-              trend="falling"
+              trend={trendFromHistory(snapshot.history, 'mq5_relative_level_pct')}
               relativeStatus={offline ? 'offline' : 'normal'}
               mq5Notice
+            />
+          ) : (
+            <SensorUnavailableCard
+              icon={Gauge}
+              titleKey="sensor.mq5"
+              descriptionKey="sensor.awaitingReading"
+              quality={telemetry.quality.mq5}
             />
           )}
 
@@ -215,16 +253,19 @@ export function OverviewDashboard() {
             icon={Wind}
             titleKey="sensor.ammonia"
             descriptionKey="sensor.ammoniaHardware"
+            quality={telemetry.quality.ammonia}
           />
           <SensorUnavailableCard
             icon={Droplets}
             titleKey="sensor.waterConsumption"
             descriptionKey="sensor.waterHardware"
+            quality={telemetry.quality.water_flow}
           />
           <SensorUnavailableCard
             icon={Weight}
             titleKey="sensor.feedWeight"
             descriptionKey="sensor.feedHardware"
+            quality={telemetry.quality.feed_weight}
           />
         </div>
       </section>
@@ -238,10 +279,17 @@ export function OverviewDashboard() {
         <DeviceHealthCard snapshot={snapshot} />
       </div>
 
-      <p className="simulation-footnote">
-        <FlaskConical size={15} aria-hidden="true" />
-        {t('header.simulation')} · {t(`scenario.${snapshot.scenario}`)}
-      </p>
+      {mode === 'mock' && snapshot.scenario ? (
+        <p className="simulation-footnote">
+          <FlaskConical size={15} aria-hidden="true" />
+          {t('header.simulation')} · {t(`scenario.${snapshot.scenario}`)}
+        </p>
+      ) : (
+        <p className="simulation-footnote">
+          <RadioTower size={15} aria-hidden="true" />
+          {t('overview.liveFootnote')}
+        </p>
+      )}
     </div>
   );
 }

@@ -88,11 +88,12 @@ Dashboard components access telemetry only through `TelemetryProvider` and `useT
 
 ```text
 Dashboard components -> typed hook -> TelemetrySource
-                                      |- MockTelemetrySource (F1)
-                                      `- ApiTelemetrySource (future placeholder)
+                                      |- ApiTelemetrySource (live polling)
+                                      `- MockTelemetrySource (local development only)
 ```
 
-`NEXT_PUBLIC_DATA_MODE=mock|api` selects the implementation. Mock mode is the default.
+Live API mode is the default and is mandatory in production builds. Explicit
+`NEXT_PUBLIC_DATA_MODE=mock` is available only for local development.
 `MockTelemetrySource` uses predictable trigonometric functions rather than uncontrolled randomness,
 keeps raw and filtered readings separate, increments sequence numbers, and advances both
 `captured_at` and `received_at` UTC timestamps. Its start/stop methods are idempotent and the provider
@@ -105,8 +106,9 @@ Scenarios are selected with `NEXT_PUBLIC_MOCK_SCENARIO`:
 - `sensor-not-installed`
 - `device-offline`
 
-`ApiTelemetrySource` deliberately returns an unavailable error in F1. A later implementation can use
-REST and WebSocket without changing dashboard components. No browser-side MQTT dependency exists.
+`ApiTelemetrySource` polls `GET /api/v1/telemetry/latest` and validates every receipt with the shared
+schema. HTTP 204/404 produces the explicit waiting state instead of mock values. The source keeps a
+bounded client-side trend from unique message IDs. No browser-side MQTT dependency exists.
 
 ## Vision page
 
@@ -138,17 +140,14 @@ VisionDashboard -> VisionClient
                    `- ApiVisionClient (REST: /api/v1/vision/*)
 ```
 
-`NEXT_PUBLIC_DATA_MODE=api` selects `ApiVisionClient`; any other value selects the mock client, and
-the page shows a banner while mock data is in use. Note that this variable also switches the
-overview to `ApiTelemetrySource`, which is intentionally unavailable in F1, so the overview and the
-real vision page cannot currently be shown with live data at the same time. A separate variable for
-vision is the straightforward fix if both are needed.
+Production selects `ApiVisionClient`; local development may explicitly select the mock client. The
+page shows a banner whenever mock data is in use.
 
 ## Frontend roadmap
 
-1. **F1 — shell and simulated overview:** current phase.
-2. **F2 — backend telemetry transport:** implement `ApiTelemetrySource` over REST/WebSocket after
-   backend ingestion exists; keep mock mode for repeatable development and tests.
+1. **F1 — shell and simulated overview:** complete.
+2. **F2 — backend telemetry transport:** HTTP ingestion and live polling are implemented with a
+   volatile latest-reading store; persistence, MQTT ingestion, and history queries remain.
 3. **F3 — live and historical modules:** complete routed pages, time-range queries, chart exploration,
    and explicit stale/missing-data behavior.
 4. **F4 — alert, device, calibration, and export workflows:** implement only after backend contracts,
