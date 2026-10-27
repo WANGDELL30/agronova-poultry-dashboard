@@ -1,0 +1,12 @@
+Zero-shot VLM (SCS prompt)
+accuracy=0.3750  f1_macro=0.2500
+
+              precision    recall  f1-score   support
+
+  not_stress       0.00      0.00      0.00         1
+      stress       0.00      0.00      0.00         4
+   undefined       0.60      1.00      0.75         3
+
+    accuracy                           0.38         8
+   macro avg       0.20      0.33      0.25         8
+weighted avg       0.22      0.38      0.28         8
