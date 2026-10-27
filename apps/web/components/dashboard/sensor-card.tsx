@@ -108,11 +108,13 @@ export function SensorUnavailableCard({
   titleKey,
   descriptionKey,
   quality = SensorQuality.NOT_INSTALLED,
+  waiting = false,
 }: Readonly<{
   icon?: LucideIcon;
   titleKey: TranslationKey;
   descriptionKey: TranslationKey;
   quality?: SensorQuality;
+  waiting?: boolean;
 }>) {
   const { t } = useLanguage();
 
@@ -129,15 +131,20 @@ export function SensorUnavailableCard({
           >
             <span aria-hidden="true" />
             {t(
-              quality === SensorQuality.DEVICE_OFFLINE
-                ? 'relative.offline'
-                : 'relative.unavailable',
+              waiting
+                ? 'sensor.waiting'
+                : quality === SensorQuality.DEVICE_OFFLINE
+                  ? 'relative.offline'
+                  : 'relative.unavailable',
             )}
           </span>
         </div>
       </div>
-      <div className="unavailable-value" aria-label={t('sensor.notAvailable')}>
-        —
+      <div
+        className={`unavailable-value${waiting ? ' waiting-value' : ''}`}
+        aria-label={waiting ? t('sensor.waiting') : t('sensor.notAvailable')}
+      >
+        {waiting ? t('sensor.waiting') : '—'}
       </div>
       <StatusBadge status={quality} />
       <p className="unavailable-copy">{t(descriptionKey)}</p>

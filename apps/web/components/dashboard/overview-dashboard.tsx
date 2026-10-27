@@ -19,13 +19,14 @@ import { formatNumber, formatRelativeTime } from '../../lib/formatting/formatter
 import { useLanguage } from '../../lib/i18n/language-provider';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
 import type { TrendMetric, TrendPoint } from '../../lib/telemetry/types';
-import { EmptyState, ErrorState, LoadingSkeleton } from '../ui/data-states';
+import { LoadingSkeleton } from '../ui/data-states';
 import { SectionHeader } from '../ui/section-header';
 import { AlertPanel } from './alert-panel';
 import { DeviceHealthCard } from './device-health-card';
 import { SensorCard, SensorUnavailableCard } from './sensor-card';
 import { SummaryCard } from './summary-card';
 import { TrendChart } from './trend-chart';
+import { WaitingTelemetryDashboard } from './waiting-telemetry-dashboard';
 import { MortalityOverviewCard } from '../mortality/mortality-overview-card';
 
 function trendFromHistory(
@@ -50,18 +51,14 @@ export function OverviewDashboard() {
     return <LoadingSkeleton />;
   }
 
-  if (state.kind === 'unavailable' || state.kind === 'error') {
+  if (state.kind === 'unavailable' || state.kind === 'error' || state.kind === 'empty') {
     return (
-      <ErrorState
+      <WaitingTelemetryDashboard
         unavailable={state.kind === 'unavailable'}
-        detail={state.message}
+        detail={'message' in state ? state.message : undefined}
         onRetry={retry}
       />
     );
-  }
-
-  if (state.kind === 'empty') {
-    return <EmptyState />;
   }
 
   const { snapshot } = state;

@@ -850,6 +850,15 @@ summary {
   font-weight: 600;
 }
 
+.unavailable-value.waiting-value {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  color: var(--text-soft);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
 .unavailable-copy {
   margin: 12px 0 0;
   color: var(--muted);
@@ -1434,6 +1443,40 @@ summary {
   box-shadow: var(--shadow-sm);
 }
 
+.waiting-telemetry-banner {
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.waiting-telemetry-banner h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.waiting-telemetry-banner p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.waiting-telemetry-banner small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.waiting-telemetry-banner .secondary-button {
+  margin-top: 0;
+}
+
 .state-heading,
 .error-state {
   display: flex;
@@ -1685,6 +1728,16 @@ summary {
 @media (max-width: 767px) {
   body {
     font-size: 13px;
+  }
+
+  .waiting-telemetry-banner {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .waiting-telemetry-banner .secondary-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
   }
 
   .app-shell {

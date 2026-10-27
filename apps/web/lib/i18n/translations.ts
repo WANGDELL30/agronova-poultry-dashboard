@@ -121,6 +121,8 @@ export const id = {
   'sensor.trend.stable': 'Stabil',
   'sensor.trend.unknown': 'Menunggu tren',
   'sensor.notAvailable': 'Tidak tersedia',
+  'sensor.waiting': 'Menunggu sensor',
+  'sensor.waitingDescription': 'Belum ada pembacaan valid dari sensor ini.',
   'sensor.notInstalled': 'Sensor belum terpasang',
   'sensor.ammoniaHardware': 'Memerlukan sensor amonia atau kualitas udara analog yang kompatibel.',
   'sensor.waterHardware': 'Memerlukan sensor aliran air untuk mengukur laju dan total konsumsi.',
@@ -202,6 +204,17 @@ export const id = {
   'state.emptyTitle': 'Menunggu perangkat & sensor',
   'state.emptyDescription': 'Mode langsung aktif, tetapi belum ada telemetri valid dari ESP32.',
   'state.emptyHint': 'Nyalakan perangkat dan kirim payload skema v1; angka tidak akan dibuat-buat.',
+  'waiting.title': 'Menunggu perangkat & sensor',
+  'waiting.emptyDescription':
+    'Dashboard langsung sudah aktif. Kotak data akan terisi otomatis setelah ESP32 mengirim telemetri.',
+  'waiting.unavailableDescription':
+    'API telemetri belum terhubung. Kotak data tetap ditampilkan dan koneksi dapat dicoba kembali.',
+  'waiting.device': 'Menunggu ESP32 terhubung',
+  'waiting.alerts': 'Menunggu data untuk evaluasi',
+  'waiting.quality': 'Belum ada payload tervalidasi',
+  'waiting.telemetry': 'Belum ada data diterima',
+  'waiting.sensorsDescription':
+    'Setiap kotak akan terisi dengan pembacaan nyata; nilai kosong tidak diganti dengan nol.',
   'state.retry': 'Coba lagi',
   'placeholder.eyebrow': 'Modul mendatang',
   'placeholder.titleSuffix': 'belum tersedia pada fase F1',
@@ -409,6 +422,8 @@ export const en: Record<TranslationKey, string> = {
   'sensor.trend.stable': 'Stable',
   'sensor.trend.unknown': 'Waiting for trend',
   'sensor.notAvailable': 'Unavailable',
+  'sensor.waiting': 'Waiting for sensor',
+  'sensor.waitingDescription': 'No valid reading has arrived from this sensor yet.',
   'sensor.notInstalled': 'Sensor not installed',
   'sensor.ammoniaHardware': 'Requires a compatible ammonia or analog air-quality sensor.',
   'sensor.waterHardware': 'Requires a water-flow sensor to measure flow rate and total usage.',
@@ -489,6 +504,17 @@ export const en: Record<TranslationKey, string> = {
   'state.emptyDescription': 'Live mode is active, but the ESP32 has not sent valid telemetry yet.',
   'state.emptyHint':
     'Power on the device and send a schema v1 payload; values are never fabricated.',
+  'waiting.title': 'Waiting for device & sensors',
+  'waiting.emptyDescription':
+    'The live dashboard is active. Data cards will fill automatically when the ESP32 sends telemetry.',
+  'waiting.unavailableDescription':
+    'The telemetry API is not connected yet. Data cards remain visible and the connection can be retried.',
+  'waiting.device': 'Waiting for ESP32 connection',
+  'waiting.alerts': 'Waiting for data to evaluate',
+  'waiting.quality': 'No validated payload yet',
+  'waiting.telemetry': 'No data received yet',
+  'waiting.sensorsDescription':
+    'Each card will fill with real readings; missing values are never replaced with zero.',
   'state.retry': 'Try again',
   'placeholder.eyebrow': 'Future module',
   'placeholder.titleSuffix': 'is not available in F1',
