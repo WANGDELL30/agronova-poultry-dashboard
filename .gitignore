@@ -42,3 +42,6 @@ apps/api/data/
 *.zip
 training/results/
 training/**/indicators_ground_truth*.csv
+
+# Laporan / dokumen Word
+*.docx

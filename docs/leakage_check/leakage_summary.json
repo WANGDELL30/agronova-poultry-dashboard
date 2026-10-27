@@ -1,0 +1,150 @@
+{
+  "pemetaan": {
+    "citra_di_zip": 51,
+    "citra_di_session_mapping": 51,
+    "zip_tanpa_session": [],
+    "session_tanpa_zip": [],
+    "instance_gt": 69,
+    "instance_gt_tidak_ada_di_coco": [],
+    "citra_gt": 51
+  },
+  "rekonstruksi_split": {
+    "crop_dicocokkan": 69,
+    "file_augmentasi": 6,
+    "masalah": []
+  },
+  "sesi_mentah_sama_dengan_tersimpan": true,
+  "cek_a": {
+    "pelanggaran": 0,
+    "jumlah_sesi": 32
+  },
+  "cek_b": {
+    "pelanggaran": 0,
+    "citra_dengan_crop": 51,
+    "citra_multi_crop": 12
+  },
+  "cek_c": {
+    "pelanggaran": 0,
+    "pasangan_phash_le_10": 20,
+    "pasangan_phash_le_10_satu_split": 20
+  },
+  "cek_d": {
+    "pelanggaran": 0,
+    "file_augmentasi": 6,
+    "sumber": [
+      {
+        "aug": "train/not_stress/aug_0_not_stress_0019.jpg",
+        "crop_sumber": "train/not_stress/not_stress_0019.jpg",
+        "instance": "train/IMG_20250512_094552_jpg.rf.e6659d8093bbb33d86e27ffba1171873.jpg#inst1",
+        "citra": "IMG_20250512_094552_jpg.rf.e6659d8093bbb33d86e27ffba1171873.jpg",
+        "split": "train"
+      },
+      {
+        "aug": "train/not_stress/aug_1_not_stress_0006.jpg",
+        "crop_sumber": "train/not_stress/not_stress_0006.jpg",
+        "instance": "train/IMG_20250512_094611_jpg.rf.eb5c7194b09338ee5dc3385f42da588e.jpg#inst1",
+        "citra": "IMG_20250512_094611_jpg.rf.eb5c7194b09338ee5dc3385f42da588e.jpg",
+        "split": "train"
+      },
+      {
+        "aug": "train/not_stress/aug_2_not_stress_0014.jpg",
+        "crop_sumber": "train/not_stress/not_stress_0014.jpg",
+        "instance": "train/IMG_20250512_094813_jpg.rf.2f5d543f2187094350a5b2cc4abf986e.jpg#inst1",
+        "citra": "IMG_20250512_094813_jpg.rf.2f5d543f2187094350a5b2cc4abf986e.jpg",
+        "split": "train"
+      },
+      {
+        "aug": "train/not_stress/aug_3_not_stress_0014.jpg",
+        "crop_sumber": "train/not_stress/not_stress_0014.jpg",
+        "instance": "train/IMG_20250512_094813_jpg.rf.2f5d543f2187094350a5b2cc4abf986e.jpg#inst1",
+        "citra": "IMG_20250512_094813_jpg.rf.2f5d543f2187094350a5b2cc4abf986e.jpg",
+        "split": "train"
+      },
+      {
+        "aug": "train/not_stress/aug_4_not_stress_0010.jpg",
+        "crop_sumber": "train/not_stress/not_stress_0010.jpg",
+        "instance": "train/IMG_20250511_135123_jpg.rf.5a13604cc8ccf1f72e330b1debc5a86e.jpg#inst0",
+        "citra": "IMG_20250511_135123_jpg.rf.5a13604cc8ccf1f72e330b1debc5a86e.jpg",
+        "split": "train"
+      },
+      {
+        "aug": "train/not_stress/aug_5_not_stress_0020.jpg",
+        "crop_sumber": "train/not_stress/not_stress_0020.jpg",
+        "instance": "train/IMG_20250511_185052_jpg.rf.74f4b8cc4aac1a728ffdc3ce72cd3e42.jpg#inst0",
+        "citra": "IMG_20250511_185052_jpg.rf.74f4b8cc4aac1a728ffdc3ce72cd3e42.jpg",
+        "split": "train"
+      }
+    ]
+  },
+  "sensitivitas": [
+    {
+      "threshold": 8,
+      "jumlah_sesi": 33,
+      "sesi_multi_citra": 12,
+      "sesi_lintas_split": 0,
+      "sama_dengan_sesi_tersimpan": false
+    },
+    {
+      "threshold": 10,
+      "jumlah_sesi": 32,
+      "sesi_multi_citra": 12,
+      "sesi_lintas_split": 0,
+      "sama_dengan_sesi_tersimpan": true
+    },
+    {
+      "threshold": 12,
+      "jumlah_sesi": 31,
+      "sesi_multi_citra": 12,
+      "sesi_lintas_split": 0,
+      "sama_dengan_sesi_tersimpan": false
+    }
+  ],
+  "per_split": {
+    "train": {
+      "instance": 52,
+      "citra": 34,
+      "sesi": 21,
+      "label": {
+        "not_stress": 11,
+        "undefined": 12,
+        "stress": 29
+      },
+      "crop_augmentasi": 6
+    },
+    "valid": {
+      "instance": 9,
+      "citra": 9,
+      "sesi": 5,
+      "label": {
+        "stress": 8,
+        "undefined": 1
+      },
+      "crop_augmentasi": 0
+    },
+    "test": {
+      "instance": 8,
+      "citra": 8,
+      "sesi": 6,
+      "label": {
+        "stress": 4,
+        "undefined": 3,
+        "not_stress": 1
+      },
+      "crop_augmentasi": 0
+    }
+  },
+  "selisih_timestamp_terkecil_lintas_split_detik": [
+    498.0,
+    "IMG_20250511_185049_jpg.rf.7a0c68f7eefd524bb2d5587b840ef620.jpg",
+    "IMG_20250511_184231_jpg.rf.a790b8da17642b061e867946c25ef420.jpg",
+    "train",
+    "test"
+  ],
+  "jarak_phash_terkecil_lintas_split": [
+    18,
+    "medium-4-_jpg.rf.98864658019578d82dcb77acc5182571.jpg",
+    "high-24-_jpg.rf.2a887917000acd84529280b6666d9241.jpg",
+    "train",
+    "valid"
+  ]
+}

@@ -1,0 +1,55 @@
+kelompok,field,nilai,sumber
+identitas,nama_proyek_roboflow,Stressed chicken,README.dataset.txt; README.roboflow.txt
+identitas,nama_versi_roboflow,Stressed chicken > 2025-10-11 4:57pm,README.dataset.txt
+identitas,workspace_slug,chicken-stress-detection,URL di README.dataset.txt
+identitas,project_slug,stressed-chicken-vgdf1,URL di README.dataset.txt
+identitas,nama_tampilan_workspace,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+identitas,versi,19,README.roboflow.txt (v19); _annotations.coco.json info.version = 19
+identitas,url,https://universe.roboflow.com/chicken-stress-detection/stressed-chicken-vgdf1,README.dataset.txt
+identitas,penyedia,Provided by a Roboflow user,README.dataset.txt
+identitas,nama_pembuat_atau_kontributor,TIDAK TERSEDIA (tidak ada di informasi publik dataset),_annotations.coco.json info.contributor kosong
+identitas,sitasi_atau_doi,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+lisensi,lisensi,CC BY 4.0,README.dataset.txt; _annotations.coco.json licenses
+lisensi,url_lisensi,https://creativecommons.org/licenses/by/4.0/,_annotations.coco.json licenses
+waktu,tanggal_ekspor_roboflow,2026-07-20 06:37:39 UTC,README.roboflow.txt; _annotations.coco.json info.date_created
+waktu,tanggal_akses_laporan,2026-10-25,ditetapkan oleh laporan (bukan dari file zip)
+waktu,tanggal_pengambilan_citra,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+berkas,nama_arsip,Raw Data Chicken Stress.zip,berkas lokal
+berkas,ukuran_arsip_byte,8167459,dihitung
+berkas,sha256_arsip,3fc9c9c789e6ea760c77e1065f026513eaee627a9c9680074408e8661dc72304,dihitung
+berkas,isi_arsip,"Data/{train,valid,test}/ (JPG + _annotations.coco.json), README.dataset.txt, README.roboflow.txt, Stressed chicken.v19i.coco.zip",dihitung
+berkas,konsistensi_zip_dalam,Stressed chicken.v19i.coco.zip berisi 56 file yang identik (MD5) dengan file hasil ekstraksi di Data/,dihitung
+citra,jumlah_citra,51,README.roboflow.txt; dihitung dari _annotations.coco.json dan file JPG
+citra,jumlah_citra_train,47,dihitung
+citra,jumlah_citra_valid,2,dihitung
+citra,jumlah_citra_test,2,dihitung
+citra,format_citra,JPG,dihitung
+citra,resolusi,640 x 640 piksel (seluruh 51 citra),dihitung dari _annotations.coco.json width/height
+citra,resolusi_asli_sebelum_resize,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+citra,prapemrosesan,Auto-orientation (EXIF stripping); Resize to 640x640 (Stretch),README.roboflow.txt
+citra,augmentasi_roboflow,Tidak ada (No image augmentation techniques were applied),README.roboflow.txt
+anotasi,format_anotasi,COCO JSON (_annotations.coco.json per split),README.roboflow.txt; dihitung
+anotasi,tipe_anotasi,bounding box,dihitung
+anotasi,kategori_coco,"normal-stressed (id 0, supercategory, 0 box); high_stress (1); low_stress (2); medium_stress (3); normal (4)",_annotations.coco.json categories
+anotasi,jumlah_box_total,119,dihitung
+anotasi,jumlah_box_train,111,dihitung
+anotasi,jumlah_box_valid,3,dihitung
+anotasi,jumlah_box_test,5,dihitung
+anotasi,box_normal,56,dihitung (train 48; valid 3; test 5)
+anotasi,box_medium_stress,28,dihitung (train 28)
+anotasi,box_high_stress,25,dihitung (train 25)
+anotasi,box_low_stress,10,dihitung (train 10)
+anotasi,komposisi_kelas_per_citra,"high_stress saja 13; medium_stress saja 12; low_stress saja 4; normal saja 18; low_stress+normal 3; medium_stress+normal 1",dihitung
+anotasi,pedoman_anotasi_roboflow,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+konteks,lokasi_pengambilan,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+konteks,kamera_atau_perangkat,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+konteks,jenis_atau_strain_ayam,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+konteks,umur_ayam,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+konteks,kondisi_kandang_atau_lingkungan,TIDAK TERSEDIA (tidak ada di informasi publik dataset),-
+turunan_penulis,jumlah_instance_ekor,69 (119 box digabung; 50 sub-box kepala menyatu ke box badan),indicators_ground_truth_multi.csv; dihitung ulang dari COCO
+turunan_penulis,instance_per_kategori_roboflow,normal 35; medium_stress 14; high_stress 13; low_stress 7,manifest_instance.csv
+turunan_penulis,distribusi_label_akhir,stress 41; not_stress 12; undefined 16,manifest_instance.csv
+turunan_penulis,jumlah_sesi_heuristik,32 (12 sesi berisi lebih dari 1 citra),session_id_mapping.csv
+turunan_penulis,split_final_instance,train 52; valid 9; test 8,direkonstruksi dari Data_working/dataset (lihat manifest_dataset.md)
+turunan_penulis,split_final_sesi,train 21; valid 5; test 6,manifest_instance.csv
+turunan_penulis,split_final_citra,train 34; valid 9; test 8,manifest_instance.csv
