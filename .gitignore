@@ -34,9 +34,11 @@ __pycache__/
 # Vision runtime data (uploaded frames) and local model/cache artifacts
 apps/api/data/
 *.pkl
+*.pt
 *.safetensors
 .cache/
 .pytest_cache/
 # Archives and bulky training outputs (dataset, checkpoints live on Roboflow / Hugging Face)
 *.zip
 training/results/
+training/**/indicators_ground_truth*.csv
