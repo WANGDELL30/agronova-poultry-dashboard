@@ -1,0 +1,2 @@
+Eksperimen: 1. YOLOv11 (satu tahap)
+Tidak ada sampel yang cocok untuk dievaluasi.

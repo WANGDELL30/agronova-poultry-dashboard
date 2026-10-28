@@ -1,0 +1,11 @@
+Eksperimen: 3. EfficientNetV2 (satu tahap)
+accuracy=1.0000, f1_macro=1.0000, n_matched=1
+
+              precision    recall  f1-score   support
+
+  not_stress       1.00      1.00      1.00         1
+      stress       0.00      0.00      0.00         0
+
+    accuracy                           1.00         1
+   macro avg       0.50      0.50      0.50         1
+weighted avg       1.00      1.00      1.00         1

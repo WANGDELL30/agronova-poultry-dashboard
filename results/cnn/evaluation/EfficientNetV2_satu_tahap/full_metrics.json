@@ -1,0 +1,23 @@
+{
+  "accuracy": 1.0,
+  "balanced_accuracy": 1.0,
+  "f1_macro": 1.0,
+  "cohen_kappa": NaN,
+  "precision_not_stress": 1.0,
+  "recall_sensitivity_not_stress": 1.0,
+  "f1_not_stress": 1.0,
+  "precision_stress": 0.0,
+  "recall_sensitivity_stress": 0.0,
+  "f1_stress": 0.0,
+  "specificity_not_stress": NaN,
+  "specificity_stress": 1.0,
+  "roc_auc": NaN,
+  "pr_auc": NaN,
+  "brier_score": NaN,
+  "ece": NaN,
+  "missed_detection_rate": 0.8,
+  "avg_latency_ms": 2019.8445320129395,
+  "fps": 0.4950876090465332,
+  "n_params": 100311722,
+  "memory_mb": 382.65885162353516
+}

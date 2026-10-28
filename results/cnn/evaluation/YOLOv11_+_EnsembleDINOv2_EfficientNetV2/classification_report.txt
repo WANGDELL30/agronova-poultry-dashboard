@@ -1,0 +1,2 @@
+Eksperimen: 6. YOLOv11 + Ensemble(DINOv2, EfficientNetV2)
+Tidak ada sampel yang cocok untuk dievaluasi.

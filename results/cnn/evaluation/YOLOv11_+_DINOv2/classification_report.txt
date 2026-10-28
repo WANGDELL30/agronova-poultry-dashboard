@@ -1,0 +1,2 @@
+Eksperimen: 4. YOLOv11 + DINOv2
+Tidak ada sampel yang cocok untuk dievaluasi.

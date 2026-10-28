@@ -1,0 +1,2 @@
+Eksperimen: 5. YOLOv11 + EfficientNetV2
+Tidak ada sampel yang cocok untuk dievaluasi.
