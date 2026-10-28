@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { formatClock, formatRelativeTime } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
+import { CollaborationMark } from './collaboration-footer';
 import { pageTitleKey } from './navigation';
 
 export function DashboardHeader() {
@@ -41,10 +42,13 @@ export function DashboardHeader() {
           <p className="header-eyebrow">{t('app.tagline')}</p>
           <h1>{t(pageTitleKey(pathname))}</h1>
         </div>
-        <div className={`simulation-badge mode-${mode}`}>
-          <span className="simulation-dot" aria-hidden="true" />
-          <span>{modeLabel}</span>
-          {scenarioLabel && <small>{scenarioLabel}</small>}
+        <div className="header-title-actions">
+          <CollaborationMark />
+          <div className={`simulation-badge mode-${mode}`}>
+            <span className="simulation-dot" aria-hidden="true" />
+            <span>{modeLabel}</span>
+            {scenarioLabel && <small>{scenarioLabel}</small>}
+          </div>
         </div>
       </div>
 

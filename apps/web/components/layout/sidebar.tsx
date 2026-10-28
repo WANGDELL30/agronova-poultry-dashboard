@@ -40,14 +40,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="sidebar-footer">
-        <span className="sidebar-pulse" aria-hidden="true" />
-        <span>
-          <strong>F1</strong>
-          <small>Frontend foundation</small>
-        </span>
-      </div>
     </aside>
   );
 }

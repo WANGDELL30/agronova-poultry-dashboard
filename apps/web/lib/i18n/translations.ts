@@ -62,6 +62,7 @@ export const id = {
   'collaboration.title': 'Bersama membangun peternakan cerdas',
   'collaboration.description':
     'AgroNova Poultry hadir melalui kolaborasi riset, teknologi, dan pengalaman industri.',
+  'collaboration.label': 'Mitra kolaborasi',
   'collaboration.partners': 'Mitra kolaborasi AgroNova Poultry',
   'collaboration.dscAlt': 'Logo Data Science Center Universitas Indonesia',
   'collaboration.kkgAlt': 'Logo Karya Kreasi Group',
@@ -370,6 +371,7 @@ export const en: Record<TranslationKey, string> = {
   'collaboration.title': 'Building smarter poultry farming together',
   'collaboration.description':
     'AgroNova Poultry brings together research, technology, and industry experience.',
+  'collaboration.label': 'Collaboration partners',
   'collaboration.partners': 'AgroNova Poultry collaboration partners',
   'collaboration.dscAlt': 'Data Science Center Universitas Indonesia logo',
   'collaboration.kkgAlt': 'Karya Kreasi Group logo',
