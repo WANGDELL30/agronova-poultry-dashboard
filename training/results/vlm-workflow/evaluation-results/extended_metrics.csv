@@ -1,3 +1,0 @@
-,balanced_accuracy,cohen_kappa,roc_auc,pr_auc,n_parse_error
-Zero-shot VLM (SCS prompt),0.3333333333333333,0.13043478260869568,0.375,0.5,0.0
-Fine-tuned VLM (SCS prompt + LoRA),1.0,1.0,1.0,1.0,0.0
