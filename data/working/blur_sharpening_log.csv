@@ -1,0 +1,4 @@
+file_name,split,laplacian_var_before,laplacian_var_after,membaik,masih_dibawah_threshold
+s3_jpg.rf.0baa582ee2b5d7a62f8c71050fd23891.jpg,train,51.2653271484375,624.2359866309166,True,False
+73_NormalChicken_jpg.rf.8d50ceda103355d3d7bed4e9a7ffffe7.jpg,train,74.1355224609375,864.7360209945678,True,False
+IMG_-_-_jpg.rf.ac466c0d3196deb463c628abc21cf3fb.jpg,valid,77.398359375,808.9420496470394,True,False
