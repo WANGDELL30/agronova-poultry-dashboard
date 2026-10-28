@@ -1,0 +1,7 @@
+model,kelas,tp,fp,fn,tn,n_pred,support,precision,recall,specificity,f1,accuracy,macro_f1,catatan
+Fine-tuned VLM (SCS prompt + LoRA),stress,4,0,0,4,4,4,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,
+Fine-tuned VLM (SCS prompt + LoRA),not_stress,1,0,0,7,1,1,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,
+Fine-tuned VLM (SCS prompt + LoRA),undefined,3,0,0,5,3,3,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,
+Zero-shot VLM (SCS prompt),stress,0,0,4,4,0,4,0.0000,0.0000,1.0000,0.0000,0.3750,0.2500,precision 0/0 (tidak ada prediksi stress) ditulis 0 sesuai zero_division=0; specificity 1 karena FP=0 bukan karena kemampuan membedakan
+Zero-shot VLM (SCS prompt),not_stress,0,3,1,4,3,1,0.0000,0.0000,0.5714,0.0000,0.3750,0.2500,
+Zero-shot VLM (SCS prompt),undefined,3,2,0,3,5,3,0.6000,1.0000,0.6000,0.7500,0.3750,0.2500,
