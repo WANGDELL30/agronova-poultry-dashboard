@@ -9,18 +9,7 @@ export function CollaborationMark() {
 
   return (
     <aside className="header-collaboration" aria-label={t('collaboration.partners')}>
-      <span className="header-collaboration-label">{t('collaboration.label')}</span>
       <div className="header-partner-logos">
-        <span className="header-partner-logo header-partner-dsc">
-          <Image
-            src="/partners/dsc-logo.png"
-            alt={t('collaboration.dscAlt')}
-            width={1018}
-            height={478}
-            sizes="(max-width: 767px) 150px, 142px"
-          />
-        </span>
-        <span className="header-collaboration-divider" aria-hidden="true" />
         <span className="header-partner-logo header-partner-kkg">
           <Image
             src="/partners/karya-kreasi-group-logo.png"
@@ -28,6 +17,18 @@ export function CollaborationMark() {
             width={1054}
             height={1408}
             sizes="38px"
+          />
+        </span>
+        <span className="header-collaboration-symbol" aria-hidden="true">
+          ×
+        </span>
+        <span className="header-partner-logo header-partner-dsc">
+          <Image
+            src="/partners/dsc-logo.png"
+            alt={t('collaboration.dscAlt')}
+            width={1018}
+            height={478}
+            sizes="(max-width: 767px) 150px, 142px"
           />
         </span>
       </div>

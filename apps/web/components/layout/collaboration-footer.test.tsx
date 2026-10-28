@@ -14,7 +14,8 @@ describe('CollaborationMark', () => {
       </LanguageProvider>,
     );
 
-    expect(screen.getByText('Mitra kolaborasi')).toBeTruthy();
+    expect(screen.queryByText('Mitra kolaborasi')).toBeNull();
+    expect(screen.getByText('×')).toBeTruthy();
     expect(screen.getByAltText('Logo Data Science Center Universitas Indonesia')).toBeTruthy();
     expect(screen.getByAltText('Logo Karya Kreasi Group')).toBeTruthy();
   });
