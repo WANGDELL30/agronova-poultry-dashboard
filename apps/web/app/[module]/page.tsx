@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 
-import { navigationItems } from '../../components/layout/navigation';
-import { PlaceholderModule } from '../../components/ui/placeholder-module';
+import { OperationsDashboard } from '../../components/operations/operations-dashboard';
+import type { OperationsModule } from '../../components/operations/operations-copy';
 
-const placeholderRoutes = new Set([
+const operationsRoutes = new Set<OperationsModule>([
   'live',
   'history',
   'alerts',
@@ -14,21 +14,16 @@ const placeholderRoutes = new Set([
 ]);
 
 export function generateStaticParams() {
-  return [...placeholderRoutes].map((module) => ({ module }));
+  return [...operationsRoutes].map((module) => ({ module }));
 }
 
-export default async function FutureModulePage({
+export default async function OperationsModulePage({
   params,
 }: Readonly<{ params: Promise<{ module: string }> }>) {
   const { module } = await params;
-  if (!placeholderRoutes.has(module)) {
+  if (!operationsRoutes.has(module as OperationsModule)) {
     notFound();
   }
 
-  const navigationItem = navigationItems.find(({ href }) => href === `/${module}`);
-  if (!navigationItem) {
-    notFound();
-  }
-
-  return <PlaceholderModule titleKey={navigationItem.labelKey} />;
+  return <OperationsDashboard module={module as OperationsModule} />;
 }
