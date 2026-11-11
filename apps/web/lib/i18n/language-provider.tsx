@@ -14,6 +14,28 @@ import { type Language, translations, type TranslationKey } from './translations
 
 const LANGUAGE_STORAGE_KEY = 'agronova-language';
 
+/**
+ * Blocked site data, enterprise policies, some WebViews and third-party iframes make even reading
+ * `window.localStorage` throw (SecurityError), and setItem can throw QuotaExceededError. The saved
+ * language is only a convenience, so failures fall back to the default language.
+ */
+const safeStorage = {
+  get(key: string): string | null {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key: string, value: string): void {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // Not persisted; the choice still applies for this page view.
+    }
+  },
+};
+
 interface LanguageContextValue {
   language: Language;
   locale: 'id-ID' | 'en-US';
@@ -38,7 +60,7 @@ export function LanguageProvider({ children }: Readonly<{ children: ReactNode }>
   const [language, setLanguageState] = useState<Language>('id');
 
   useEffect(() => {
-    const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    const savedLanguage = safeStorage.get(LANGUAGE_STORAGE_KEY);
     if (savedLanguage === 'id' || savedLanguage === 'en') {
       setLanguageState(savedLanguage);
     }
@@ -50,7 +72,7 @@ export function LanguageProvider({ children }: Readonly<{ children: ReactNode }>
 
   const setLanguage = useCallback((nextLanguage: Language) => {
     setLanguageState(nextLanguage);
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    safeStorage.set(LANGUAGE_STORAGE_KEY, nextLanguage);
   }, []);
 
   const t = useCallback(
