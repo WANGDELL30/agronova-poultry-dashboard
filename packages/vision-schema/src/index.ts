@@ -152,7 +152,11 @@ export const VISION_API_ERROR_CODES = [
   'inference_timeout',
   'inference_not_ready',
   'inference_bad_response',
+  'inference_failed',
   'invalid_metadata',
+  'image_required',
+  'image_too_large',
+  'unsupported_image_type',
 ] as const;
 export type VisionApiErrorCode = (typeof VISION_API_ERROR_CODES)[number];
 /** The subset raised when the API talks to the inference service. */

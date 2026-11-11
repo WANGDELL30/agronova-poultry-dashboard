@@ -16,7 +16,8 @@ export class VisionInferenceFailure extends Error {
   constructor(
     readonly code: InferenceError['code'],
     message: string,
-    readonly record: VisionResultV1,
+    /** Null when nothing was stored (model not ready). */
+    readonly record: VisionResultV1 | null,
   ) {
     super(message);
   }
@@ -37,8 +38,6 @@ export class VisionService {
   ): Promise<VisionResultV1> {
     const messageId = randomUUID();
     const receivedAt = this.now().toISOString();
-    await this.images.save(messageId, mimeType, image);
-
     let response: InferenceResponseV1 | null = null;
     let failure: InferenceError | null = null;
     try {
@@ -47,6 +46,12 @@ export class VisionService {
       if (!(error instanceof InferenceError)) throw error;
       failure = error;
     }
+    if (failure?.code === 'inference_not_ready') {
+      // Nothing was analysed: store neither the frame nor a record, so a retry does not leave a
+      // duplicate inference_error entry in the history (AUDIT R10).
+      throw new VisionInferenceFailure(failure.code, failure.message, null);
+    }
+    await this.images.save(messageId, mimeType, image);
 
     const window = await this.repository.acceptedLabels(meta.camera_id, 4);
     const { vote } = evaluateVote({ result: response?.result ?? null, window });

@@ -55,6 +55,13 @@ export class InferenceClient {
     if (response.status === 503) {
       throw new InferenceError('inference_not_ready', 'Inference model is not ready.');
     }
+    if (response.status >= 500) {
+      // Includes model crashes such as CUDA OOM: the service failed, the answer is not malformed.
+      throw new InferenceError(
+        'inference_failed',
+        `Inference failed with HTTP ${response.status}.`,
+      );
+    }
     if (!response.ok) {
       throw new InferenceError(
         'inference_bad_response',

@@ -37,6 +37,13 @@ describe('InferenceClient', () => {
     );
   });
 
+  it('maps other 5xx answers from inference to inference_failed (R10)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 500 })));
+    await expect(
+      new InferenceClient('http://i', 1000).classify(Buffer.from('x'), 'image/png'),
+    ).rejects.toMatchObject({ code: 'inference_failed', message: expect.stringContaining('500') });
+  });
+
   it('reports health honestly: loading (503) is not ready, and a dead service is unreachable', async () => {
     vi.stubGlobal(
       'fetch',

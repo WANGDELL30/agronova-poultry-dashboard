@@ -306,7 +306,15 @@ export const id = {
     'Layanan inferensi tidak dapat dihubungi. Foto tetap tersimpan.',
   'vision.error.inference_timeout':
     'Layanan inferensi terlalu lama menjawab. Foto tetap tersimpan.',
-  'vision.error.inference_not_ready': 'Model belum siap. Coba lagi sebentar lagi.',
+  'vision.error.inference_not_ready':
+    'Model belum siap (masih dimuat). Foto tidak disimpan; coba lagi sekitar 30 detik lagi.',
+  'vision.error.inference_failed':
+    'Layanan inferensi gagal memproses foto (galat server, misalnya memori GPU penuh). Coba lagi nanti.',
+  'vision.error.image_required': 'Kirim tepat satu foto dalam satu unggahan.',
+  'vision.error.image_too_large':
+    'Foto terlalu besar untuk server (batas bawaan 8 MB). Kecilkan atau kompres foto lalu coba lagi.',
+  'vision.error.unsupported_image_type':
+    'Format foto tidak didukung. Gunakan JPEG, PNG, atau WebP.',
   'vision.error.inference_bad_response': 'Layanan inferensi mengirim respons yang tidak valid.',
   'vision.error.invalid_metadata': 'Data formulir tidak valid.',
   'vision.error.noFile': 'Pilih foto terlebih dahulu.',
@@ -626,7 +634,14 @@ export const en: Record<TranslationKey, string> = {
     'The inference service cannot be reached. The photo was still saved.',
   'vision.error.inference_timeout':
     'The inference service took too long. The photo was still saved.',
-  'vision.error.inference_not_ready': 'The model is not ready yet. Try again shortly.',
+  'vision.error.inference_not_ready':
+    'The model is not ready yet (still loading). The photo was not saved; try again in about 30 seconds.',
+  'vision.error.inference_failed':
+    'The inference service failed to process the photo (server error, e.g. GPU out of memory). Try again later.',
+  'vision.error.image_required': 'Send exactly one photo per upload.',
+  'vision.error.image_too_large':
+    'The photo is too large for the server (8 MB by default). Resize or compress it and try again.',
+  'vision.error.unsupported_image_type': 'Unsupported photo format. Use JPEG, PNG, or WebP.',
   'vision.error.inference_bad_response': 'The inference service returned an invalid response.',
   'vision.error.invalid_metadata': 'Invalid form data.',
   'vision.error.noFile': 'Choose a photo first.',

@@ -76,4 +76,15 @@ describe('VisionService', () => {
     const [saved] = await service.list('cam-01', 5);
     expect(saved).toMatchObject({ status: 'inference_error', result: null, error_message: 'slow' });
   });
+
+  it('stores neither the record nor the image when the model is not ready (R10)', async () => {
+    const service = build(
+      vi.fn().mockRejectedValue(new InferenceError('inference_not_ready', 'model loading')),
+    );
+    await expect(service.processFrame(meta, Buffer.from('x'), 'image/png')).rejects.toMatchObject({
+      code: 'inference_not_ready',
+      record: null,
+    });
+    expect(await service.list('cam-01', 5)).toHaveLength(0);
+  });
 });

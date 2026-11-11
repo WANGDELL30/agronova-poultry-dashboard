@@ -129,6 +129,53 @@ describe('VisionController (HTTP)', () => {
     expect((await upload(valid, { data: 'a', type: 'image/png' })).statusCode).toBe(502);
   });
 
+  it('returns specific error codes for wrong type, oversize and more than one file (R10)', async () => {
+    const wrongType = await upload(valid, { data: 'GIF89a', type: 'image/gif' });
+    expect(wrongType.statusCode).toBe(415);
+    expect(wrongType.json()).toMatchObject({ error: 'unsupported_image_type' });
+
+    const tooLarge = await upload(valid, { data: 'x'.repeat(200), type: 'image/png' });
+    expect(tooLarge.statusCode).toBe(413);
+    expect(tooLarge.json()).toMatchObject({ error: 'image_too_large' });
+
+    const form = new FormData();
+    for (const [k, v] of Object.entries(valid)) form.append(k, v);
+    form.append('image', new Blob(['a'], { type: 'image/png' }), 'a');
+    form.append('image', new Blob(['b'], { type: 'image/png' }), 'b');
+    const res = new Response(form);
+    const twoFiles = await app.inject({
+      method: 'POST',
+      url: '/api/v1/vision/frames',
+      headers: { 'content-type': res.headers.get('content-type') ?? '' },
+      payload: Buffer.from(await res.arrayBuffer()),
+    });
+    expect(twoFiles.statusCode).toBe(400);
+    expect(twoFiles.json()).toMatchObject({ error: 'image_required' });
+  });
+
+  it('maps a 5xx inference failure to inference_failed (R10)', async () => {
+    classify.mockRejectedValueOnce(new InferenceError('inference_failed', 'CUDA OOM'));
+    const res = await upload(valid, { data: 'a', type: 'image/png' });
+    expect(res.statusCode).toBe(502);
+    expect(res.json()).toMatchObject({ error: 'inference_failed' });
+  });
+
+  it('answers 503 + Retry-After when the model is not ready and stores nothing (R10)', async () => {
+    const before = (
+      await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })
+    ).json();
+    classify.mockRejectedValueOnce(new InferenceError('inference_not_ready', 'model loading'));
+    const res = await upload(valid, { data: 'a', type: 'image/png' });
+    expect(res.statusCode).toBe(503);
+    expect(res.headers['retry-after']).toBe('30');
+    expect(res.json()).toMatchObject({ error: 'inference_not_ready' });
+    expect(res.json().message_id).toBeUndefined();
+    const after = (
+      await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })
+    ).json();
+    expect(after).toHaveLength(before.length);
+  });
+
   it('never resolves non-UUID image ids to files', async () => {
     const res = await app.inject({
       method: 'GET',

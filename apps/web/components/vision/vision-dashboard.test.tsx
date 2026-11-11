@@ -122,4 +122,21 @@ describe('VisionDashboard', () => {
     expect((await screen.findAllByText(/API belum dikonfigurasi/)).length).toBeGreaterThan(0);
     expect(submit).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['unsupported_image_type', /JPEG, PNG, atau WebP/],
+    ['image_too_large', /terlalu besar/],
+    ['image_required', /tepat satu foto/],
+    ['inference_failed', /gagal memproses foto/i],
+    ['inference_not_ready', /tidak disimpan/],
+  ])('explains %s specifically, not with the generic message (R10)', async (code, text) => {
+    setup(fakeClient({ submit: vi.fn().mockRejectedValue(new VisionClientError(code, 'x')) }));
+    await userEvent.upload(
+      screen.getByLabelText(/Foto ayam/),
+      new File(['x'], 'a.jpg', { type: 'image/jpeg' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Analisis foto' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(text));
+    expect(screen.getByRole('alert').textContent).not.toBe('Gagal memproses foto.');
+  });
 });

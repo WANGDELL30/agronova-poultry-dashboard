@@ -20,6 +20,13 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { ALLOWED_IMAGE_TYPES, type VisionConfig } from './vision-config.js';
+
+/** Seconds a client should wait before retrying while the model is still loading. */
+export const NOT_READY_RETRY_AFTER_SECONDS = 30;
+
+function apiError(code: VisionApiErrorCode, message: string, status: HttpStatus): HttpException {
+  return new HttpException({ error: code, message }, status);
+}
 import { VISION_CONFIG } from './vision.tokens.js';
 import { VisionInferenceFailure, VisionService } from './vision.service.js';
 
@@ -31,38 +38,53 @@ export class VisionController {
   ) {}
 
   @Post('frames')
-  async upload(@Req() request: FastifyRequest): Promise<VisionResultV1> {
+  async upload(
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<VisionResultV1> {
     if (!request.isMultipart()) throw new BadRequestException('Expected multipart/form-data.');
 
     const fields: Record<string, string> = {};
     let image: { data: Buffer; mimeType: string } | null = null;
-    for await (const part of request.parts({
-      limits: { fileSize: this.config.maxImageBytes, files: 1 },
-    })) {
-      if (part.type === 'file') {
-        if (part.fieldname !== 'image' || image)
-          throw new BadRequestException('Exactly one "image" file is required.');
-        if (!ALLOWED_IMAGE_TYPES[part.mimetype]) {
-          throw new HttpException(
-            'Only JPEG, PNG, or WebP images are accepted.',
-            HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-          );
-        }
-        let data: Buffer;
-        try {
-          data = await part.toBuffer();
-        } catch (error) {
-          if ((error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
-            throw new HttpException('Image exceeds the size limit.', HttpStatus.PAYLOAD_TOO_LARGE);
+    const exactlyOneImage = () =>
+      apiError('image_required', 'Exactly one "image" file is required.', HttpStatus.BAD_REQUEST);
+    try {
+      for await (const part of request.parts({
+        limits: { fileSize: this.config.maxImageBytes, files: 1 },
+      })) {
+        if (part.type === 'file') {
+          if (part.fieldname !== 'image' || image) throw exactlyOneImage();
+          if (!ALLOWED_IMAGE_TYPES[part.mimetype]) {
+            throw apiError(
+              'unsupported_image_type',
+              'Only JPEG, PNG, or WebP images are accepted.',
+              HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+            );
           }
-          throw error;
+          let data: Buffer;
+          try {
+            data = await part.toBuffer();
+          } catch (error) {
+            if ((error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
+              throw apiError(
+                'image_too_large',
+                `Image exceeds the size limit of ${this.config.maxImageBytes} bytes.`,
+                HttpStatus.PAYLOAD_TOO_LARGE,
+              );
+            }
+            throw error;
+          }
+          image = { data, mimeType: part.mimetype };
+        } else if (typeof part.value === 'string') {
+          fields[part.fieldname] = part.value;
         }
-        image = { data, mimeType: part.mimetype };
-      } else if (typeof part.value === 'string') {
-        fields[part.fieldname] = part.value;
       }
+    } catch (error) {
+      // @fastify/multipart reports a second file as 413 "reach files limit"; it is a bad request.
+      if ((error as { code?: string }).code === 'FST_FILES_LIMIT') throw exactlyOneImage();
+      throw error;
     }
-    if (!image) throw new BadRequestException('Exactly one "image" file is required.');
+    if (!image) throw exactlyOneImage();
 
     const meta = visionFrameMetadataSchema.safeParse(fields);
     if (!meta.success) {
@@ -74,10 +96,15 @@ export class VisionController {
       return await this.service.processFrame(meta.data, image.data, image.mimeType);
     } catch (error) {
       if (error instanceof VisionInferenceFailure) {
+        if (error.code === 'inference_not_ready') {
+          // Nothing was stored, so there is no message_id; the client may retry later.
+          reply.header('Retry-After', String(NOT_READY_RETRY_AFTER_SECONDS));
+          throw apiError(error.code, error.message, HttpStatus.SERVICE_UNAVAILABLE);
+        }
         const status =
           error.code === 'inference_timeout' ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
         throw new HttpException(
-          { error: error.code, message: error.message, message_id: error.record.message_id },
+          { error: error.code, message: error.message, message_id: error.record?.message_id },
           status,
         );
       }
