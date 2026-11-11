@@ -17,6 +17,7 @@ import {
 
 import { formatNumber, formatRelativeTime } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
+import { telemetryErrorKey } from '../../lib/telemetry/error-messages';
 import { isDeviceOnline, snapshotFreshness, useNow } from '../../lib/telemetry/freshness';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
 import type { TrendMetric, TrendPoint } from '../../lib/telemetry/types';
@@ -65,7 +66,11 @@ export function OverviewDashboard() {
       <WaitingTelemetryDashboard
         unconfigured={state.kind === 'unconfigured'}
         unavailable={state.kind === 'unavailable'}
-        detail={'message' in state ? state.message : undefined}
+        detail={
+          state.kind === 'unavailable' || state.kind === 'error'
+            ? t(telemetryErrorKey(state.kind))
+            : undefined
+        }
         onRetry={retry}
       />
     );

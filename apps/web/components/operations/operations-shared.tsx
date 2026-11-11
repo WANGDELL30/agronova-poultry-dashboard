@@ -4,6 +4,7 @@ import { CircleCheck, DatabaseZap, RefreshCw, RadioTower, type LucideIcon } from
 import type { ReactNode } from 'react';
 
 import { useLanguage } from '../../lib/i18n/language-provider';
+import { telemetryErrorKey } from '../../lib/telemetry/error-messages';
 import { snapshotFreshness, useNow } from '../../lib/telemetry/freshness';
 import type { TelemetryState } from '../../lib/telemetry/types';
 import { operationsCopy } from './operations-copy';
@@ -35,7 +36,7 @@ export function ConnectionBanner({
   state,
   onRetry,
 }: Readonly<{ state: TelemetryState; onRetry: () => void }>) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const copy = operationsCopy[language].common;
   const now = useNow();
   const freshness = state.kind === 'ready' ? snapshotFreshness(state.snapshot, now) : null;
@@ -92,7 +93,9 @@ export function ConnectionBanner({
       <div>
         <strong>{title}</strong>
         <p>{description}</p>
-        {'message' in state && <small>{state.message}</small>}
+        {(state.kind === 'unavailable' || state.kind === 'error') && (
+          <small>{t(telemetryErrorKey(state.kind))}</small>
+        )}
       </div>
       {(unavailable || error) && (
         <button type="button" className="secondary-button" onClick={onRetry}>

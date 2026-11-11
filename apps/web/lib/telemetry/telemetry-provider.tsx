@@ -42,6 +42,10 @@ export function TelemetryProvider({
       const snapshot = await source.getInitialSnapshot();
       setState(snapshot ? { kind: 'ready', snapshot } : { kind: 'empty' });
     } catch (error) {
+      // Technical details stay in the console; the UI shows a localized message (AUDIT D13).
+      console.warn(
+        `[agronova/web] telemetry: ${error instanceof Error ? error.message : String(error)}`,
+      );
       if (error instanceof TelemetrySourceError) {
         if (error.kind === 'unconfigured') {
           setState({ kind: 'unconfigured' });

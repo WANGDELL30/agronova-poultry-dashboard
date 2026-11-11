@@ -214,6 +214,10 @@ export const id = {
   'apiConfig.missingTitle': 'API belum dikonfigurasi',
   'apiConfig.missingDescription':
     'Alamat API (NEXT_PUBLIC_API_BASE_URL) belum diisi saat build, jadi dashboard tidak meminta data. Atur variabel ini lalu build ulang.',
+  'telemetry.error.unavailable':
+    'API telemetri tidak dapat dihubungi atau membalas dengan galat. Dashboard akan mencoba lagi.',
+  'telemetry.error.invalid':
+    'API telemetri mengirim data yang tidak sesuai format telemetri v1, sehingga tidak ditampilkan.',
   'waiting.title': 'Menunggu perangkat & sensor',
   'waiting.emptyDescription':
     'Dashboard langsung sudah aktif. Kotak data akan terisi otomatis setelah ESP32 mengirim telemetri.',
@@ -540,6 +544,10 @@ export const en: Record<TranslationKey, string> = {
   'apiConfig.missingTitle': 'API not configured',
   'apiConfig.missingDescription':
     'The API address (NEXT_PUBLIC_API_BASE_URL) was not set at build time, so the dashboard requests no data. Set it and rebuild.',
+  'telemetry.error.unavailable':
+    'The telemetry API cannot be reached or answered with an error. The dashboard will try again.',
+  'telemetry.error.invalid':
+    'The telemetry API sent data that did not match the telemetry format (v1), so it is not shown.',
   'waiting.title': 'Waiting for device & sensors',
   'waiting.emptyDescription':
     'The live dashboard is active. Data cards will fill automatically when the ESP32 sends telemetry.',
