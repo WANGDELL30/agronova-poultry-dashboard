@@ -36,19 +36,38 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
   // Loading the history is not an upload, so its failure must not appear as an upload error.
   const [historyErrorKey, setHistoryErrorKey] = useState<TranslationKey | null>(null);
 
+  // Only the most recent list request may update the history: a slow initial request must not
+  // overwrite the list loaded after an upload (AUDIT H5).
+  const latestListRequest = useRef(0);
+
   const refresh = useCallback(async () => {
-    const list = await client.list();
-    setRecords(list);
-    return list;
+    const requestId = ++latestListRequest.current;
+    try {
+      const list = await client.list();
+      if (requestId === latestListRequest.current) {
+        setRecords(list);
+        setHistoryErrorKey(null);
+      }
+    } finally {
+      if (requestId === latestListRequest.current) setLoading(false);
+    }
   }, [client]);
 
   useEffect(() => {
     let active = true;
+    const requestId = ++latestListRequest.current;
+    const isLatest = () => active && requestId === latestListRequest.current;
     client
       .list()
-      .then((list) => active && setRecords(list))
-      .catch((error: unknown) => active && setHistoryErrorKey(historyErrorToKey(error)))
-      .finally(() => active && setLoading(false));
+      .then((list) => {
+        if (isLatest()) setRecords(list);
+      })
+      .catch((error: unknown) => {
+        if (isLatest()) setHistoryErrorKey(historyErrorToKey(error));
+      })
+      .finally(() => {
+        if (isLatest()) setLoading(false);
+      });
     return () => {
       active = false;
     };
