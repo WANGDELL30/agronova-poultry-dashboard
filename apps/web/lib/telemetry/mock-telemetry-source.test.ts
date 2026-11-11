@@ -94,7 +94,9 @@ describe('telemetry source selection', () => {
     expect(resolveDataMode('mock', 'development')).toBe('mock');
     expect(resolveDataMode('mock', 'production')).toBe('api');
     expect(resolveScenario('unexpected')).toBe('normal');
-    expect(resolveInterval('50')).toBe(5_000);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(resolveInterval('50')).toBe(3_000);
+    expect(resolveInterval('50', 5_000)).toBe(5_000);
   });
 
   it('waits without inventing readings when the live API has no telemetry', async () => {

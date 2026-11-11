@@ -13,6 +13,7 @@ import type {
   TrendPoint,
   TrendReading,
 } from './types';
+import { DEFAULT_MOCK_INTERVAL_MS } from './intervals';
 
 const DEVICE_ID = 'AGRONOVA-ESP32-01';
 const INITIAL_SEQUENCE = 1_842;
@@ -230,7 +231,7 @@ export class MockTelemetrySource implements TelemetrySource {
 
   constructor(options: MockTelemetrySourceOptions = {}) {
     this.scenario = options.scenario ?? 'normal';
-    this.intervalMs = options.intervalMs ?? 5_000;
+    this.intervalMs = options.intervalMs ?? DEFAULT_MOCK_INTERVAL_MS;
     this.initialDelayMs = options.initialDelayMs ?? 320;
     this.now = options.now ?? (() => new Date());
     this.current = createSnapshot(

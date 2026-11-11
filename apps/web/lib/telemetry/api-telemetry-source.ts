@@ -13,6 +13,7 @@ import {
   type TrendPoint,
 } from './types';
 import { STALE_AFTER_FAILED_POLLS } from './freshness';
+import { DEFAULT_LIVE_INTERVAL_MS } from './intervals';
 
 interface ApiTelemetrySourceOptions {
   deviceId?: string;
@@ -107,7 +108,7 @@ export class ApiTelemetrySource implements TelemetrySource {
     this.configured = base !== '';
     const query = options.deviceId ? `?device_id=${encodeURIComponent(options.deviceId)}` : '';
     this.endpoint = `${base}/api/v1/telemetry/latest${query}`;
-    this.intervalMs = options.intervalMs ?? 3_000;
+    this.intervalMs = options.intervalMs ?? DEFAULT_LIVE_INTERVAL_MS;
     this.requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
     // Browsers reject fetch called with a non-global `this` ("Illegal invocation").
     this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));

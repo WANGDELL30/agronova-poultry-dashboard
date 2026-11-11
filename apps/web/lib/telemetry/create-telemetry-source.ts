@@ -1,4 +1,5 @@
 import { ApiTelemetrySource } from './api-telemetry-source';
+import { DEFAULT_LIVE_INTERVAL_MS, DEFAULT_MOCK_INTERVAL_MS, resolveInterval } from './intervals';
 import { MockTelemetrySource } from './mock-telemetry-source';
 import type { DataMode, SimulationScenario, TelemetrySource } from './types';
 
@@ -23,22 +24,27 @@ export function resolveScenario(value: string | undefined): SimulationScenario {
     : 'normal';
 }
 
-export function resolveInterval(value: string | undefined): number {
-  const interval = Number(value ?? '5000');
-  return Number.isInteger(interval) && interval >= 1_000 ? interval : 5_000;
-}
+export { DEFAULT_LIVE_INTERVAL_MS, DEFAULT_MOCK_INTERVAL_MS, resolveInterval };
 
 export function createTelemetrySource(): TelemetrySource {
   const mode = resolveDataMode(process.env.NEXT_PUBLIC_DATA_MODE);
   if (mode === 'api') {
     return new ApiTelemetrySource(process.env.NEXT_PUBLIC_API_BASE_URL ?? '', {
       deviceId: process.env.NEXT_PUBLIC_DEVICE_ID,
-      intervalMs: resolveInterval(process.env.NEXT_PUBLIC_LIVE_INTERVAL_MS ?? '3000'),
+      intervalMs: resolveInterval(
+        process.env.NEXT_PUBLIC_LIVE_INTERVAL_MS,
+        DEFAULT_LIVE_INTERVAL_MS,
+        'NEXT_PUBLIC_LIVE_INTERVAL_MS',
+      ),
     });
   }
 
   return new MockTelemetrySource({
     scenario: resolveScenario(process.env.NEXT_PUBLIC_MOCK_SCENARIO),
-    intervalMs: resolveInterval(process.env.NEXT_PUBLIC_MOCK_INTERVAL_MS),
+    intervalMs: resolveInterval(
+      process.env.NEXT_PUBLIC_MOCK_INTERVAL_MS,
+      DEFAULT_MOCK_INTERVAL_MS,
+      'NEXT_PUBLIC_MOCK_INTERVAL_MS',
+    ),
   });
 }
