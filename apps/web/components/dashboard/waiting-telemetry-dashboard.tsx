@@ -22,10 +22,12 @@ import { SensorUnavailableCard } from './sensor-card';
 import { SummaryCard } from './summary-card';
 
 export function WaitingTelemetryDashboard({
+  unconfigured = false,
   unavailable,
   detail,
   onRetry,
 }: Readonly<{
+  unconfigured?: boolean;
   unavailable: boolean;
   detail?: string;
   onRetry: () => void;
@@ -54,8 +56,16 @@ export function WaitingTelemetryDashboard({
           <RadioTower size={23} />
         </span>
         <div>
-          <h2>{t('waiting.title')}</h2>
-          <p>{t(unavailable ? 'waiting.unavailableDescription' : 'waiting.emptyDescription')}</p>
+          <h2>{t(unconfigured ? 'apiConfig.missingTitle' : 'waiting.title')}</h2>
+          <p>
+            {t(
+              unconfigured
+                ? 'apiConfig.missingDescription'
+                : unavailable
+                  ? 'waiting.unavailableDescription'
+                  : 'waiting.emptyDescription',
+            )}
+          </p>
           {detail && <small>{detail}</small>}
         </div>
         {unavailable && (

@@ -19,6 +19,7 @@ const KNOWN_ERRORS = new Set([
   'inference_not_ready',
   'inference_bad_response',
   'invalid_metadata',
+  'api_not_configured',
 ]);
 
 export function VisionDashboard({ client: injected }: Readonly<{ client?: VisionClient }>) {
@@ -32,6 +33,8 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null);
+  // Loading the history is not an upload, so its failure must not appear as an upload error.
+  const [historyErrorKey, setHistoryErrorKey] = useState<TranslationKey | null>(null);
 
   const refresh = useCallback(async () => {
     const list = await client.list();
@@ -44,7 +47,7 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
     client
       .list()
       .then((list) => active && setRecords(list))
-      .catch((error: unknown) => active && setErrorKey(errorToKey(error)))
+      .catch((error: unknown) => active && setHistoryErrorKey(historyErrorToKey(error)))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
@@ -130,6 +133,8 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
         <h3 id="vision-history">{t('vision.history.title')}</h3>
         {loading ? (
           <p>{t('vision.loading')}</p>
+        ) : historyErrorKey && records.length === 0 ? (
+          <p role="status">{t(historyErrorKey)}</p>
         ) : records.length === 0 ? (
           <p>{t('vision.history.empty')}</p>
         ) : (
@@ -155,6 +160,13 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
       </section>
     </div>
   );
+}
+
+function historyErrorToKey(error: unknown): TranslationKey {
+  if (error instanceof VisionClientError && error.code === 'api_not_configured') {
+    return 'vision.error.api_not_configured';
+  }
+  return 'vision.history.error';
 }
 
 function errorToKey(error: unknown): TranslationKey {

@@ -79,6 +79,7 @@ export class ApiTelemetrySource implements TelemetrySource {
   readonly scenario = null;
 
   private readonly endpoint: string;
+  private readonly configured: boolean;
   private readonly intervalMs: number;
   private readonly fetcher: typeof fetch;
   private readonly listeners = new Set<(snapshot: DashboardSnapshot) => void>();
@@ -89,7 +90,9 @@ export class ApiTelemetrySource implements TelemetrySource {
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(apiBaseUrl = '', options: ApiTelemetrySourceOptions = {}) {
-    const base = apiBaseUrl.replace(/\/+$/, '');
+    const base = apiBaseUrl.trim().replace(/\/+$/, '');
+    // An empty base would silently request the web app's own origin (AUDIT D4).
+    this.configured = base !== '';
     const query = options.deviceId ? `?device_id=${encodeURIComponent(options.deviceId)}` : '';
     this.endpoint = `${base}/api/v1/telemetry/latest${query}`;
     this.intervalMs = options.intervalMs ?? 3_000;
@@ -108,7 +111,7 @@ export class ApiTelemetrySource implements TelemetrySource {
   }
 
   start(): void {
-    if (this.timer) return;
+    if (this.timer || !this.configured) return;
     this.timer = setInterval(() => void this.poll(), this.intervalMs);
   }
 
@@ -143,6 +146,9 @@ export class ApiTelemetrySource implements TelemetrySource {
   }
 
   private async fetchSnapshot(): Promise<DashboardSnapshot | null> {
+    if (!this.configured) {
+      throw new TelemetrySourceError('unconfigured', 'NEXT_PUBLIC_API_BASE_URL is not set.');
+    }
     let response: Response;
     try {
       response = await this.fetcher(this.endpoint, { cache: 'no-store' });
@@ -150,7 +156,8 @@ export class ApiTelemetrySource implements TelemetrySource {
       throw new TelemetrySourceError('unavailable', 'Telemetry API is unreachable.');
     }
 
-    if (response.status === 204 || response.status === 404) return null;
+    // Only 204 means "no reading yet"; a 404 usually means the URL points at the wrong host.
+    if (response.status === 204) return null;
     if (!response.ok) {
       throw new TelemetrySourceError(
         'unavailable',

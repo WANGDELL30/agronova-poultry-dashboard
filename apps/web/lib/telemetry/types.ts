@@ -58,12 +58,13 @@ export type TelemetryState =
   | { kind: 'loading' }
   | { kind: 'ready'; snapshot: DashboardSnapshot }
   | { kind: 'empty' }
+  | { kind: 'unconfigured' }
   | { kind: 'unavailable'; message: string }
   | { kind: 'error'; message: string };
 
 export class TelemetrySourceError extends Error {
   constructor(
-    readonly kind: 'unavailable' | 'error',
+    readonly kind: 'unavailable' | 'error' | 'unconfigured',
     message: string,
   ) {
     super(message);

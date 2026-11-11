@@ -99,7 +99,7 @@ describe('telemetry source selection', () => {
 
   it('waits without inventing readings when the live API has no telemetry', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-    const source = new ApiTelemetrySource('', { fetcher });
+    const source = new ApiTelemetrySource('http://api.test', { fetcher });
 
     await expect(source.getInitialSnapshot()).resolves.toBeNull();
   });

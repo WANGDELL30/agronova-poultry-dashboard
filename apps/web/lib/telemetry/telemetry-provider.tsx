@@ -43,6 +43,10 @@ export function TelemetryProvider({
       setState(snapshot ? { kind: 'ready', snapshot } : { kind: 'empty' });
     } catch (error) {
       if (error instanceof TelemetrySourceError) {
+        if (error.kind === 'unconfigured') {
+          setState({ kind: 'unconfigured' });
+          return;
+        }
         setState({ kind: error.kind, message: error.message });
         return;
       }

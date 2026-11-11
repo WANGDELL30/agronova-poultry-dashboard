@@ -49,4 +49,29 @@ describe('ApiTelemetrySource', () => {
     expect(snapshots[0]?.telemetry.message_id).toBe(validTelemetryV1Example.message_id);
     expect(snapshots[0]?.deviceOnline).toBe(true);
   });
+
+  it('treats only 204 as "no data yet"; 404 and other statuses are errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    await expect(
+      new ApiTelemetrySource('http://api.test').getInitialSnapshot(),
+    ).resolves.toBeNull();
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Not Found', { status: 404 })));
+    await expect(
+      new ApiTelemetrySource('http://api.test').getInitialSnapshot(),
+    ).rejects.toMatchObject({ kind: 'unavailable', message: 'Telemetry API returned HTTP 404.' });
+  });
+
+  it('reports an unconfigured API instead of requesting its own origin', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    const source = new ApiTelemetrySource('   ', { intervalMs: 1_000 });
+
+    await expect(source.getInitialSnapshot()).rejects.toMatchObject({ kind: 'unconfigured' });
+    source.start();
+    await vi.advanceTimersByTimeAsync(3_000);
+    source.stop();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

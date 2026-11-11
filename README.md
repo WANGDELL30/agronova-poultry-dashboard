@@ -232,8 +232,11 @@ NEXT_PUBLIC_DEVICE_ID=AGRONOVA-ESP32-01
 NEXT_PUBLIC_LIVE_INTERVAL_MS=3000
 ```
 
-If the public API URL is not configured, the deployed UI remains in its honest waiting state. Run a
-direct production deployment from the repository root with:
+`NEXT_PUBLIC_API_BASE_URL` must be an absolute `https:` URL for a Vercel production build
+(`VERCEL_ENV=production`); otherwise `next build` fails with an explicit error. Other builds (local,
+preview, root `corepack pnpm build`) only print a warning. If the variable is empty at build time, the
+UI shows "API belum dikonfigurasi" / "API not configured" and sends no requests. Run a direct
+production deployment from the repository root with:
 
 ```bash
 corepack pnpm dlx vercel@latest deploy --prod
@@ -289,7 +292,7 @@ connect to MQTT or publish telemetry.
 | `HF_BASE_MODEL`                | Base VLM (real mode)                                  | `Qwen/Qwen3-VL-4B-Instruct`         |
 | `HF_TOKEN`                     | Hugging Face token, only if the adapter is private    | Never commit                        |
 | `PORT`                         | Next.js web port                                      | `3000`                              |
-| `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL                          | `http://localhost:4000`             |
+| `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL (https on Vercel prod)   | none: empty = "API not configured"  |
 | `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`    | `api`                               |
 | `NEXT_PUBLIC_DEVICE_ID`        | Optional live device filter                           | all devices                         |
 | `NEXT_PUBLIC_LIVE_INTERVAL_MS` | Live telemetry polling interval                       | `3000`                              |

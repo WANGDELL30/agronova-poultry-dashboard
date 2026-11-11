@@ -74,4 +74,13 @@ describe('ApiVisionClient', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json([{ ...record, status: 'classified' }])));
     await expect(new ApiVisionClient('http://api.test').list()).rejects.toThrow();
   });
+
+  it('reports an unconfigured API without requesting its own origin', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new ApiVisionClient('');
+    await expect(client.list()).rejects.toMatchObject({ code: 'api_not_configured' });
+    await expect(client.submit(input)).rejects.toMatchObject({ code: 'api_not_configured' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

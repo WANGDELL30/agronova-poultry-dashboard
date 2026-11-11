@@ -11,9 +11,13 @@ interface ApiErrorBody {
 export class ApiVisionClient implements VisionClient {
   readonly mode = 'api' as const;
   private readonly base: string;
+  private readonly configured: boolean;
 
   constructor(apiBaseUrl: string) {
-    this.base = `${apiBaseUrl.replace(/\/+$/, '')}/api/v1/vision`;
+    const root = apiBaseUrl.trim().replace(/\/+$/, '');
+    // An empty base would silently request the web app's own origin (AUDIT D4).
+    this.configured = root !== '';
+    this.base = `${root}/api/v1/vision`;
   }
 
   async submit({
@@ -41,6 +45,9 @@ export class ApiVisionClient implements VisionClient {
   }
 
   private async request(url: string, init?: RequestInit): Promise<Response> {
+    if (!this.configured) {
+      throw new VisionClientError('api_not_configured', 'NEXT_PUBLIC_API_BASE_URL is not set.');
+    }
     let response: Response;
     try {
       response = await fetch(url, init);

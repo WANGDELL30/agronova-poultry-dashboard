@@ -89,4 +89,21 @@ describe('VisionDashboard', () => {
     expect(await screen.findByRole('status')).toBeTruthy();
     expect(screen.getByText(/Mode simulasi/)).toBeTruthy();
   });
+
+  it('does not show an upload error before any photo is submitted when the history fails', async () => {
+    setup(fakeClient({ list: vi.fn().mockRejectedValue(new VisionClientError('http_404', 'x')) }));
+    expect(await screen.findByText('Riwayat analisis tidak dapat dimuat.')).toBeTruthy();
+    expect(screen.queryByText('Gagal memproses foto.')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('says the API is not configured when no API URL was built in', async () => {
+    setup(
+      fakeClient({
+        list: vi.fn().mockRejectedValue(new VisionClientError('api_not_configured', 'x')),
+      }),
+    );
+    expect(await screen.findByText(/API belum dikonfigurasi/)).toBeTruthy();
+    expect(screen.queryByText('Gagal memproses foto.')).toBeNull();
+  });
 });

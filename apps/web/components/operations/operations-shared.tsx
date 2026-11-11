@@ -40,29 +40,38 @@ export function ConnectionBanner({
   const unavailable = state.kind === 'unavailable';
   const error = state.kind === 'error';
   const loading = state.kind === 'loading';
-  const Icon = ready ? CircleCheck : unavailable || error ? DatabaseZap : RadioTower;
+  const unconfigured = state.kind === 'unconfigured';
+  const Icon = ready
+    ? CircleCheck
+    : unavailable || error || unconfigured
+      ? DatabaseZap
+      : RadioTower;
   const title = ready
     ? copy.connected
     : loading
       ? copy.connecting
-      : unavailable
-        ? copy.unavailable
-        : error
-          ? copy.error
-          : copy.waiting;
+      : unconfigured
+        ? copy.unconfigured
+        : unavailable
+          ? copy.unavailable
+          : error
+            ? copy.error
+            : copy.waiting;
   const description = ready
     ? copy.connectedDescription
     : loading
       ? copy.connectingDescription
-      : unavailable
-        ? copy.unavailableDescription
-        : error
-          ? copy.errorDescription
-          : copy.waitingDescription;
+      : unconfigured
+        ? copy.unconfiguredDescription
+        : unavailable
+          ? copy.unavailableDescription
+          : error
+            ? copy.errorDescription
+            : copy.waitingDescription;
 
   return (
     <section
-      className={`operations-status${ready ? ' is-ready' : unavailable || error ? ' is-unavailable' : ''}`}
+      className={`operations-status${ready ? ' is-ready' : unavailable || error || unconfigured ? ' is-unavailable' : ''}`}
       role="status"
     >
       <span className="operations-status-icon" aria-hidden="true">

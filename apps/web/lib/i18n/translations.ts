@@ -211,6 +211,9 @@ export const id = {
   'state.emptyTitle': 'Menunggu perangkat & sensor',
   'state.emptyDescription': 'Mode langsung aktif, tetapi belum ada telemetri valid dari ESP32.',
   'state.emptyHint': 'Nyalakan perangkat dan kirim payload skema v1; angka tidak akan dibuat-buat.',
+  'apiConfig.missingTitle': 'API belum dikonfigurasi',
+  'apiConfig.missingDescription':
+    'Alamat API (NEXT_PUBLIC_API_BASE_URL) belum diisi saat build, jadi dashboard tidak meminta data. Atur variabel ini lalu build ulang.',
   'waiting.title': 'Menunggu perangkat & sensor',
   'waiting.emptyDescription':
     'Dashboard langsung sudah aktif. Kotak data akan terisi otomatis setelah ESP32 mengirim telemetri.',
@@ -302,6 +305,9 @@ export const id = {
   'vision.error.inference_bad_response': 'Layanan inferensi mengirim respons yang tidak valid.',
   'vision.error.invalid_metadata': 'Data formulir tidak valid.',
   'vision.error.noFile': 'Pilih foto terlebih dahulu.',
+  'vision.error.api_not_configured':
+    'API belum dikonfigurasi (NEXT_PUBLIC_API_BASE_URL kosong saat build).',
+  'vision.history.error': 'Riwayat analisis tidak dapat dimuat.',
 } as const;
 
 export type TranslationKey = keyof typeof id;
@@ -518,6 +524,9 @@ export const en: Record<TranslationKey, string> = {
   'state.emptyDescription': 'Live mode is active, but the ESP32 has not sent valid telemetry yet.',
   'state.emptyHint':
     'Power on the device and send a schema v1 payload; values are never fabricated.',
+  'apiConfig.missingTitle': 'API not configured',
+  'apiConfig.missingDescription':
+    'The API address (NEXT_PUBLIC_API_BASE_URL) was not set at build time, so the dashboard requests no data. Set it and rebuild.',
   'waiting.title': 'Waiting for device & sensors',
   'waiting.emptyDescription':
     'The live dashboard is active. Data cards will fill automatically when the ESP32 sends telemetry.',
@@ -610,6 +619,9 @@ export const en: Record<TranslationKey, string> = {
   'vision.error.inference_bad_response': 'The inference service returned an invalid response.',
   'vision.error.invalid_metadata': 'Invalid form data.',
   'vision.error.noFile': 'Choose a photo first.',
+  'vision.error.api_not_configured':
+    'API not configured (NEXT_PUBLIC_API_BASE_URL was empty at build time).',
+  'vision.history.error': 'The analysis history could not be loaded.',
 };
 
 export const translations = { id, en } as const;

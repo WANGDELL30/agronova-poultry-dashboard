@@ -51,9 +51,15 @@ export function OverviewDashboard() {
     return <LoadingSkeleton />;
   }
 
-  if (state.kind === 'unavailable' || state.kind === 'error' || state.kind === 'empty') {
+  if (
+    state.kind === 'unavailable' ||
+    state.kind === 'error' ||
+    state.kind === 'empty' ||
+    state.kind === 'unconfigured'
+  ) {
     return (
       <WaitingTelemetryDashboard
+        unconfigured={state.kind === 'unconfigured'}
         unavailable={state.kind === 'unavailable'}
         detail={'message' in state ? state.message : undefined}
         onRetry={retry}

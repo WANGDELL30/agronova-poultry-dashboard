@@ -9,6 +9,9 @@ const id = {
     connectingDescription: 'Dashboard sedang memeriksa telemetri perangkat.',
     waiting: 'Menunggu perangkat & sensor',
     waitingDescription: 'Struktur halaman sudah siap dan akan terisi saat data nyata diterima.',
+    unconfigured: 'API belum dikonfigurasi',
+    unconfiguredDescription:
+      'Alamat API (NEXT_PUBLIC_API_BASE_URL) belum diisi saat build, jadi dashboard tidak meminta data.',
     unavailable: 'API telemetri belum terjangkau',
     unavailableDescription: 'Kartu tetap ditampilkan tanpa mengganti nilai kosong menjadi nol.',
     error: 'Telemetri belum dapat dimuat',
@@ -174,6 +177,9 @@ const en: OperationsCopy = {
     connectingDescription: 'The dashboard is checking device telemetry.',
     waiting: 'Waiting for device & sensors',
     waitingDescription: 'The page structure is ready and will fill when real data arrives.',
+    unconfigured: 'API not configured',
+    unconfiguredDescription:
+      'The API address (NEXT_PUBLIC_API_BASE_URL) was not set at build time, so the dashboard requests no data.',
     unavailable: 'Telemetry API is unreachable',
     unavailableDescription: 'Cards remain visible without replacing missing values with zero.',
     error: 'Telemetry could not be loaded',
