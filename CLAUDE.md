@@ -35,7 +35,7 @@ corepack pnpm --filter @agronova/api exec vitest run -t "test name"
 cd apps/inference && python -m pytest tests/test_scs.py -k name
 ```
 
-Frontend-only dev: build both schema packages, then `corepack pnpm --filter @agronova/web dev` with `NEXT_PUBLIC_DATA_MODE=mock`. Use `NEXT_PUBLIC_DATA_MODE=api` for `/vision` against the real API (the telemetry overview then shows "unavailable" by design). The schema packages must be rebuilt (`build`) after edits before dependents see the changes.
+Frontend-only dev: build both schema packages, then `corepack pnpm --filter @agronova/web dev` with `NEXT_PUBLIC_DATA_MODE=mock`. Use `NEXT_PUBLIC_DATA_MODE=api` (with `NEXT_PUBLIC_API_BASE_URL`) for `/vision` and the telemetry pages against the real API. The overview then polls `/api/v1/telemetry/latest` and shows a waiting state until the API holds a reading. The schema packages must be rebuilt (`build`) after edits before dependents see the changes.
 
 ## Architecture
 

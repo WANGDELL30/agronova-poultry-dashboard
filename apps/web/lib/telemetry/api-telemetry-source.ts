@@ -93,7 +93,8 @@ export class ApiTelemetrySource implements TelemetrySource {
     const query = options.deviceId ? `?device_id=${encodeURIComponent(options.deviceId)}` : '';
     this.endpoint = `${base}/api/v1/telemetry/latest${query}`;
     this.intervalMs = options.intervalMs ?? 3_000;
-    this.fetcher = options.fetcher ?? fetch;
+    // Browsers reject fetch called with a non-global `this` ("Illegal invocation").
+    this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
   }
 
   async getInitialSnapshot(): Promise<DashboardSnapshot | null> {
