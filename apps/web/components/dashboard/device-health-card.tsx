@@ -9,7 +9,10 @@ import type { DashboardSnapshot } from '../../lib/telemetry/types';
 import { SectionHeader } from '../ui/section-header';
 import { StatusBadge } from '../ui/status-badge';
 
-export function DeviceHealthCard({ snapshot }: Readonly<{ snapshot: DashboardSnapshot }>) {
+export function DeviceHealthCard({
+  snapshot,
+  online,
+}: Readonly<{ snapshot: DashboardSnapshot; online: boolean }>) {
   const { locale, t } = useLanguage();
   const { telemetry } = snapshot;
 
@@ -28,19 +31,17 @@ export function DeviceHealthCard({ snapshot }: Readonly<{ snapshot: DashboardSna
   return (
     <section className="panel device-panel">
       <SectionHeader title={t('device.title')} description={t('device.description')} />
-      <div className={`device-hero${snapshot.deviceOnline ? '' : ' is-offline'}`}>
+      <div className={`device-hero${online ? '' : ' is-offline'}`}>
         <span className="device-icon" aria-hidden="true">
           <Cpu size={27} />
         </span>
         <div>
-          <strong>{t(snapshot.deviceOnline ? 'device.online' : 'device.offline')}</strong>
+          <strong>{t(online ? 'device.online' : 'device.offline')}</strong>
           <span>
             <RadioTower size={14} aria-hidden="true" /> {telemetry.device.wifi_rssi_dbm} dBm
           </span>
         </div>
-        <StatusBadge
-          status={snapshot.deviceOnline ? SensorQuality.VALID : SensorQuality.DEVICE_OFFLINE}
-        />
+        <StatusBadge status={online ? SensorQuality.VALID : SensorQuality.DEVICE_OFFLINE} />
       </div>
       <dl className="device-details">
         {details.map(([label, value]) => (

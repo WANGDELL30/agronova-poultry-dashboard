@@ -205,6 +205,7 @@ function createSnapshot(
     received_at: receivedAt,
     last_seen_at: receivedAt,
     deviceOnline: !offline,
+    stale: false,
     history: createHistory(now, step, scenario, telemetry),
     alerts: createAlerts(now, scenario, acknowledgedIds),
     installedSensorCount: waterNotInstalled ? 3 : 4,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -33,7 +33,10 @@ const metrics: MetricConfig[] = [
   { key: 'mq5_relative_level_pct', labelKey: 'trend.mq5', unit: '% rel.', digits: 1 },
 ];
 
-export function TrendChart({ history }: Readonly<{ history: TrendPoint[] }>) {
+// Memoized: the overview re-renders every second for relative times (AUDIT H3).
+export const TrendChart = memo(function TrendChart({
+  history,
+}: Readonly<{ history: TrendPoint[] }>) {
   const { locale, t } = useLanguage();
   const [metricKey, setMetricKey] = useState<TrendMetric>('air_temperature_c');
   const [showRaw, setShowRaw] = useState(false);
@@ -194,4 +197,4 @@ export function TrendChart({ history }: Readonly<{ history: TrendPoint[] }>) {
       )}
     </section>
   );
-}
+});

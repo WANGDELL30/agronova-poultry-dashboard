@@ -12,6 +12,7 @@ import {
   type TelemetrySource,
   type TrendPoint,
 } from './types';
+import { STALE_AFTER_FAILED_POLLS } from './freshness';
 
 interface ApiTelemetrySourceOptions {
   deviceId?: string;
@@ -95,6 +96,7 @@ export class ApiTelemetrySource implements TelemetrySource {
   private readonly acknowledgedIds = new Set<string>();
   private history: TrendPoint[] = [];
   private current: DashboardSnapshot | null = null;
+  private failedPolls = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private running = false;
   private inFlight: AbortController | null = null;
@@ -165,12 +167,22 @@ export class ApiTelemetrySource implements TelemetrySource {
     if (this.inFlight) return;
     try {
       const snapshot = await this.fetchSnapshot();
+      this.failedPolls = 0;
       if (snapshot && snapshot !== this.current) {
         this.current = snapshot;
         this.emit(snapshot);
+      } else if (this.current?.stale) {
+        // Connection is back even though the reading itself did not change.
+        this.current = { ...this.current, stale: false };
+        this.emit(this.current);
       }
     } catch {
-      // Keep the last verified reading visible. The next poll retries automatically.
+      // Keep the last reading visible, but flag it as stale after repeated failures.
+      this.failedPolls += 1;
+      if (this.failedPolls >= STALE_AFTER_FAILED_POLLS && this.current && !this.current.stale) {
+        this.current = { ...this.current, stale: true };
+        this.emit(this.current);
+      }
     }
   }
 
@@ -232,6 +244,7 @@ export class ApiTelemetrySource implements TelemetrySource {
       received_at: receipt.received_at,
       last_seen_at: receipt.last_seen_at,
       deviceOnline: receipt.device_online,
+      stale: false,
       history: this.history,
       alerts: createAlerts(receipt, this.acknowledgedIds),
       installedSensorCount: qualities.filter(

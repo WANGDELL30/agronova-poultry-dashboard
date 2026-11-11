@@ -4,6 +4,7 @@ import { CircleCheck, DatabaseZap, RefreshCw, RadioTower, type LucideIcon } from
 import type { ReactNode } from 'react';
 
 import { useLanguage } from '../../lib/i18n/language-provider';
+import { snapshotFreshness, useNow } from '../../lib/telemetry/freshness';
 import type { TelemetryState } from '../../lib/telemetry/types';
 import { operationsCopy } from './operations-copy';
 
@@ -36,42 +37,53 @@ export function ConnectionBanner({
 }: Readonly<{ state: TelemetryState; onRetry: () => void }>) {
   const { language } = useLanguage();
   const copy = operationsCopy[language].common;
-  const ready = state.kind === 'ready';
+  const now = useNow();
+  const freshness = state.kind === 'ready' ? snapshotFreshness(state.snapshot, now) : null;
+  const stale = freshness === 'disconnected' || freshness === 'deviceSilent';
+  const ready = state.kind === 'ready' && !stale;
   const unavailable = state.kind === 'unavailable';
   const error = state.kind === 'error';
   const loading = state.kind === 'loading';
   const unconfigured = state.kind === 'unconfigured';
   const Icon = ready
     ? CircleCheck
-    : unavailable || error || unconfigured
+    : unavailable || error || unconfigured || stale
       ? DatabaseZap
       : RadioTower;
   const title = ready
     ? copy.connected
-    : loading
-      ? copy.connecting
-      : unconfigured
-        ? copy.unconfigured
-        : unavailable
-          ? copy.unavailable
-          : error
-            ? copy.error
-            : copy.waiting;
+    : freshness === 'disconnected'
+      ? copy.disconnected
+      : freshness === 'deviceSilent'
+        ? copy.deviceSilent
+        : loading
+          ? copy.connecting
+          : unconfigured
+            ? copy.unconfigured
+            : unavailable
+              ? copy.unavailable
+              : error
+                ? copy.error
+                : copy.waiting;
   const description = ready
     ? copy.connectedDescription
-    : loading
-      ? copy.connectingDescription
-      : unconfigured
-        ? copy.unconfiguredDescription
-        : unavailable
-          ? copy.unavailableDescription
-          : error
-            ? copy.errorDescription
-            : copy.waitingDescription;
+    : freshness === 'disconnected'
+      ? copy.disconnectedDescription
+      : freshness === 'deviceSilent'
+        ? copy.deviceSilentDescription
+        : loading
+          ? copy.connectingDescription
+          : unconfigured
+            ? copy.unconfiguredDescription
+            : unavailable
+              ? copy.unavailableDescription
+              : error
+                ? copy.errorDescription
+                : copy.waitingDescription;
 
   return (
     <section
-      className={`operations-status${ready ? ' is-ready' : unavailable || error || unconfigured ? ' is-unavailable' : ''}`}
+      className={`operations-status${ready ? ' is-ready' : unavailable || error || unconfigured || stale ? ' is-unavailable' : ''}`}
       role="status"
     >
       <span className="operations-status-icon" aria-hidden="true">

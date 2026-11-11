@@ -9,6 +9,12 @@ const id = {
     connectingDescription: 'Dashboard sedang memeriksa telemetri perangkat.',
     waiting: 'Menunggu perangkat & sensor',
     waitingDescription: 'Struktur halaman sudah siap dan akan terisi saat data nyata diterima.',
+    disconnected: 'Tidak tersambung · data basi',
+    disconnectedDescription:
+      'API tidak menjawab beberapa kali berturut-turut. Angka yang tampil adalah pembacaan terakhir, bukan kondisi saat ini.',
+    deviceSilent: 'Perangkat tidak mengirim data · data basi',
+    deviceSilentDescription:
+      'Belum ada telemetri baru lebih dari 30 detik. Angka yang tampil adalah pembacaan terakhir.',
     unconfigured: 'API belum dikonfigurasi',
     unconfiguredDescription:
       'Alamat API (NEXT_PUBLIC_API_BASE_URL) belum diisi saat build, jadi dashboard tidak meminta data.',
@@ -177,6 +183,12 @@ const en: OperationsCopy = {
     connectingDescription: 'The dashboard is checking device telemetry.',
     waiting: 'Waiting for device & sensors',
     waitingDescription: 'The page structure is ready and will fill when real data arrives.',
+    disconnected: 'Not connected · stale data',
+    disconnectedDescription:
+      'The API did not answer several times in a row. The values shown are the last reading, not current conditions.',
+    deviceSilent: 'Device is not sending data · stale data',
+    deviceSilentDescription:
+      'No new telemetry for more than 30 seconds. The values shown are the last reading.',
     unconfigured: 'API not configured',
     unconfiguredDescription:
       'The API address (NEXT_PUBLIC_API_BASE_URL) was not set at build time, so the dashboard requests no data.',

@@ -38,6 +38,8 @@ export interface DashboardSnapshot {
   received_at: string;
   last_seen_at: string;
   deviceOnline: boolean;
+  /** True after repeated failed polls: the values are the last reading received (AUDIT H3). */
+  stale: boolean;
   history: TrendPoint[];
   alerts: DashboardAlert[];
   installedSensorCount: number;

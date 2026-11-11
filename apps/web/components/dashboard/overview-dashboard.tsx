@@ -17,6 +17,7 @@ import {
 
 import { formatNumber, formatRelativeTime } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
+import { isDeviceOnline, snapshotFreshness, useNow } from '../../lib/telemetry/freshness';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
 import type { TrendMetric, TrendPoint } from '../../lib/telemetry/types';
 import { LoadingSkeleton } from '../ui/data-states';
@@ -28,6 +29,7 @@ import { SummaryCard } from './summary-card';
 import { TrendChart } from './trend-chart';
 import { WaitingTelemetryDashboard } from './waiting-telemetry-dashboard';
 import { MortalityOverviewCard } from '../mortality/mortality-overview-card';
+import { ConnectionBanner } from '../operations/operations-shared';
 
 function trendFromHistory(
   history: TrendPoint[],
@@ -46,6 +48,8 @@ function trendFromHistory(
 export function OverviewDashboard() {
   const { locale, t } = useLanguage();
   const { state, mode, acknowledgeAlert, retry } = useTelemetry();
+  // Re-renders relative times and re-checks staleness without waiting for new data (AUDIT H3).
+  const now = useNow(1_000);
 
   if (state.kind === 'loading') {
     return <LoadingSkeleton />;
@@ -73,7 +77,9 @@ export function OverviewDashboard() {
   const airHumidity = telemetry.readings.air_humidity_pct;
   const waterTemperature = telemetry.readings.water_temperature_c;
   const mq5 = telemetry.readings.mq5;
-  const offline = !snapshot.deviceOnline;
+  const online = isDeviceOnline(snapshot, now);
+  const offline = !online;
+  const fresh = snapshotFreshness(snapshot, now) === 'live';
   const activeAlerts = snapshot.alerts.filter((alert) => !alert.acknowledged).length;
 
   return (
@@ -84,6 +90,8 @@ export function OverviewDashboard() {
         <p>{t('overview.description')}</p>
       </section>
 
+      {!fresh && <ConnectionBanner state={state} onRetry={retry} />}
+
       <section aria-labelledby="summary-heading">
         <h2 className="sr-only" id="summary-heading">
           {t('overview.summary')}
@@ -92,12 +100,12 @@ export function OverviewDashboard() {
           <SummaryCard
             icon={Cpu}
             label={t('summary.devicesOnline')}
-            value={snapshot.deviceOnline ? '1/1' : '0/1'}
+            value={online ? '1/1' : '0/1'}
             detail={t('summary.ofDevices', {
-              online: snapshot.deviceOnline ? 1 : 0,
+              online: online ? 1 : 0,
               total: 1,
             })}
-            tone={snapshot.deviceOnline ? 'success' : 'warning'}
+            tone={online ? 'success' : 'warning'}
           />
           <SummaryCard
             icon={BellRing}
@@ -116,7 +124,7 @@ export function OverviewDashboard() {
           <SummaryCard
             icon={Clock3}
             label={t('summary.lastTelemetry')}
-            value={formatRelativeTime(snapshot.received_at, locale)}
+            value={formatRelativeTime(snapshot.received_at, locale, new Date(now))}
             detail={t('summary.receivedAt', {
               time: new Intl.DateTimeFormat(locale, {
                 timeZone: 'Asia/Jakarta',
@@ -126,7 +134,7 @@ export function OverviewDashboard() {
                 hour12: false,
               }).format(new Date(snapshot.received_at)),
             })}
-            tone={snapshot.deviceOnline ? 'default' : 'warning'}
+            tone={online ? 'default' : 'warning'}
           />
         </div>
       </section>
@@ -279,7 +287,7 @@ export function OverviewDashboard() {
 
       <div className="overview-bottom-grid">
         <AlertPanel alerts={snapshot.alerts} onAcknowledge={acknowledgeAlert} />
-        <DeviceHealthCard snapshot={snapshot} />
+        <DeviceHealthCard snapshot={snapshot} online={online} />
       </div>
 
       {mode === 'mock' && snapshot.scenario ? (

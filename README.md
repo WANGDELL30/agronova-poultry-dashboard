@@ -303,5 +303,9 @@ connect to MQTT or publish telemetry.
 | `MQTT_TELEMETRY_TOPIC`         | Future shared simulator/device topic template         | example file value                  |
 | `SIMULATOR_DEVICE_ID`          | Future simulator device identity                      | `AGRONOVA-SIM-01`                   |
 
+The web dashboard does not receive `DEVICE_OFFLINE_AFTER_MS` from the API. It assumes the API default
+(30000 ms, `DEVICE_OFFLINE_AFTER_MS` in `apps/web/lib/telemetry/freshness.ts`) to mark data as stale,
+so change both together.
+
 See [the architecture document](docs/architecture.md) for boundaries and data-flow decisions, and
 [the phased roadmap](docs/development-phases.md) before extending the system.

@@ -26,6 +26,7 @@ import {
   formatRelativeTime,
 } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
+import { isDeviceOnline, useNow } from '../../lib/telemetry/freshness';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
 import type { TrendPoint } from '../../lib/telemetry/types';
 import { AlertPanel } from '../dashboard/alert-panel';
@@ -65,6 +66,8 @@ export function LiveMonitoringDashboard() {
   const { state, retry } = useTelemetry();
   const copy = operationsCopy[language];
   const snapshot = state.kind === 'ready' ? state.snapshot : null;
+  const now = useNow();
+  const online = snapshot ? isDeviceOnline(snapshot, now) : false;
   const telemetry = snapshot?.telemetry;
   const waiting = copy.common.waitingSensor;
 
@@ -172,9 +175,9 @@ export function LiveMonitoringDashboard() {
         <OperationsStat
           icon={RadioTower}
           label={copy.common.connection}
-          value={snapshot?.deviceOnline ? copy.common.active : copy.common.pending}
+          value={online ? copy.common.active : copy.common.pending}
           detail={snapshot ? snapshot.telemetry.device_id : copy.common.waitingDescription}
-          tone={snapshot?.deviceOnline ? 'success' : 'default'}
+          tone={online ? 'success' : 'default'}
         />
         <OperationsStat
           icon={Cpu}
@@ -405,6 +408,8 @@ export function DevicesDashboard() {
   const { state, retry } = useTelemetry();
   const copy = operationsCopy[language];
   const snapshot = state.kind === 'ready' ? state.snapshot : null;
+  const now = useNow();
+  const online = snapshot ? isDeviceOnline(snapshot, now) : false;
   const telemetry = snapshot?.telemetry;
   const inventory = [
     [t('sensor.airTemperature'), telemetry?.quality.air_temperature, telemetry?.calibration.dht22],
@@ -427,9 +432,9 @@ export function DevicesDashboard() {
         <OperationsStat
           icon={Wifi}
           label={copy.devices.online}
-          value={snapshot ? (snapshot.deviceOnline ? '1/1' : '0/1') : '—'}
+          value={snapshot ? (online ? '1/1' : '0/1') : '—'}
           detail={snapshot ? telemetry!.device_id : copy.common.waitingData}
-          tone={snapshot?.deviceOnline ? 'success' : 'default'}
+          tone={online ? 'success' : 'default'}
         />
         <OperationsStat
           icon={Cpu}
@@ -453,7 +458,7 @@ export function DevicesDashboard() {
       </div>
 
       {snapshot ? (
-        <DeviceHealthCard snapshot={snapshot} />
+        <DeviceHealthCard snapshot={snapshot} online={online} />
       ) : (
         <OperationsPanel
           title={copy.devices.waitingTitle}
