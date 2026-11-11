@@ -13,6 +13,9 @@ const operationsRoutes = new Set<OperationsModule>([
   'settings',
 ]);
 
+// Unknown slugs get the static 404 instead of an on-demand render cached as ISR (AUDIT D9).
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return [...operationsRoutes].map((module) => ({ module }));
 }
