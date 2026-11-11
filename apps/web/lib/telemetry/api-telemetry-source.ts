@@ -16,12 +16,20 @@ import {
 interface ApiTelemetrySourceOptions {
   deviceId?: string;
   intervalMs?: number;
+  /** A request still pending after this long is aborted. */
+  requestTimeoutMs?: number;
   fetcher?: typeof fetch;
 }
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+const MAX_HISTORY_POINTS = 288;
+
+const capturedTime = (iso: string) => Date.parse(iso);
+
 function toTrendPoint(receipt: TelemetryReceiptV1): TrendPoint {
-  const { readings, captured_at } = receipt.telemetry;
+  const { readings, captured_at, message_id } = receipt.telemetry;
   return {
+    message_id,
     captured_at,
     air_temperature_c: readings.air_temperature_c,
     air_humidity_pct: readings.air_humidity_pct,
@@ -81,13 +89,15 @@ export class ApiTelemetrySource implements TelemetrySource {
   private readonly endpoint: string;
   private readonly configured: boolean;
   private readonly intervalMs: number;
+  private readonly requestTimeoutMs: number;
   private readonly fetcher: typeof fetch;
   private readonly listeners = new Set<(snapshot: DashboardSnapshot) => void>();
   private readonly acknowledgedIds = new Set<string>();
   private history: TrendPoint[] = [];
-  private lastMessageId: string | null = null;
   private current: DashboardSnapshot | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private running = false;
+  private inFlight: AbortController | null = null;
 
   constructor(apiBaseUrl = '', options: ApiTelemetrySourceOptions = {}) {
     const base = apiBaseUrl.trim().replace(/\/+$/, '');
@@ -96,12 +106,14 @@ export class ApiTelemetrySource implements TelemetrySource {
     const query = options.deviceId ? `?device_id=${encodeURIComponent(options.deviceId)}` : '';
     this.endpoint = `${base}/api/v1/telemetry/latest${query}`;
     this.intervalMs = options.intervalMs ?? 3_000;
+    this.requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
     // Browsers reject fetch called with a non-global `this` ("Illegal invocation").
     this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
   }
 
   async getInitialSnapshot(): Promise<DashboardSnapshot | null> {
-    this.current = await this.fetchSnapshot();
+    const snapshot = await this.fetchSnapshot();
+    if (snapshot) this.current = snapshot;
     return this.current;
   }
 
@@ -110,15 +122,30 @@ export class ApiTelemetrySource implements TelemetrySource {
     return () => this.listeners.delete(listener);
   }
 
+  /**
+   * Chained timeouts instead of setInterval: the next poll is only scheduled after the previous
+   * one settled, so a slow network never stacks requests (AUDIT H4).
+   */
   start(): void {
-    if (this.timer || !this.configured) return;
-    this.timer = setInterval(() => void this.poll(), this.intervalMs);
+    if (this.running || !this.configured) return;
+    this.running = true;
+    this.schedule();
   }
 
   stop(): void {
-    if (!this.timer) return;
-    clearInterval(this.timer);
+    this.running = false;
+    if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    this.inFlight?.abort();
+  }
+
+  private schedule(): void {
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      void this.poll().finally(() => {
+        if (this.running) this.schedule();
+      });
+    }, this.intervalMs);
   }
 
   acknowledgeAlert(alertId: string): void {
@@ -134,9 +161,11 @@ export class ApiTelemetrySource implements TelemetrySource {
   }
 
   private async poll(): Promise<void> {
+    // The initial request may still be running; never run two at once.
+    if (this.inFlight) return;
     try {
       const snapshot = await this.fetchSnapshot();
-      if (snapshot) {
+      if (snapshot && snapshot !== this.current) {
         this.current = snapshot;
         this.emit(snapshot);
       }
@@ -149,11 +178,26 @@ export class ApiTelemetrySource implements TelemetrySource {
     if (!this.configured) {
       throw new TelemetrySourceError('unconfigured', 'NEXT_PUBLIC_API_BASE_URL is not set.');
     }
+    const controller = new AbortController();
+    this.inFlight = controller;
+    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    try {
+      return await this.request(controller.signal);
+    } finally {
+      clearTimeout(timeout);
+      if (this.inFlight === controller) this.inFlight = null;
+    }
+  }
+
+  private async request(signal: AbortSignal): Promise<DashboardSnapshot | null> {
     let response: Response;
     try {
-      response = await this.fetcher(this.endpoint, { cache: 'no-store' });
+      response = await this.fetcher(this.endpoint, { cache: 'no-store', signal });
     } catch {
-      throw new TelemetrySourceError('unavailable', 'Telemetry API is unreachable.');
+      throw new TelemetrySourceError(
+        'unavailable',
+        signal.aborted ? 'Telemetry API request timed out.' : 'Telemetry API is unreachable.',
+      );
     }
 
     // Only 204 means "no reading yet"; a 404 usually means the URL points at the wrong host.
@@ -170,10 +214,16 @@ export class ApiTelemetrySource implements TelemetrySource {
       throw new TelemetrySourceError('error', 'Telemetry API returned an invalid payload.');
     }
     const receipt = parsed.data;
-    if (receipt.telemetry.message_id !== this.lastMessageId) {
-      this.lastMessageId = receipt.telemetry.message_id;
-      this.history = [...this.history, toTrendPoint(receipt)].slice(-288);
+    const current = this.current?.telemetry;
+    if (
+      current &&
+      current.device_id === receipt.telemetry.device_id &&
+      capturedTime(receipt.telemetry.captured_at) < capturedTime(current.captured_at)
+    ) {
+      // A late or retransmitted older reading must not replace the one already shown.
+      return this.current;
     }
+    this.addToHistory(toTrendPoint(receipt));
 
     const { overall: _overall, ...sensorQuality } = receipt.telemetry.quality;
     const qualities = Object.values(sensorQuality);
@@ -193,6 +243,14 @@ export class ApiTelemetrySource implements TelemetrySource {
       disconnectedSensorCount: countQuality(receipt, SensorQuality.DISCONNECTED),
       scenario: null,
     };
+  }
+
+  /** One point per message_id, ordered by captured_at (AUDIT R5, web part). */
+  private addToHistory(point: TrendPoint): void {
+    if (this.history.some(({ message_id }) => message_id === point.message_id)) return;
+    this.history = [...this.history, point]
+      .sort((a, b) => capturedTime(a.captured_at) - capturedTime(b.captured_at))
+      .slice(-MAX_HISTORY_POINTS);
   }
 
   private emit(snapshot: DashboardSnapshot): void {

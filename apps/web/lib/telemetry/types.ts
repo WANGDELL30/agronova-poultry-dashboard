@@ -14,6 +14,8 @@ export interface TrendReading {
 }
 
 export interface TrendPoint {
+  /** Unique per reading; used to de-duplicate the trend and as the React key. */
+  message_id: string;
   captured_at: string;
   air_temperature_c: TrendReading | null;
   air_humidity_pct: TrendReading | null;

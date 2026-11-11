@@ -122,8 +122,11 @@ describe('telemetry source selection', () => {
     expect(snapshot?.telemetry.message_id).toBe(validTelemetryV1Example.message_id);
     expect(snapshot?.telemetry.readings.ammonia_adc).toBeNull();
     expect(snapshot?.history).toHaveLength(1);
-    expect(fetcher).toHaveBeenCalledWith('https://api.example.test/api/v1/telemetry/latest', {
-      cache: 'no-store',
-    });
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/telemetry/latest',
+      expect.objectContaining({
+        cache: 'no-store',
+      }),
+    );
   });
 });

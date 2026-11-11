@@ -42,6 +42,7 @@ export function TrendChart({ history }: Readonly<{ history: TrendPoint[] }>) {
   const data = useMemo(
     () =>
       history.map((point) => ({
+        message_id: point.message_id,
         captured_at: point.captured_at,
         filtered: point[metricKey]?.filtered ?? null,
         raw: point[metricKey]?.raw ?? null,
@@ -171,7 +172,7 @@ export function TrendChart({ history }: Readonly<{ history: TrendPoint[] }>) {
             </thead>
             <tbody>
               {data.slice(-6).map((point) => (
-                <tr key={point.captured_at}>
+                <tr key={point.message_id}>
                   <td>{formatDateTime(point.captured_at, locale)}</td>
                   <td>
                     {point.filtered === null

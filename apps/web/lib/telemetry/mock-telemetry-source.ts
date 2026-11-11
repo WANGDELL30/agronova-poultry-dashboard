@@ -60,6 +60,7 @@ function createHistory(
     const humidityBoost = scenario === 'warning' ? 6.4 : 0;
 
     return {
+      message_id: `mock-${captured_at}`,
       captured_at,
       air_temperature_c: createTrendReading(28.7, 28.5, phase, 1.1),
       air_humidity_pct: createTrendReading(73.1 + humidityBoost, 72.4 + humidityBoost, phase, 3.1),

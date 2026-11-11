@@ -307,7 +307,7 @@ export function HistoricalAnalysisDashboard() {
                   .slice(-8)
                   .reverse()
                   .map((point) => (
-                    <tr key={point.captured_at}>
+                    <tr key={point.message_id}>
                       <td>{formatDateTime(point.captured_at, locale)}</td>
                       <td>{displayTrendValue(point, 'air_temperature_c', locale, '°C')}</td>
                       <td>{displayTrendValue(point, 'air_humidity_pct', locale, '%')}</td>
