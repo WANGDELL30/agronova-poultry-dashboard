@@ -226,6 +226,11 @@ export const id = {
   'waiting.sensorsDescription':
     'Setiap kotak akan terisi dengan pembacaan nyata; nilai kosong tidak diganti dengan nol.',
   'state.retry': 'Coba lagi',
+  'error.title': 'Halaman ini gagal dimuat',
+  'error.description': 'Terjadi kesalahan saat menampilkan halaman. Navigasi tetap tersedia.',
+  'notFound.title': 'Halaman tidak ditemukan',
+  'notFound.description': 'Alamat ini tidak ada di dashboard AgroNova.',
+  'notFound.back': 'Kembali ke Ikhtisar',
   'placeholder.eyebrow': 'Modul mendatang',
   'placeholder.titleSuffix': 'belum tersedia pada fase F1',
   'placeholder.description':
@@ -539,6 +544,12 @@ export const en: Record<TranslationKey, string> = {
   'waiting.sensorsDescription':
     'Each card will fill with real readings; missing values are never replaced with zero.',
   'state.retry': 'Try again',
+  'error.title': 'This page failed to load',
+  'error.description':
+    'Something went wrong while showing this page. Navigation is still available.',
+  'notFound.title': 'Page not found',
+  'notFound.description': 'This address does not exist in the AgroNova dashboard.',
+  'notFound.back': 'Back to Overview',
   'placeholder.eyebrow': 'Future module',
   'placeholder.titleSuffix': 'is not available in F1',
   'placeholder.description':
