@@ -11,7 +11,7 @@ interface ApiErrorBody {
 export class ApiVisionClient implements VisionClient {
   readonly mode = 'api' as const;
   private readonly base: string;
-  private readonly configured: boolean;
+  readonly configured: boolean;
 
   constructor(apiBaseUrl: string) {
     const root = apiBaseUrl.trim().replace(/\/+$/, '');

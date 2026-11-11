@@ -39,6 +39,7 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
   // Only the most recent list request may update the history: a slow initial request must not
   // overwrite the list loaded after an upload (AUDIT H5).
   const latestListRequest = useRef(0);
+  const notConfigured = client.configured === false;
 
   const refresh = useCallback(async () => {
     const requestId = ++latestListRequest.current;
@@ -121,6 +122,7 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
           {t('vision.form.camera')}
           <input
             required
+            disabled={notConfigured}
             maxLength={64}
             value={cameraId}
             onChange={(e) => setCameraId(e.target.value)}
@@ -128,17 +130,32 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
         </label>
         <label>
           {t('vision.form.kandang')}
-          <input maxLength={64} value={kandangId} onChange={(e) => setKandangId(e.target.value)} />
+          <input
+            disabled={notConfigured}
+            maxLength={64}
+            value={kandangId}
+            onChange={(e) => setKandangId(e.target.value)}
+          />
         </label>
         <label>
           {t('vision.form.image')}
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" />
+          <input
+            ref={fileRef}
+            disabled={notConfigured}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          />
         </label>
         <small>{t('vision.form.capturedAtNote')}</small>
-        <button className="primary-button" type="submit" disabled={submitting}>
+        <button className="primary-button" type="submit" disabled={submitting || notConfigured}>
           <Camera size={16} aria-hidden="true" />
           {submitting ? t('vision.form.submitting') : t('vision.form.submit')}
         </button>
+        {notConfigured && (
+          <p className="vision-error" role="status">
+            {t('vision.error.api_not_configured')}
+          </p>
+        )}
         {errorKey && (
           <p className="vision-error" role="alert">
             {t(errorKey)}

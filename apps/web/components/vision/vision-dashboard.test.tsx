@@ -106,4 +106,20 @@ describe('VisionDashboard', () => {
     expect(await screen.findByText(/API belum dikonfigurasi/)).toBeTruthy();
     expect(screen.queryByText('Gagal memproses foto.')).toBeNull();
   });
+
+  it('disables the upload form when no API URL was built in', async () => {
+    const submit = vi.fn();
+    setup(
+      fakeClient({
+        configured: false,
+        submit,
+        list: vi.fn().mockRejectedValue(new VisionClientError('api_not_configured', 'x')),
+      }),
+    );
+    const button = screen.getByRole('button', { name: 'Analisis foto' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect((screen.getByLabelText(/Foto ayam/) as HTMLInputElement).disabled).toBe(true);
+    expect((await screen.findAllByText(/API belum dikonfigurasi/)).length).toBeGreaterThan(0);
+    expect(submit).not.toHaveBeenCalled();
+  });
 });

@@ -10,6 +10,8 @@ export interface SubmitFrameInput {
 
 export interface VisionClient {
   readonly mode: 'mock' | 'api';
+  /** False when no API URL was built in; the upload form is then disabled. Defaults to true. */
+  readonly configured?: boolean;
   submit(input: SubmitFrameInput): Promise<VisionResultV1>;
   list(): Promise<VisionResultV1[]>;
   imageUrl(record: VisionResultV1): string | null;
