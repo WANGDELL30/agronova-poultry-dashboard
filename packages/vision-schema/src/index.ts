@@ -143,6 +143,21 @@ export const visionResultV1Schema = z
     }
   });
 
+/**
+ * Error codes the API returns as `{ error }` from the vision endpoints. Single source for the API
+ * (inference-client, controller) and the web messages (AUDIT H16).
+ */
+export const VISION_API_ERROR_CODES = [
+  'inference_unreachable',
+  'inference_timeout',
+  'inference_not_ready',
+  'inference_bad_response',
+  'invalid_metadata',
+] as const;
+export type VisionApiErrorCode = (typeof VISION_API_ERROR_CODES)[number];
+/** The subset raised when the API talks to the inference service. */
+export type InferenceErrorCode = Extract<VisionApiErrorCode, `inference_${string}`>;
+
 export const visionFrameMetadataSchema = z
   .object({
     camera_id: z.string().min(1).max(64),

@@ -1,6 +1,6 @@
 'use client';
 
-import type { VisionResultV1 } from '@agronova/vision-schema';
+import { VISION_API_ERROR_CODES, type VisionResultV1 } from '@agronova/vision-schema';
 import { Camera } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 
@@ -12,15 +12,8 @@ import { VisionClientError, type VisionClient } from '../../lib/vision/vision-cl
 import { SectionHeader } from '../ui/section-header';
 import { VisionResultCard, VisionStatusBadge, VoteText } from './vision-result-card';
 
-const KNOWN_ERRORS = new Set([
-  'network',
-  'inference_unreachable',
-  'inference_timeout',
-  'inference_not_ready',
-  'inference_bad_response',
-  'invalid_metadata',
-  'api_not_configured',
-]);
+// API codes come from the shared contract; the last two are raised by the web client itself.
+const KNOWN_ERRORS = new Set<string>([...VISION_API_ERROR_CODES, 'network', 'api_not_configured']);
 
 export function VisionDashboard({ client: injected }: Readonly<{ client?: VisionClient }>) {
   const { t, locale } = useLanguage();

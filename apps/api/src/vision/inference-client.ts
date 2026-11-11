@@ -1,12 +1,12 @@
-import { inferenceResponseV1Schema, type InferenceResponseV1 } from '@agronova/vision-schema';
+import {
+  inferenceResponseV1Schema,
+  type InferenceErrorCode,
+  type InferenceResponseV1,
+} from '@agronova/vision-schema';
 
 export class InferenceError extends Error {
   constructor(
-    readonly code:
-      | 'inference_unreachable'
-      | 'inference_timeout'
-      | 'inference_not_ready'
-      | 'inference_bad_response',
+    readonly code: InferenceErrorCode,
     message: string,
   ) {
     super(message);

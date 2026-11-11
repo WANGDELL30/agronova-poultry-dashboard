@@ -12,7 +12,11 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { visionFrameMetadataSchema, type VisionResultV1 } from '@agronova/vision-schema';
+import {
+  visionFrameMetadataSchema,
+  type VisionApiErrorCode,
+  type VisionResultV1,
+} from '@agronova/vision-schema';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { ALLOWED_IMAGE_TYPES, type VisionConfig } from './vision-config.js';
@@ -62,7 +66,8 @@ export class VisionController {
 
     const meta = visionFrameMetadataSchema.safeParse(fields);
     if (!meta.success) {
-      throw new BadRequestException({ error: 'invalid_metadata', issues: meta.error.issues });
+      const error: VisionApiErrorCode = 'invalid_metadata';
+      throw new BadRequestException({ error, issues: meta.error.issues });
     }
 
     try {
