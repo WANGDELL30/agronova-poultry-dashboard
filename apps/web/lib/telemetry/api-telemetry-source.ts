@@ -236,6 +236,11 @@ export class ApiTelemetrySource implements TelemetrySource {
       // A late or retransmitted older reading must not replace the one already shown.
       return this.current;
     }
+    if (current && current.device_id !== receipt.telemetry.device_id) {
+      // Without NEXT_PUBLIC_DEVICE_ID the latest reading may come from another device; one trend
+      // line must never mix two devices (AUDIT R6).
+      this.history = [];
+    }
     this.addToHistory(toTrendPoint(receipt));
 
     const { overall: _overall, ...sensorQuality } = receipt.telemetry.quality;

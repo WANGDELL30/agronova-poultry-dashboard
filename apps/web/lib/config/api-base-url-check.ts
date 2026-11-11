@@ -39,3 +39,12 @@ export function checkApiBaseUrl(
         : `${problem}. Fine for local http; an https site cannot call an http API (mixed content).`,
   };
 }
+
+/**
+ * Without NEXT_PUBLIC_DEVICE_ID the dashboard follows whichever device reported last, so its trend
+ * restarts whenever another device sends (AUDIT R6). Only a build warning: one ESP32 is the norm.
+ */
+export function checkDeviceId(env: Readonly<Record<string, string | undefined>>): string | null {
+  if (env.NEXT_PUBLIC_DEVICE_ID?.trim()) return null;
+  return 'NEXT_PUBLIC_DEVICE_ID is empty. The dashboard follows the device that reported last, and its trend restarts when another device sends data.';
+}
