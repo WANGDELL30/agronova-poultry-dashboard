@@ -6,13 +6,14 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 import { useLanguage } from '../../lib/i18n/language-provider';
-import { mobileMoreItems, mobilePrimaryItems } from './navigation';
+import { activeHref, mobileMoreItems, mobilePrimaryItems } from './navigation';
 
 export function MobileNavigation() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreRouteActive = mobileMoreItems.some(({ href }) => pathname.startsWith(href));
+  const current = activeHref(pathname);
+  const moreRouteActive = mobileMoreItems.some(({ href }) => href === current);
 
   return (
     <>
@@ -31,7 +32,7 @@ export function MobileNavigation() {
           </div>
           <div className="mobile-more-grid">
             {mobileMoreItems.map(({ href, labelKey, icon: Icon }) => {
-              const active = pathname.startsWith(href);
+              const active = href === current;
               return (
                 <Link
                   href={href}
@@ -51,7 +52,7 @@ export function MobileNavigation() {
 
       <nav className="mobile-navigation" aria-label={t('nav.primary')}>
         {mobilePrimaryItems.map(({ href, labelKey, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+          const active = href === current;
           return (
             <Link
               href={href}

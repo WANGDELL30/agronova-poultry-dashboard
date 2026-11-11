@@ -42,6 +42,20 @@ export const mobileMoreItems = navigationItems.filter(({ href }) =>
   ['/mortality', '/vision', '/history', '/calibration', '/exports', '/settings'].includes(href),
 );
 
+/**
+ * The navigation item for an exact, known route (all routes are one segment deep). Prefix matching
+ * made /live/extra look like Live Monitoring and /nope like Overview (AUDIT D10).
+ */
+function routeItem(pathname: string): NavigationItem | undefined {
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  return navigationItems.find(({ href }) => href === normalized);
+}
+
+export function activeHref(pathname: string): string | null {
+  return routeItem(pathname)?.href ?? null;
+}
+
+/** Unknown paths (404) get a neutral title instead of a module name. */
 export function pageTitleKey(pathname: string): TranslationKey {
-  return navigationItems.find(({ href }) => pathname.startsWith(href))?.labelKey ?? 'nav.overview';
+  return routeItem(pathname)?.labelKey ?? 'app.shortName';
 }

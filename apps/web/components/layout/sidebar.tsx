@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { useLanguage } from '../../lib/i18n/language-provider';
-import { navigationItems } from './navigation';
+import { activeHref, navigationItems } from './navigation';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const current = activeHref(pathname);
 
   return (
     <aside className="sidebar">
@@ -25,7 +26,7 @@ export function Sidebar() {
 
       <nav className="sidebar-nav" aria-label={t('nav.primary')}>
         {navigationItems.map(({ href, labelKey, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+          const active = href === current;
           return (
             <Link
               className={`sidebar-link${active ? ' is-active' : ''}`}
