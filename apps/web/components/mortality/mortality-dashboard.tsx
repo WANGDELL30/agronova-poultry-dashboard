@@ -8,6 +8,23 @@ import { SectionHeader } from '../ui/section-header';
 
 type ModelState = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; model: ModelStatus };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Checks the fields this page renders before trusting the response (AUDIT H13). A 200 with another
+ * shape (partial deploy, proxy page, renamed field) becomes the error state instead of a crash.
+ */
+function isModelStatus(value: unknown): value is ModelStatus {
+  if (!isRecord(value) || !isRecord(value.input) || !isRecord(value.output)) return false;
+  return (
+    typeof value.input.timesteps === 'number' &&
+    typeof value.input.available_non_gas_features === 'number' &&
+    typeof value.output.classes === 'number'
+  );
+}
+
 export function MortalityDashboard() {
   const { t } = useLanguage();
   const [state, setState] = useState<ModelState>({ kind: 'loading' });
@@ -21,7 +38,8 @@ export function MortalityDashboard() {
     void fetch('/api/v1/mortality/model', { signal: controller.signal, cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error('Model unavailable');
-        const model = (await response.json()) as ModelStatus;
+        const model: unknown = await response.json();
+        if (!isModelStatus(model)) throw new Error('Unexpected model status payload');
         if (active) setState({ kind: 'ready', model });
       })
       .catch(() => {

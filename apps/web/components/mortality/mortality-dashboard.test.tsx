@@ -46,4 +46,17 @@ describe('MortalityDashboard', () => {
     expect(screen.queryByLabelText(/File input/i)).toBeNull();
     expect(screen.queryByText(/Skor kelas/i)).toBeNull();
   });
+
+  it.each([
+    ['a different object', { status: 'ok' }],
+    ['a missing output block', { ...model, output: undefined }],
+    ['a non-numeric window', { ...model, input: { ...model.input, timesteps: '24' } }],
+    ['null', null],
+  ])('shows the error state with retry for an unexpected 200 body (%s)', async (_label, body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => body }));
+    renderDashboard();
+    expect(await screen.findByText('Model belum dapat diakses')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeTruthy();
+    expect(screen.queryByText('Model tersimpan · prediksi nonaktif')).toBeNull();
+  });
 });
