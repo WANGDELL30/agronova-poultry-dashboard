@@ -1,5 +1,5 @@
 // Server-only runtime. Frontend components must use type-only imports.
-export { getModelStatus } from './runtime.js';
+export { getModelStatus, PermanentModelError, reportModelFailure } from './runtime.js';
 export {
   deferredGasFeatures,
   modelInputsUnavailable,

@@ -14,12 +14,32 @@ import {
 
 let modelPromise: Promise<tf.LayersModel> | undefined;
 
+/**
+ * The bundled artifact itself is broken (checksum mismatch, wrong dimensions). Retrying cannot help,
+ * so the failure is cached for the life of the process instead of re-hashing on every request (H12).
+ */
+export class PermanentModelError extends Error {}
+
+const reportedFailures = new WeakSet<object>();
+
+/**
+ * Log a model failure once before answering 503 (H12). A cached permanent error is the same object
+ * on every request, so it is logged only the first time; each transient error is logged.
+ */
+export function reportModelFailure(error: unknown, log: (message: string) => void): void {
+  if (typeof error === 'object' && error !== null) {
+    if (reportedFailures.has(error)) return;
+    reportedFailures.add(error);
+  }
+  log(`Mortality model unavailable: ${error instanceof Error ? error.message : String(error)}`);
+}
+
 async function loadModel(): Promise<tf.LayersModel> {
   await tf.setBackend('cpu');
   await tf.ready();
   const weights = Buffer.from(artifact.weightDataBase64, 'base64');
   if (createHash('sha256').update(weights).digest('hex') !== artifact.weights_sha256) {
-    throw new Error('Model weight checksum mismatch.');
+    throw new PermanentModelError('Model weight checksum mismatch.');
   }
   const model = await tf.loadLayersModel(
     tf.io.fromMemory({
@@ -30,14 +50,15 @@ async function loadModel(): Promise<tf.LayersModel> {
   );
   if (model.inputs[0]?.shape.join(',') !== ',24,9' || model.outputs[0]?.shape.join(',') !== ',3') {
     model.dispose();
-    throw new Error('Unexpected mortality model input/output dimensions.');
+    throw new PermanentModelError('Unexpected mortality model input/output dimensions.');
   }
   return model;
 }
 
 function getModel(): Promise<tf.LayersModel> {
   modelPromise ??= loadModel().catch((error: unknown) => {
-    modelPromise = undefined;
+    // Transient errors (e.g. backend init) may be retried; a broken artifact stays cached (H12).
+    if (!(error instanceof PermanentModelError)) modelPromise = undefined;
     throw error;
   });
   return modelPromise;

@@ -1,11 +1,18 @@
-import { getModelStatus, modelInputsUnavailable } from '@agronova/mortality-model';
+import {
+  getModelStatus,
+  modelInputsUnavailable,
+  reportModelFailure,
+} from '@agronova/mortality-model';
 import {
   ConflictException,
   Controller,
   Get,
+  Logger,
   Post,
   ServiceUnavailableException,
 } from '@nestjs/common';
+
+const logger = new Logger('MortalityController');
 
 @Controller('mortality')
 export class MortalityController {
@@ -13,7 +20,8 @@ export class MortalityController {
   async model() {
     try {
       return await getModelStatus();
-    } catch {
+    } catch (error) {
+      reportModelFailure(error, (message) => logger.error(message)); // once per failure (H12)
       throw new ServiceUnavailableException({ code: 'MODEL_UNAVAILABLE' });
     }
   }
