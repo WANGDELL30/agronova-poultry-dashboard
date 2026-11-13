@@ -312,11 +312,12 @@ connect to MQTT or publish telemetry.
 | `INFERENCE_TIMEOUT_MS`         | API timeout for one inference call                    | `30000` (`120000` recommended real) |
 | `INFERENCE_HEALTH_TIMEOUT_MS`  | API timeout for the inference health check            | `5000`                              |
 | `VISION_IMAGE_DIR`             | Where uploaded frames are stored                      | `./data/vision-images`              |
-| `VISION_MAX_IMAGE_BYTES`       | Maximum upload size                                   | `8388608`                           |
+| `VISION_MAX_IMAGE_BYTES`       | Maximum image size; read by **both** the API and the inference service (compose passes it to both inference containers). Keep the values equal | `8388608`                           |
 | `INFERENCE_MODE`               | Inference backend: `mock` or `real`                   | `mock`                              |
+| `INFERENCE_LOAD_BLOCKING`      | `1` loads the real model synchronously at startup instead of in a background thread | unset (background load, `/health` 503 meanwhile) |
 | `HF_ADAPTER_REPO`              | LoRA adapter repository (real mode)                   | `Arga23/chickenstress-vlm-lora`     |
 | `HF_BASE_MODEL`                | Base VLM (real mode)                                  | `Qwen/Qwen3-VL-4B-Instruct`         |
-| `HF_TOKEN`                     | Optional; default adapter is public (private repo only) | Never commit                        |
+| `HF_TOKEN`                     | Optional; default adapter is public (private repo only). Alias: `HUGGING_FACE_HUB_TOKEN` | Never commit                        |
 | `PORT`                         | Next.js web port                                      | `3000`                              |
 | `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL (https on Vercel prod)   | none: empty = "API not configured"  |
 | `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`    | `api`                               |
