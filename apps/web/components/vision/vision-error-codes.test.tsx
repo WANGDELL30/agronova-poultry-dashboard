@@ -26,6 +26,19 @@ describe('vision error codes come from the contract (AUDIT H16)', () => {
     }
   });
 
+  it('gives each inference failure its own message (R12, H11)', () => {
+    const codes = [
+      'inference_not_ready',
+      'inference_unavailable',
+      'inference_gpu_oom',
+      'inference_failed',
+    ] as const;
+    for (const dictionary of [id, en]) {
+      const messages = codes.map((code) => dictionary[`vision.error.${code}`]);
+      expect(new Set(messages).size).toBe(codes.length);
+    }
+  });
+
   it.each([...VISION_API_ERROR_CODES])('shows the specific message for %s', async (code) => {
     const client: VisionClient = {
       mode: 'api',
