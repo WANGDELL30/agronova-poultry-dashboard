@@ -85,6 +85,15 @@ Both NestJS and the Vercel Next.js runtime expose the same safe status:
 | POST   | `/api/v1/mortality/diagnostics` | HTTP 409; no public inference while gas inputs and fitted scaler are absent |
 | POST   | `/api/v1/mortality/predict`     | HTTP 409 with `mortality_prediction: null`                                  |
 
+Both runtimes send `Cache-Control: no-store` on every mortality response, and `predict`/`diagnostics`
+never read the request body: malformed JSON or another `Content-Type` still gets the 409.
+
+**Known difference: wrong HTTP method.** A request with a method a route does not define (`GET
+predict`, `GET diagnostics`, `POST model`) is answered by each framework's router: NestJS returns 404
+with a JSON body (`Cannot GET …`), while the Next.js App Router returns 405 with an empty body. No
+client in this repo sends those methods, so the difference is documented rather than aligned (AUDIT
+K10).
+
 The status reports the known feature order, labels, seven available non-gas fields, two deferred gas
 fields, the missing fitted scaler, unknown source timezone, and zero recall for both risk classes.
 Inputs and results are not persisted.
