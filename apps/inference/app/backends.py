@@ -47,6 +47,10 @@ class RealBackend:
         self._lock = threading.Lock()
         device = "cuda" if torch.cuda.is_available() else "cpu"
         dtype = torch.float16 if device == "cuda" else torch.float32
+        # Pixel bounds copied verbatim from notebook 04 and training (keep for parity). The 28 px
+        # factor is the Qwen2-VL convention: Qwen3-VL uses 32 px per visual token (patch 16 x merge 2),
+        # so this is roughly 196-392 visual tokens, not 256-512. A 640x640 frame exceeds max_pixels
+        # and is downscaled. Effective token counts are measured in Colab (PV9).
         self._processor = AutoProcessor.from_pretrained(
             settings.base_model, min_pixels=256 * 28 * 28, max_pixels=512 * 28 * 28
         )
