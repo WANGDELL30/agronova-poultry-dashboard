@@ -40,14 +40,9 @@ export class InMemoryVisionRepository implements VisionRepository {
     const labels: VotedLabel[] = [];
     for (const r of this.records) {
       if (r.camera_id !== cameraId || r.result === null) continue;
-      const { label, confidence } = r.result;
-      if (
-        label !== 'undefined' &&
-        confidence !== null &&
-        r.vote.status !== 'ignored_low_confidence'
-      ) {
-        labels.push(label);
-      }
+      // Same rule as the voter (K1/V1): every stress/not_stress label is a vote, no confidence filter.
+      const { label } = r.result;
+      if (label !== 'undefined') labels.push(label);
     }
     return labels.slice(-limit);
   }

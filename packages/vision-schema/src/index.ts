@@ -6,6 +6,10 @@ export const VISION_SCHEMA_VERSION = 1 as const;
 export const STRESS_THRESHOLD = 3 as const;
 export const MIN_VISIBLE_INDICATORS = 5 as const;
 export const VOTE_WINDOW_SIZE = 5 as const;
+/**
+ * @deprecated: tidak lagi dipakai sejak K1. The voter counts every stress/not_stress label (decision
+ * 2026-11-13). Kept so the notebook value stays documented and existing imports keep compiling.
+ */
 export const VOTE_CONFIDENCE_THRESHOLD = 0.6 as const;
 export const VOTE_MIN_VOTES_FOR_ALERT = 3 as const;
 
@@ -62,7 +66,11 @@ export const classificationResultSchema = z
     visible_count: z.number().int().min(0).max(7),
     label: stressLabelSchema,
     score_stress: z.number().min(0).max(1),
-    /** Null when label is `undefined` (the notebook uses 0.0; null avoids implying certainty). */
+    /**
+     * Severity, not model certainty: YA/7 for `stress`, 1 - YA/7 for `not_stress`. Null when label
+     * is `undefined` (the notebook uses 0.0; null avoids implying certainty). Not used for voting
+     * since K1; kept in the contract for compatibility.
+     */
     confidence: z.number().min(0).max(1).nullable(),
   })
   .strict();
@@ -119,6 +127,7 @@ export const inferenceResponseV1Schema = z
 export const voteStatusSchema = z.enum([
   'ignored_no_result',
   'ignored_undefined',
+  /** @deprecated: tidak lagi dihasilkan sejak K1. Kept so older records and clients still parse. */
   'ignored_low_confidence',
   'waiting_window',
   'no_alert',

@@ -1,26 +1,28 @@
 import {
-  VOTE_CONFIDENCE_THRESHOLD,
   VOTE_MIN_VOTES_FOR_ALERT,
   VOTE_WINDOW_SIZE,
   type ClassificationResult,
   type Vote,
 } from '@agronova/vision-schema';
 
-/** A frame that entered the voting window (label was stress/not_stress and confidence passed). */
+/** A frame that entered the voting window: a classified frame labelled stress or not_stress. */
 export type VotedLabel = 'stress' | 'not_stress';
 
 export interface VoteInput {
   /** Null when the frame has no classification (skipped_quality / parse_error / inference_error). */
-  result: Pick<ClassificationResult, 'label' | 'confidence'> | null;
+  result: Pick<ClassificationResult, 'label'> | null;
   /** Labels of previously accepted frames for the same camera, oldest first. */
   window: readonly VotedLabel[];
 }
 
 /**
- * Port of `make_temporal_voter` from the notebook, made stateless: the window is rebuilt from
- * stored records so it survives API restarts. Behaviour is unchanged (window 5, confidence >= 0.6,
- * alert when the majority is `stress` with at least 3 votes). Frames without a classification are
- * reported as `ignored_no_result` instead of the notebook's parse_error -> `undefined` conflation.
+ * Label-based temporal vote, made stateless: the window is rebuilt from stored records so it
+ * survives API restarts. Every classified frame labelled `stress` or `not_stress` is a vote, with no
+ * confidence filter (window 5, alert when the majority is `stress` with at least 3 votes). This is a
+ * deliberate deviation from the voter in inference notebook 04, which also required confidence >= 0.6
+ * (decision 2026-11-13, AUDIT K1/V1): confidence there is YA/7, so stress frames with 3-4 YA never
+ * became votes. `undefined` is `ignored_undefined`; frames without a classification are
+ * `ignored_no_result` instead of the notebook's parse_error -> `undefined` conflation.
  */
 export function evaluateVote({ result, window }: VoteInput): { vote: Vote; accepted: boolean } {
   const empty = (status: Vote['status'], filled: number): Vote => ({
@@ -37,10 +39,6 @@ export function evaluateVote({ result, window }: VoteInput): { vote: Vote; accep
   if (result.label === 'undefined') {
     return { vote: empty('ignored_undefined', prior.length), accepted: false };
   }
-  if (result.confidence === null || result.confidence < VOTE_CONFIDENCE_THRESHOLD) {
-    return { vote: empty('ignored_low_confidence', prior.length), accepted: false };
-  }
-
   const current = [...prior, result.label].slice(-VOTE_WINDOW_SIZE);
   if (current.length < VOTE_WINDOW_SIZE) {
     return { vote: empty('waiting_window', current.length), accepted: true };

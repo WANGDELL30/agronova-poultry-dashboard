@@ -72,9 +72,13 @@ The inference service runs three stages and returns a `status` with a nullable `
 3. **SCS rule.** `stress` when at least 3 indicators are `YA`; `undefined` when fewer than 5 of 7
    indicators are visible; otherwise `not_stress`.
 
-The API then applies a **temporal vote**: a window of the last 5 accepted frames per camera, a
-minimum confidence of 0.6, and an alert when `stress` is the majority with at least 3 votes. The
-window is rebuilt from stored records, so it does not depend on in-process state.
+The API then applies a **temporal vote**: every classified frame labelled `stress` or `not_stress` is
+a vote, with no confidence filter. The window holds the last 5 votes per camera, and an alert is
+raised when `stress` is the majority with at least 3 votes. `undefined` is reported as
+`ignored_undefined` and frames without a result as `ignored_no_result`; neither enters the window.
+The window is rebuilt from stored records, so it does not depend on in-process state. Dropping the
+confidence >= 0.6 filter is a deliberate deviation from the voter in inference notebook 04 (decision
+2026-11-13, AUDIT K1/V1): with confidence = YA/7, stress frames with 3-4 `YA` never became votes.
 
 The thresholds are ported unchanged from the training notebook. They are defined in
 `packages/vision-schema` (TypeScript) and `apps/inference/app/scs.py` (Python) and must be changed
@@ -85,7 +89,9 @@ together, only after re-evaluating the model.
 - Frames without a classification have `result: null`. `skipped_quality`, `parse_error`,
   `inference_error`, and the label `undefined` are never equivalent to `not_stress` and never enter
   the voting window.
-- `confidence` is `null` when the label is `undefined`, instead of an invented number.
+- `confidence` is `null` when the label is `undefined`, instead of an invented number. It measures
+  severity (YA/7 for `stress`, 1 - YA/7 for `not_stress`), not model certainty, and is not used for
+  voting.
 - `captured_at` (camera) and `received_at` (backend) are both stored in UTC and converted only for
   display.
 - The raw model response is preserved alongside the parsed result.

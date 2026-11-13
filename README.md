@@ -36,8 +36,11 @@ Web (/vision) ──multipart image──▶ API (NestJS) ──▶ Inference (F
    Scale indicators (tail, head, eyes, beak, wings, legs/posture, feathers).
 3. **SCS rule.** `stress` when at least 3 indicators are `YA`; `undefined` when fewer than 5 of 7
    are visible.
-4. **Temporal vote.** Window of 5 frames, minimum confidence 0.6; an alert is raised when `stress`
-   is the majority with at least 3 votes.
+4. **Temporal vote.** Every classified frame labelled `stress` or `not_stress` is a vote, with no
+   confidence filter. Window of 5 votes per camera; an alert is raised when `stress` is the majority
+   with at least 3 votes. This deliberately deviates from the voter in inference notebook 04, which
+   also required confidence >= 0.6 (decision 2026-11-13): there, stress frames with 3-4 `YA` never
+   counted.
 
 The result is decision support, not a diagnosis. `skipped_quality`, `parse_error`,
 `inference_error`, and `undefined` are never treated as `not_stress`.

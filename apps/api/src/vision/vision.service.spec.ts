@@ -66,6 +66,16 @@ describe('VisionService', () => {
     expect(last?.vote.status).toBe('alert');
   });
 
+  it('alerts on five stress frames with 3 YA, which the old 0.6 filter dropped (K1, V1)', async () => {
+    const threeYa = classified('stress', 3 / 7);
+    threeYa.result = { ...threeYa.result!, total_ya: 3, score_stress: 3 / 7 };
+    const service = build(vi.fn().mockResolvedValue(threeYa));
+    let last;
+    for (let i = 0; i < 5; i++)
+      last = await service.processFrame(meta, Buffer.from('x'), 'image/png');
+    expect(last?.vote).toMatchObject({ status: 'alert', window_filled: 5 });
+  });
+
   it('never votes on a result attached to a non-classified status (K2, B5)', async () => {
     const skipped = { ...classified('stress', 1), status: 'skipped_quality' as const };
     const service = build(vi.fn().mockResolvedValue(skipped));
