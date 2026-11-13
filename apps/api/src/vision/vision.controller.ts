@@ -18,8 +18,13 @@ import {
   type VisionResultV1,
 } from '@agronova/vision-schema';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { z } from 'zod';
+
+import { limitQuery, optionalIdQuery, parseQuery } from '../common/query.js';
 
 import { ALLOWED_IMAGE_TYPES, type VisionConfig } from './vision-config.js';
+
+const resultsQuerySchema = z.object({ camera_id: optionalIdQuery, limit: limitQuery(20, 100) });
 
 /** Seconds a client should wait before retrying while the model is still loading. */
 export const NOT_READY_RETRY_AFTER_SECONDS = 30;
@@ -117,15 +122,9 @@ export class VisionController {
   }
 
   @Get('results')
-  list(
-    @Query('camera_id') cameraId?: string,
-    @Query('limit') limit?: string,
-  ): Promise<VisionResultV1[]> {
-    const parsed = limit === undefined ? 20 : Number(limit);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
-      throw new BadRequestException('limit must be an integer between 1 and 100.');
-    }
-    return this.service.list(cameraId || undefined, parsed);
+  list(@Query() query: unknown): Promise<VisionResultV1[]> {
+    const { camera_id: cameraId, limit } = parseQuery(resultsQuerySchema, query);
+    return this.service.list(cameraId, limit);
   }
 
   @Get('results/:id/image')

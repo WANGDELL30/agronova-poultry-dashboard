@@ -208,4 +208,22 @@ describe('VisionController (HTTP)', () => {
       (await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=5' })).statusCode,
     ).toBe(200);
   });
+
+  it('rejects non-decimal limits and repeated query parameters (H10, R17)', async () => {
+    const status = async (query: string) =>
+      (await app.inject({ method: 'GET', url: `/api/v1/vision/results?${query}` })).statusCode;
+    for (const query of ['limit=0x10', 'limit=1e2', 'limit=%2010%20', 'limit=5&limit=6']) {
+      expect(await status(query), query).toBe(400);
+    }
+    expect(await status('camera_id=cam-01&camera_id=cam-01')).toBe(400);
+    expect(await status('camera_id=cam-01&limit=100')).toBe(200);
+  });
+
+  it('still filters by camera_id', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/vision/results?camera_id=cam-01' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().length).toBeGreaterThan(0);
+    const none = await app.inject({ method: 'GET', url: '/api/v1/vision/results?camera_id=zzz' });
+    expect(none.json()).toEqual([]);
+  });
 });
