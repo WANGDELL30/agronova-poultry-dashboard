@@ -7,3 +7,4 @@ export {
   mortalityFeatureNames,
 } from './contract.js';
 export type { DiagnosticInput, DiagnosticResult, ModelStatus } from './contract.js';
+export { mortalityHttpCases, type MortalityHttpCase } from './http-fixtures.js';
