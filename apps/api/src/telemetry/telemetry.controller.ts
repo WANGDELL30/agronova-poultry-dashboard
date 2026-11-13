@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   Inject,
@@ -14,7 +15,7 @@ import { z } from 'zod';
 
 import { optionalIdQuery, parseQuery } from '../common/query.js';
 
-import { TelemetryService } from './telemetry.service.js';
+import { DuplicateMessageIdError, TelemetryService } from './telemetry.service.js';
 
 const latestQuerySchema = z.object({ device_id: optionalIdQuery });
 
@@ -23,7 +24,10 @@ export class TelemetryController {
   constructor(@Inject(TelemetryService) private readonly service: TelemetryService) {}
 
   @Post()
-  ingest(@Body() body: unknown): TelemetryReceiptV1 {
+  ingest(
+    @Body() body: unknown,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): TelemetryReceiptV1 {
     const parsed = telemetryV1Schema.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -31,7 +35,19 @@ export class TelemetryController {
         issues: parsed.error.issues,
       });
     }
-    return this.service.ingest(parsed.data);
+    try {
+      const { receipt, replayed } = this.service.ingestOrReplay(parsed.data);
+      if (replayed) reply.status(200); // retransmission: same receipt, nothing changed (R5)
+      return receipt;
+    } catch (error) {
+      if (error instanceof DuplicateMessageIdError) {
+        throw new ConflictException({
+          error: 'duplicate_message_id',
+          message: 'This message_id was already received with a different payload.',
+        });
+      }
+      throw error;
+    }
   }
 
   @Get('latest')

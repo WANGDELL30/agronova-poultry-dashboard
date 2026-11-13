@@ -181,18 +181,18 @@ corepack pnpm infra:down
 
 ## API endpoints (prefix `/api/v1`)
 
-| Method | Path                        | Purpose                                                                 |
-| ------ | --------------------------- | ----------------------------------------------------------------------- |
-| GET    | `/health`                   | API and database status (`degraded` when PostgreSQL is unavailable)     |
-| POST   | `/vision/frames`            | Multipart upload: one `image` (JPEG/PNG/WebP, up to 8 MB) + metadata    |
-| GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)               |
-| GET    | `/vision/results/:id/image` | Stored frame for a result                                               |
-| GET    | `/vision/health`            | Vision pipeline status                                                  |
-| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid)       |
-| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held       |
-| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure)  |
-| POST   | `/mortality/predict`        | Always **409** `MODEL_INPUTS_UNAVAILABLE` while gas inputs are deferred |
-| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)                 |
+| Method | Path                        | Purpose                                                                                                                                                                                                                           |
+| ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`                   | API and database status (`degraded` when PostgreSQL is unavailable)                                                                                                                                                               |
+| POST   | `/vision/frames`            | Multipart upload: one `image` (JPEG/PNG/WebP, up to 8 MB) + metadata                                                                                                                                                              |
+| GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)                                                                                                                                                                         |
+| GET    | `/vision/results/:id/image` | Stored frame for a result                                                                                                                                                                                                         |
+| GET    | `/vision/health`            | Vision pipeline status                                                                                                                                                                                                            |
+| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid). Idempotent per `message_id`: an identical retransmission returns the original receipt with 200; the same id with another payload is 409 `duplicate_message_id` |
+| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held                                                                                                                                                                 |
+| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure)                                                                                                                                                            |
+| POST   | `/mortality/predict`        | Always **409** `MODEL_INPUTS_UNAVAILABLE` while gas inputs are deferred                                                                                                                                                           |
+| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)                                                                                                                                                                           |
 
 Inference service: `GET /health` and `POST /v1/classify` (multipart `file`, optional `X-API-Key`).
 

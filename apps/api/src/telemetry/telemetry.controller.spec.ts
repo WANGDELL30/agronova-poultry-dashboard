@@ -39,3 +39,53 @@ describe('TelemetryController (HTTP)', () => {
     expect(res.statusCode).toBe(400);
   });
 });
+
+describe('POST /telemetry is idempotent per message_id (R5)', () => {
+  let app: NestFastifyApplication;
+
+  beforeAll(async () => {
+    app = await NestFactory.create<NestFastifyApplication>(TelemetryModule, new FastifyAdapter(), {
+      logger: false,
+    });
+    app.setGlobalPrefix('api/v1');
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+  });
+  afterAll(() => app.close());
+
+  const reading = (messageId: string, celsius: number, device = 'dev-r5') => ({
+    ...validTelemetryV1Example,
+    device_id: device,
+    message_id: messageId,
+    readings: {
+      ...validTelemetryV1Example.readings,
+      air_temperature_c: { raw: celsius, filtered: celsius },
+    },
+  });
+  const send = (payload: object) =>
+    app.inject({ method: 'POST', url: '/api/v1/telemetry', payload });
+  const latestCelsius = async (device = 'dev-r5') =>
+    (
+      await app.inject({ method: 'GET', url: `/api/v1/telemetry/latest?device_id=${device}` })
+    ).json().telemetry.readings.air_temperature_c.filtered;
+
+  it('W1, W2, retransmitted W1: the replay gets the old receipt and latest stays W2', async () => {
+    const w1 = reading('11111111-1111-4111-8111-111111111111', 21);
+    const first = await send(w1);
+    expect(first.statusCode).toBe(201);
+    expect((await send(reading('22222222-2222-4222-8222-222222222222', 22))).statusCode).toBe(201);
+    const replay = await send(w1);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json().received_at).toBe(first.json().received_at);
+    expect(await latestCelsius()).toBe(22);
+  });
+
+  it('rejects the same message_id with a different payload as 409 and keeps the stored reading', async () => {
+    const id = '33333333-3333-4333-8333-333333333333';
+    expect((await send(reading(id, 25, 'dev-r5b'))).statusCode).toBe(201);
+    const conflict = await send(reading(id, 30, 'dev-r5b'));
+    expect(conflict.statusCode).toBe(409);
+    expect(conflict.json()).toMatchObject({ error: 'duplicate_message_id' });
+    expect(await latestCelsius('dev-r5b')).toBe(25);
+  });
+});

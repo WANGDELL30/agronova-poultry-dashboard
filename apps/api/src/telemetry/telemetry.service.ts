@@ -11,9 +11,26 @@ interface StoredTelemetry {
   lastSeenAt: string;
 }
 
+/** message_ids kept per device to recognise retransmissions; older ones are forgotten (R5). */
+export const MESSAGE_IDS_REMEMBERED_PER_DEVICE = 1000;
+
+/** Same message_id, different payload: never overwrite what was stored (R5). */
+export class DuplicateMessageIdError extends Error {
+  constructor(readonly messageId: string) {
+    super(`message_id ${messageId} was already received with a different payload.`);
+  }
+}
+
+interface SeenMessage {
+  payload: string;
+  stored: StoredTelemetry;
+}
+
 @Injectable()
 export class TelemetryService {
   private readonly latestByDevice = new Map<string, StoredTelemetry>();
+  /** Per device, insertion-ordered so the oldest id is evicted first. */
+  private readonly seenByDevice = new Map<string, Map<string, SeenMessage>>();
   private readonly offlineAfterMs: number;
 
   constructor() {
@@ -25,10 +42,37 @@ export class TelemetryService {
   }
 
   ingest(telemetry: TelemetryV1, receivedAt = new Date()): TelemetryReceiptV1 {
+    return this.ingestOrReplay(telemetry, receivedAt).receipt;
+  }
+
+  /**
+   * Idempotent per `message_id` (AUDIT R5): a retransmission with the identical payload returns the
+   * original receipt and leaves the latest reading alone; the same id with another payload throws
+   * DuplicateMessageIdError.
+   */
+  ingestOrReplay(
+    telemetry: TelemetryV1,
+    receivedAt = new Date(),
+  ): { receipt: TelemetryReceiptV1; replayed: boolean } {
+    const payload = JSON.stringify(telemetry);
+    let seen = this.seenByDevice.get(telemetry.device_id);
+    const previous = seen?.get(telemetry.message_id);
+    if (previous) {
+      if (previous.payload !== payload) throw new DuplicateMessageIdError(telemetry.message_id);
+      return { receipt: this.toReceipt(previous.stored, receivedAt), replayed: true };
+    }
     const timestamp = receivedAt.toISOString();
     const stored = { telemetry, receivedAt: timestamp, lastSeenAt: timestamp };
     this.latestByDevice.set(telemetry.device_id, stored);
-    return this.toReceipt(stored, receivedAt);
+    if (!seen) {
+      seen = new Map();
+      this.seenByDevice.set(telemetry.device_id, seen);
+    }
+    seen.set(telemetry.message_id, { payload, stored });
+    if (seen.size > MESSAGE_IDS_REMEMBERED_PER_DEVICE) {
+      seen.delete(seen.keys().next().value as string);
+    }
+    return { receipt: this.toReceipt(stored, receivedAt), replayed: false };
   }
 
   latest(deviceId?: string, now = new Date()): TelemetryReceiptV1 | null {

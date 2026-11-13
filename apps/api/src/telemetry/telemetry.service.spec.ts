@@ -1,7 +1,7 @@
 import { validTelemetryV1Example } from '@agronova/telemetry-schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { TelemetryService } from './telemetry.service.js';
+import { MESSAGE_IDS_REMEMBERED_PER_DEVICE, TelemetryService } from './telemetry.service.js';
 
 describe('TelemetryService', () => {
   const previousThreshold = process.env.DEVICE_OFFLINE_AFTER_MS;
@@ -41,5 +41,15 @@ describe('TelemetryService', () => {
       service.latest(undefined, new Date('2026-10-27T04:00:31.000Z'))?.telemetry.quality
         .air_temperature,
     ).toBe('DEVICE_OFFLINE');
+  });
+
+  it('remembers a bounded number of message_ids per device (R5)', () => {
+    const service = new TelemetryService();
+    const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const send = (n: number) =>
+      service.ingestOrReplay({ ...validTelemetryV1Example, message_id: id(n) }).replayed;
+    for (let n = 0; n <= MESSAGE_IDS_REMEMBERED_PER_DEVICE; n++) expect(send(n)).toBe(false);
+    expect(send(MESSAGE_IDS_REMEMBERED_PER_DEVICE)).toBe(true); // still remembered
+    expect(send(0)).toBe(false); // the oldest id was evicted
   });
 });
