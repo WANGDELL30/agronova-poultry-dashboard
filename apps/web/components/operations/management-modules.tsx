@@ -19,6 +19,7 @@ import { useState } from 'react';
 
 import { useLanguage } from '../../lib/i18n/language-provider';
 import { useTelemetry } from '../../lib/telemetry/telemetry-provider';
+import { createSnapshotCsv, createSnapshotJson } from '../../lib/telemetry/snapshot-export';
 import type { DashboardSnapshot } from '../../lib/telemetry/types';
 import { CalibrationBadge } from '../ui/status-badge';
 import { operationsCopy } from './operations-copy';
@@ -29,81 +30,11 @@ import {
   OperationsStat,
 } from './operations-shared';
 
-function escapeCsv(value: string | number | null) {
-  if (value === null) return '';
-  const stringValue = String(value);
-  return /[",\n]/.test(stringValue) ? `"${stringValue.replaceAll('"', '""')}"` : stringValue;
-}
-
-function createSnapshotCsv(snapshot: DashboardSnapshot) {
-  const { telemetry } = snapshot;
-  const headers = [
-    'schema_version',
-    'message_id',
-    'device_id',
-    'sequence_no',
-    'captured_at',
-    'received_at',
-    'last_seen_at',
-    'device_online',
-    'air_temperature_raw_c',
-    'air_temperature_filtered_c',
-    'air_humidity_raw_pct',
-    'air_humidity_filtered_pct',
-    'water_temperature_raw_c',
-    'water_temperature_filtered_c',
-    'mq5_raw_adc',
-    'mq5_filtered_adc',
-    'mq5_adc_voltage_v',
-    'mq5_relative_level_pct',
-    'ammonia_adc',
-    'water_flow_l_min',
-    'water_total_l',
-    'feed_weight_kg',
-  ];
-  const values: Array<string | number | null> = [
-    telemetry.schema_version,
-    telemetry.message_id,
-    telemetry.device_id,
-    telemetry.sequence_no,
-    telemetry.captured_at,
-    snapshot.received_at,
-    snapshot.last_seen_at,
-    String(snapshot.deviceOnline),
-    telemetry.readings.air_temperature_c?.raw ?? null,
-    telemetry.readings.air_temperature_c?.filtered ?? null,
-    telemetry.readings.air_humidity_pct?.raw ?? null,
-    telemetry.readings.air_humidity_pct?.filtered ?? null,
-    telemetry.readings.water_temperature_c?.raw ?? null,
-    telemetry.readings.water_temperature_c?.filtered ?? null,
-    telemetry.readings.mq5?.raw_adc ?? null,
-    telemetry.readings.mq5?.filtered_adc ?? null,
-    telemetry.readings.mq5?.adc_voltage_v ?? null,
-    telemetry.readings.mq5?.relative_level_pct ?? null,
-    telemetry.readings.ammonia_adc,
-    telemetry.readings.water_flow_l_min,
-    telemetry.readings.water_total_l,
-    telemetry.readings.feed_weight_kg,
-  ];
-  return `${headers.join(',')}\n${values.map(escapeCsv).join(',')}\n`;
-}
-
 function downloadSnapshot(snapshot: DashboardSnapshot, format: 'json' | 'csv') {
-  const now = new Date().toISOString();
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
   const content =
-    format === 'json'
-      ? JSON.stringify(
-          {
-            exported_at: now,
-            telemetry: snapshot.telemetry,
-            received_at: snapshot.received_at,
-            last_seen_at: snapshot.last_seen_at,
-            device_online: snapshot.deviceOnline,
-          },
-          null,
-          2,
-        )
-      : createSnapshotCsv(snapshot);
+    format === 'json' ? createSnapshotJson(snapshot, nowMs) : createSnapshotCsv(snapshot, nowMs);
   const blob = new Blob([content], {
     type: format === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8',
   });
