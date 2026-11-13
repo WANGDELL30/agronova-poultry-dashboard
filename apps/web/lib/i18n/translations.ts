@@ -319,7 +319,7 @@ export const id = {
   'vision.error.image_required': 'Kirim tepat satu foto dalam satu unggahan.',
   'vision.error.image_empty': 'File foto kosong (0 byte). Pilih foto lain.',
   'vision.error.image_too_large':
-    'Foto terlalu besar untuk server (batas bawaan 8 MB). Kecilkan atau kompres foto lalu coba lagi.',
+    'Foto terlalu besar untuk server (batas bawaan 8 MB atau 40 megapiksel). Kecilkan atau kompres foto lalu coba lagi.',
   'vision.error.unsupported_image_type':
     'Format foto tidak didukung. Gunakan JPEG, PNG, atau WebP.',
   'vision.error.inference_bad_response': 'Layanan inferensi mengirim respons yang tidak valid.',
@@ -654,7 +654,7 @@ export const en: Record<TranslationKey, string> = {
   'vision.error.image_required': 'Send exactly one photo per upload.',
   'vision.error.image_empty': 'The photo file is empty (0 bytes). Choose another photo.',
   'vision.error.image_too_large':
-    'The photo is too large for the server (8 MB by default). Resize or compress it and try again.',
+    'The photo is too large for the server (8 MB or 40 megapixels by default). Resize or compress it and try again.',
   'vision.error.unsupported_image_type': 'Unsupported photo format. Use JPEG, PNG, or WebP.',
   'vision.error.inference_bad_response': 'The inference service returned an invalid response.',
   'vision.error.invalid_metadata': 'Invalid form data.',
