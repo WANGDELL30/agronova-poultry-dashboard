@@ -83,7 +83,10 @@ export const modelInfoSchema = z
   .object({
     base_model: z.string().min(1),
     adapter: z.string().min(1),
+    /** Commit of the adapter files actually loaded (P7); null for mock or a local folder. */
     adapter_revision: z.string().nullable(),
+    /** Commit of the base model actually loaded (P7). Optional: older inference builds omit it. */
+    base_revision: z.string().nullable().optional(),
   })
   .strict();
 

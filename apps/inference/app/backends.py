@@ -2,6 +2,7 @@
 import hashlib
 import json
 import threading
+from pathlib import PurePath
 from typing import Protocol
 
 import numpy as np
@@ -17,11 +18,40 @@ class Backend(Protocol):
     def generate(self, img_bgr: np.ndarray) -> str: ...
 
 
+def base_revision(model) -> str | None:
+    """Commit of the base model that was loaded (AUDIT P7); None for a local folder."""
+    return getattr(getattr(model, "config", None), "_commit_hash", None)
+
+
+def adapter_revision(peft_model, repo: str) -> str | None:
+    """Commit of the LoRA adapter that was loaded (AUDIT P7), not a fresh Hub query of `main`.
+
+    Prefers a hash recorded on the loaded PEFT config; otherwise reads the snapshot folder of the cached
+    `adapter_config.json`, which also works offline (HF_HUB_OFFLINE) because the files came from there.
+    """
+    for config in (getattr(peft_model, "peft_config", None) or {}).values():
+        commit = getattr(config, "_commit_hash", None)
+        if commit:
+            return commit
+    try:
+        from huggingface_hub import try_to_load_from_cache
+    except ImportError:
+        return None
+    try:
+        path = try_to_load_from_cache(repo, "adapter_config.json")
+    except Exception:  # noqa: BLE001 - e.g. a local folder is not a valid repo id
+        return None
+    if not isinstance(path, str):
+        return None
+    parts = PurePath(path).parts
+    return parts[-2] if len(parts) >= 3 and parts[-3] == "snapshots" else None
+
+
 class MockBackend:
     """Deterministic fake VLM (no GPU). Output depends only on the image bytes."""
 
     mode = "mock"
-    model_info = {"base_model": "mock", "adapter": "mock", "adapter_revision": None}
+    model_info = {"base_model": "mock", "adapter": "mock", "adapter_revision": None, "base_revision": None}
 
     def generate(self, img_bgr: np.ndarray) -> str:
         digest = hashlib.sha256(img_bgr.tobytes()).digest()
@@ -37,7 +67,6 @@ class RealBackend:
 
     def __init__(self, settings: Settings) -> None:
         import torch  # noqa: PLC0415 - heavy import only in real mode
-        from huggingface_hub import HfApi
         from peft import PeftModel
         from transformers import AutoProcessor
 
@@ -58,14 +87,12 @@ class RealBackend:
         base.eval()
         self._model = PeftModel.from_pretrained(base, settings.hf_adapter_repo, token=settings.hf_token)
         self._model.eval()
-        try:
-            revision = HfApi().model_info(settings.hf_adapter_repo, token=settings.hf_token).sha
-        except Exception:  # noqa: BLE001 - revision is informational only
-            revision = None
+        # Revisions of the files actually loaded (P7); pinning them is S10 and not done here.
         self.model_info = {
             "base_model": settings.base_model,
             "adapter": settings.hf_adapter_repo,
-            "adapter_revision": revision,
+            "adapter_revision": adapter_revision(self._model, settings.hf_adapter_repo),
+            "base_revision": base_revision(base),
         }
 
     @staticmethod

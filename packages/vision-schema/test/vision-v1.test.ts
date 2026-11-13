@@ -137,6 +137,13 @@ describe('inferenceResponseV1Schema invariants (AUDIT K2)', () => {
     ).toBe(true);
   });
 
+  it('accepts an optional base_revision next to adapter_revision (P7)', () => {
+    const model = { base_model: 'b', adapter: 'a', adapter_revision: 'abc', base_revision: 'def' };
+    expect(ok({ ...response, model })).toBe(true);
+    expect(ok({ ...response, model: { ...model, base_revision: null } })).toBe(true);
+    expect(ok(response)).toBe(true); // older inference without the field
+  });
+
   it('rejects a result on a non-classified status, and a classified status without one', () => {
     expect(ok({ ...response, status: 'skipped_quality' })).toBe(false);
     expect(ok({ ...response, status: 'parse_error' })).toBe(false);
