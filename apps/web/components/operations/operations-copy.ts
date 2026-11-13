@@ -192,7 +192,7 @@ const en: OperationsCopy = {
     unconfigured: 'API not configured',
     unconfiguredDescription:
       'The API address (NEXT_PUBLIC_API_BASE_URL) was not set at build time, so the dashboard requests no data.',
-    unavailable: 'Telemetry API is unreachable',
+    unavailable: 'Telemetry is not reachable yet',
     unavailableDescription: 'Cards remain visible without replacing missing values with zero.',
     error: 'Telemetry could not be loaded',
     errorDescription: 'Check the data source connection and try again.',
