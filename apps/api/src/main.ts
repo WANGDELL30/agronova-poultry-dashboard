@@ -5,6 +5,7 @@ import fastifyMultipart from '@fastify/multipart';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { AppModule } from './app.module.js';
+import { parseAllowedOrigins } from './cors.js';
 
 function parsePort(value: string | undefined): number {
   const port = Number(value ?? '4000');
@@ -17,15 +18,11 @@ function parsePort(value: string | undefined): number {
 }
 
 async function bootstrap(): Promise<void> {
+  const allowedOrigins = parseAllowedOrigins(process.env.WEB_ORIGIN);
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: true }),
   );
-
-  const allowedOrigins = (process.env.WEB_ORIGIN ?? 'http://localhost:3000')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
 
   app.enableCors({
     origin: allowedOrigins,

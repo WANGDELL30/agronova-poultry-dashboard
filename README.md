@@ -295,7 +295,7 @@ connect to MQTT or publish telemetry.
 | `API_HOST`                     | API bind address                                      | `0.0.0.0`                           |
 | `API_PORT`                     | API port                                              | `4000`                              |
 | `APP_VERSION`                  | Version reported by health                            | `0.1.0`                             |
-| `WEB_ORIGIN`                   | Comma-separated allowed browser origins               | `http://localhost:3000`             |
+| `WEB_ORIGIN`                   | Allowed browser origins, comma-separated; no `*`      | `http://localhost:3000`             |
 | `DATABASE_URL`                 | PostgreSQL connection string used by API health       | Omit to report `not_configured`     |
 | `DATABASE_CONNECT_TIMEOUT_MS`  | Health-query connection timeout                       | `3000`                              |
 | `INFERENCE_URL`                | Inference service base URL used by the API            | `http://localhost:8000`             |
