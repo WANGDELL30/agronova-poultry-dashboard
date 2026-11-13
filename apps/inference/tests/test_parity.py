@@ -56,3 +56,14 @@ def test_write_reference_finds_jpeg_and_upper_case_extensions(tmp_path):
     args = ["--backend", "mock", "--reference", str(ref), "--images", str(tmp_path), "--report", str(tmp_path / "r.json")]
     assert main(args + ["--write-reference"]) == 0
     assert sorted(i["file"] for i in json.loads(ref.read_text())["items"]) == ["a.jpeg", "b.JPG", "c.PNG", "d.jpg"]
+
+
+def test_coverage_warns_when_a_quality_path_has_too_few_images():
+    """AUDIT P4: the official procedure compared only 2 `ok` images."""
+    from scripts.parity_check import MIN_IMAGES_PER_PATH, coverage_warnings
+
+    items = [{"quality_status": "ok"}] * 2
+    warnings = coverage_warnings(items)
+    assert len(warnings) == 3 and all("below the minimum" in w for w in warnings)
+    enough = [{"quality_status": s} for s, n in MIN_IMAGES_PER_PATH.items() for _ in range(n)]
+    assert coverage_warnings(enough) == []

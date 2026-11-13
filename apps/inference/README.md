@@ -29,7 +29,12 @@ repo, add a read token as a Kaggle Secret.
 **A. Parity check** (proves the service matches the notebook):
 
 1. In notebook 04, run the cells up to the voter, then paste and run `scripts/notebook_reference_cell.py`
-   as a new cell. It writes `/kaggle/working/notebook_reference.json`.
+   as a new cell. It writes `/kaggle/working/notebook_reference.json`. First set `PARITY_IMAGE_DIR` to a
+   folder that covers every quality-gate path and includes single-chicken crops, with at least
+   **5 `ok`, 3 `enhanced`, and 2 `skipped`** images (AUDIT P4). The default `DEST/test` has only 2
+   `ok` images, so "2/2 identical" proves nothing for enhancement. A good example is the audit's Colab
+   bundle (68 images, 5 of them `enhanced`, including the crop `stress_0001.jpg`); it is not stored in
+   this repo. Both the cell and `parity_check.py` print a warning when a path is below its minimum.
 2. Restart the kernel (frees VRAM). In a new cell, with the dataset mounted:
    `!pip install -q -r requirements.txt -r requirements-real.txt`, set `HF_TOKEN` from Kaggle Secrets into
    `os.environ` (only for a private adapter repo), then `!python scripts/parity_check.py --reference /kaggle/working/notebook_reference.json`.

@@ -15,6 +15,22 @@ from app.pipeline import classify_bytes  # noqa: E402
 
 COMPARED = ("label", "total_ya", "visible_count", "score_stress", "indicators")
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
+# Minimum reference images per quality-gate path (AUDIT P4). Keep in sync with notebook_reference_cell.py.
+MIN_IMAGES_PER_PATH = {"ok": 5, "enhanced": 3, "skipped": 2}
+
+
+def coverage_warnings(items: list[dict]) -> list[str]:
+    """Warn when the reference does not exercise every quality-gate path often enough (P4)."""
+    counts = {path: 0 for path in MIN_IMAGES_PER_PATH}
+    for item in items:
+        if item.get("quality_status") in counts:
+            counts[item["quality_status"]] += 1
+    return [
+        f"WARNING: {counts[path]} '{path}' image(s), below the minimum of {minimum}; "
+        "N/N identical does not prove parity for this path"
+        for path, minimum in MIN_IMAGES_PER_PATH.items()
+        if counts[path] < minimum
+    ]
 
 
 def image_files(image_dir: Path) -> list[Path]:
@@ -82,6 +98,8 @@ def main(argv=None) -> int:
         Path(args.reference).write_text(json.dumps({"image_dir": str(image_dir), "items": items}))
 
     ref = json.loads(Path(args.reference).read_text())
+    for warning in coverage_warnings(ref["items"]):
+        print(warning)
     image_dir = Path(args.images or ref["image_dir"])
     report, failures = [], 0
     for item in ref["items"]:
