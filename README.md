@@ -116,6 +116,7 @@ should be committed.
 ```bash
 corepack pnpm --filter @agronova/telemetry-schema build
 corepack pnpm --filter @agronova/vision-schema build
+corepack pnpm --filter @agronova/mortality-model build
 corepack pnpm --filter @agronova/web dev
 ```
 
