@@ -56,7 +56,7 @@ scaler is absent, and its notebook evaluation has zero recall for Waspada and Ba
 
 ```text
 apps/
-  api/                      NestJS API (Fastify): health + vision endpoints
+  api/                      NestJS API (Fastify): health, telemetry, mortality, vision
   inference/                FastAPI service: quality gate, Qwen3-VL + LoRA, SCS rule (Python)
   simulator/                Non-publishing telemetry simulator placeholder
   web/                      Next.js App Router frontend
@@ -185,6 +185,11 @@ corepack pnpm infra:down
 | GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)            |
 | GET    | `/vision/results/:id/image` | Stored frame for a result                                            |
 | GET    | `/vision/health`            | Vision pipeline status                                               |
+| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid)    |
+| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held    |
+| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure) |
+| POST   | `/mortality/predict`        | Always **409** `MODEL_INPUTS_UNAVAILABLE` while gas inputs are deferred |
+| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)              |
 
 Inference service: `GET /health` and `POST /v1/classify` (multipart `file`, optional `X-API-Key`).
 
