@@ -161,7 +161,7 @@ training notebook.
 
 | Service    | URL / address                         | Configuration                     |
 | ---------- | ------------------------------------- | --------------------------------- |
-| Web        | `http://localhost:3000`               | `PORT` in `apps/web/.env.local`   |
+| Web        | `http://localhost:3000`               | `PORT=… corepack pnpm --filter @agronova/web dev` or `next dev -p` (not read from `.env.local`) |
 | API        | `http://localhost:4000`               | `API_HOST`, `API_PORT`            |
 | Health     | `http://localhost:4000/api/v1/health` | API environment                   |
 | Inference  | `http://localhost:8000`               | `INFERENCE_PORT`, `INFERENCE_URL` |
@@ -318,7 +318,7 @@ connect to MQTT or publish telemetry.
 | `HF_ADAPTER_REPO`              | LoRA adapter repository (real mode)                   | `Arga23/chickenstress-vlm-lora`     |
 | `HF_BASE_MODEL`                | Base VLM (real mode)                                  | `Qwen/Qwen3-VL-4B-Instruct`         |
 | `HF_TOKEN`                     | Optional; default adapter is public (private repo only). Alias: `HUGGING_FACE_HUB_TOKEN` | Never commit                        |
-| `PORT`                         | Next.js web port                                      | `3000`                              |
+| `PORT`                         | Next.js web port; process environment only (Next ignores it in `.env*` files) | `3000`                              |
 | `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL (https on Vercel prod)   | none: empty = "API not configured"  |
 | `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`    | `api`                               |
 | `NEXT_PUBLIC_DEVICE_ID`        | Optional live device filter                           | all devices                         |
