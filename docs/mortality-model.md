@@ -119,5 +119,5 @@ corepack pnpm lint
 corepack pnpm build
 ```
 
-The existing Vercel project is `web`, rooted at `apps/web`. No model-related secret is required.
-Deployment remains pending until the Vercel CLI is authenticated.
+No model-related secret is required. The Vercel project settings are in the README
+("Deploy the frontend to Vercel").

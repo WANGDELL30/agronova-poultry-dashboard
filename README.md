@@ -226,6 +226,7 @@ Vercel. The web package builds the shared telemetry schema, vision schema, and m
 Vercel project settings (to be confirmed by the owner of the Vercel project; they live in the
 dashboard, not in this repository):
 
+- **Project:** the existing Vercel project is named `web`.
 - **Root Directory:** `apps/web`. Keep the default install and build commands (`pnpm install`,
   `pnpm run build`); no `vercel.json` is needed. `prebuild` (`apps/web/prebuild.mjs`) runs the
   schema builds with the same pnpm that started it, so it works with or without `corepack` on PATH.
