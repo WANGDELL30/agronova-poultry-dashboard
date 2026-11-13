@@ -57,4 +57,20 @@ describe('InferenceClient', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('down')));
     expect((await new InferenceClient('http://i', 1000).health()).status).toBe('unreachable');
   });
+  it('gives up on health after its own short timeout, not the upload timeout (R13)', async () => {
+    // A service that accepts the connection but never answers; only the abort signal ends it.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+          }),
+      ),
+    );
+    const started = Date.now();
+    const health = await new InferenceClient('http://i', 60_000, null, 50).health();
+    expect(health.status).toBe('unreachable');
+    expect(Date.now() - started).toBeLessThan(2_000);
+  });
 });

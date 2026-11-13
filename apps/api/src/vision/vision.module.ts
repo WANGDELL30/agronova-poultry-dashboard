@@ -28,6 +28,7 @@ import { VISION_CONFIG } from './vision.tokens.js';
             config.inferenceUrl,
             config.inferenceTimeoutMs,
             config.inferenceApiKey,
+            config.inferenceHealthTimeoutMs,
           ),
         ),
     },

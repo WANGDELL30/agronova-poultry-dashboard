@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 export interface VisionConfig {
   inferenceUrl: string;
   inferenceTimeoutMs: number;
+  /** Short timeout for GET /health, so a hung service is reported quickly (AUDIT R13). */
+  inferenceHealthTimeoutMs: number;
   /** Optional shared secret sent as X-API-Key (needed when inference sits behind a public tunnel). */
   inferenceApiKey: string | null;
   imageDir: string;
@@ -45,6 +47,11 @@ export function loadVisionConfig(env: NodeJS.ProcessEnv = process.env): VisionCo
   return {
     inferenceUrl: (env.INFERENCE_URL ?? 'http://localhost:8000').replace(/\/+$/, ''),
     inferenceTimeoutMs: timeoutMs('INFERENCE_TIMEOUT_MS', env.INFERENCE_TIMEOUT_MS, 30_000),
+    inferenceHealthTimeoutMs: timeoutMs(
+      'INFERENCE_HEALTH_TIMEOUT_MS',
+      env.INFERENCE_HEALTH_TIMEOUT_MS,
+      5_000,
+    ),
     inferenceApiKey: env.INFERENCE_API_KEY || null,
     imageDir: resolve(env.VISION_IMAGE_DIR ?? './data/vision-images'),
     maxImageBytes: positiveInt(

@@ -301,6 +301,7 @@ connect to MQTT or publish telemetry.
 | `INFERENCE_URL`                | Inference service base URL used by the API            | `http://localhost:8000`             |
 | `INFERENCE_API_KEY`            | Shared secret (`X-API-Key`) for the inference service | Empty = no auth; set for tunnels    |
 | `INFERENCE_TIMEOUT_MS`         | API timeout for one inference call                    | `30000` (`120000` recommended real) |
+| `INFERENCE_HEALTH_TIMEOUT_MS`  | API timeout for the inference health check            | `5000`                              |
 | `VISION_IMAGE_DIR`             | Where uploaded frames are stored                      | `./data/vision-images`              |
 | `VISION_MAX_IMAGE_BYTES`       | Maximum upload size                                   | `8388608`                           |
 | `INFERENCE_MODE`               | Inference backend: `mock` or `real`                   | `mock`                              |

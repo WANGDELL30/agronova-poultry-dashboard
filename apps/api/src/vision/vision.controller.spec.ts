@@ -47,6 +47,7 @@ describe('VisionController (HTTP)', () => {
     const config: VisionConfig = {
       inferenceUrl: 'x',
       inferenceTimeoutMs: 1000,
+      inferenceHealthTimeoutMs: 1000,
       inferenceApiKey: null,
       imageDir: dir,
       maxImageBytes: 100,

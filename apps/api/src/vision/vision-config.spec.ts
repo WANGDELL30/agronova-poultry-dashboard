@@ -25,3 +25,22 @@ describe('loadVisionConfig INFERENCE_TIMEOUT_MS (AUDIT H6)', () => {
     }
   });
 });
+
+describe('loadVisionConfig INFERENCE_HEALTH_TIMEOUT_MS (AUDIT R13)', () => {
+  it('defaults to 5 s, separate from the upload timeout', () => {
+    const config = loadVisionConfig({ INFERENCE_TIMEOUT_MS: '120000' });
+    expect(config.inferenceHealthTimeoutMs).toBe(5_000);
+    expect(config.inferenceTimeoutMs).toBe(120_000);
+  });
+
+  it('reads and validates the env var like INFERENCE_TIMEOUT_MS', () => {
+    expect(loadVisionConfig({ INFERENCE_HEALTH_TIMEOUT_MS: '2000' }).inferenceHealthTimeoutMs).toBe(
+      2_000,
+    );
+    for (const value of ['0', '1e3', '2147483648']) {
+      expect(() => loadVisionConfig({ INFERENCE_HEALTH_TIMEOUT_MS: value })).toThrow(
+        /INFERENCE_HEALTH_TIMEOUT_MS/,
+      );
+    }
+  });
+});

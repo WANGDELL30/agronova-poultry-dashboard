@@ -24,6 +24,8 @@ export class InferenceClient {
     private readonly baseUrl: string,
     private readonly timeoutMs: number,
     private readonly apiKey: string | null = null,
+    /** Health checks use their own short timeout instead of the upload one (AUDIT R13). */
+    private readonly healthTimeoutMs = 5_000,
   ) {}
 
   async classify(image: Buffer, mimeType: string): Promise<InferenceResponseV1> {
@@ -81,7 +83,7 @@ export class InferenceClient {
   async health(): Promise<InferenceHealth> {
     try {
       const response = await fetch(`${this.baseUrl}/health`, {
-        signal: AbortSignal.timeout(this.timeoutMs),
+        signal: AbortSignal.timeout(this.healthTimeoutMs),
       });
       const body = (await response.json().catch(() => ({}))) as {
         status?: string;
