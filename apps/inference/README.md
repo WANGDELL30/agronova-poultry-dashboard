@@ -29,6 +29,12 @@ repo, add a read token as a Kaggle Secret.
    `os.environ` (only for a private adapter repo), then `!python scripts/parity_check.py --reference /kaggle/working/notebook_reference.json`.
 3. Expect `N/N identical`. Send back `parity_report.json` if anything differs.
 
+**Deliberate deviations from notebook 04** (a parity check must not count these as divergence):
+
+- **Truncated files (AUDIT R9).** A JPEG, PNG, or WebP cut off mid-file is `skipped_quality` with the
+  issue `gambar_rusak`, detected before decoding. The notebook decodes it anyway; `cv2.imdecode`
+  fills the missing part with uninitialised memory, so the result changed on every call.
+
 **B. Demo with the dashboard (free GPU on Colab):**
 
 1. Open `colab/run_inference_colab.ipynb` in Google Colab and set the runtime to **T4 GPU**.

@@ -43,6 +43,8 @@ export const qualityIssueSchema = z.enum([
   'terlalu_terang',
   'blank_or_occluded',
   'gagal_dibaca_atau_blank',
+  /** Truncated or damaged file, detected before decoding (AUDIT R9). */
+  'gambar_rusak',
 ]);
 
 export const qualitySchema = z

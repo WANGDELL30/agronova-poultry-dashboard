@@ -1,4 +1,4 @@
-import { VISION_API_ERROR_CODES } from '@agronova/vision-schema';
+import { VISION_API_ERROR_CODES, qualityIssueSchema } from '@agronova/vision-schema';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -16,6 +16,13 @@ describe('vision error codes come from the contract (AUDIT H16)', () => {
     for (const code of VISION_API_ERROR_CODES) {
       expect(id).toHaveProperty(`vision.error.${code}`);
       expect(en).toHaveProperty(`vision.error.${code}`);
+    }
+  });
+
+  it('has an Indonesian and an English label for every quality issue (R9)', () => {
+    for (const issue of qualityIssueSchema.options) {
+      expect(id).toHaveProperty(`vision.issue.${issue}`);
+      expect(en).toHaveProperty(`vision.issue.${issue}`);
     }
   });
 
