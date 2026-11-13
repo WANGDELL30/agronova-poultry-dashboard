@@ -3,7 +3,11 @@
 Work must remain inside the active phase. Each phase should finish with tests, documentation, and a
 review of sensor-data integrity rules before the next begins.
 
-## Phase 1 — Project foundation (complete)
+**Active phase: Phase 1**, with the authorized extensions listed under it (decision 2026-11-13,
+AUDIT DOC9). The vision track runs in parallel. Anything from Phase 2 onwards that is not one of
+those extensions stays out of scope until the phase is started.
+
+## Phase 1 — Project foundation (active)
 
 ### Authorized extension: mortality model integration (2026-09-16)
 
@@ -17,6 +21,24 @@ records, alerts, or other later phases.
 
 See [mortality-model.md](mortality-model.md) for the contract, limits, and deployment procedure.
 
+### Authorized extension: HTTP telemetry ingestion (2026-10-27)
+
+`POST /api/v1/telemetry` accepts one schema-v1 reading, validates it, and keeps the latest reading per
+device in memory; `GET /api/v1/telemetry/latest` serves it (204 until a reading exists). The API keeps
+the device `captured_at` and its own `received_at`, and is idempotent per `message_id`. This is HTTP
+ingest only: it does not activate MQTT ingestion, persistence, or the rest of Phase 2.
+
+### Authorized extension: operations modules (2026-10-28)
+
+The seven operations pages (`live`, `history`, `alerts`, `devices`, `calibration`, `exports`,
+`settings`) show live API telemetry where it exists; controls that belong to later phases are shown
+disabled. This does not activate the Phase 4 alert lifecycle or device management.
+
+### Authorized extension: snapshot export (2026-10-28)
+
+`/exports` downloads the current telemetry snapshot as JSON or CSV in the browser. It exports what the
+dashboard already shows; there is no server-side export or history archive.
+
 - pnpm TypeScript monorepo and consistent quality tooling
 - Next.js web shell with honest backend health rendering
 - NestJS/Fastify API with PostgreSQL-aware health endpoint
@@ -25,8 +47,8 @@ See [mortality-model.md](mortality-model.md) for the contract, limits, and deplo
 - TimescaleDB and Mosquitto local infrastructure
 - Architecture, workflow, and permanent engineering rules
 
-No telemetry ingestion, persistence schema, authentication, alerts, exports, or physical device
-integration is part of this phase.
+Apart from the authorized extensions above, no MQTT ingestion, persistence schema, authentication,
+alert lifecycle, or physical device integration is part of this phase.
 
 ## Vision track — chicken stress detection (in progress)
 
