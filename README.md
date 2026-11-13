@@ -157,7 +157,7 @@ Real inference on a CPU takes tens of minutes per image. Use one of:
   into `apps/api/.env` and restart the API. The tunnel URL changes on every run.
 
 See [`apps/inference/README.md`](apps/inference/README.md) for the parity check against the
-training notebook.
+reference inference notebook (`training/vlm-workflow/inference-vlm-lora-huggingface.ipynb`).
 
 ### Service addresses
 
