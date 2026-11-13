@@ -143,7 +143,7 @@ Real inference on a CPU takes tens of minutes per image. Use one of:
 - **Local NVIDIA GPU (Docker):**
 
   ```bash
-  # set INFERENCE_API_KEY (and HF_TOKEN only if the adapter repo is private) in .env
+  # set INFERENCE_API_KEY in .env (HF_TOKEN is optional: the default adapter repo is public)
   docker compose --profile gpu up -d --build inference-gpu
   ```
 
@@ -315,7 +315,7 @@ connect to MQTT or publish telemetry.
 | `INFERENCE_MODE`               | Inference backend: `mock` or `real`                   | `mock`                              |
 | `HF_ADAPTER_REPO`              | LoRA adapter repository (real mode)                   | `Arga23/chickenstress-vlm-lora`     |
 | `HF_BASE_MODEL`                | Base VLM (real mode)                                  | `Qwen/Qwen3-VL-4B-Instruct`         |
-| `HF_TOKEN`                     | Hugging Face token, only if the adapter is private    | Never commit                        |
+| `HF_TOKEN`                     | Optional; default adapter is public (private repo only) | Never commit                        |
 | `PORT`                         | Next.js web port                                      | `3000`                              |
 | `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL (https on Vercel prod)   | none: empty = "API not configured"  |
 | `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`    | `api`                               |

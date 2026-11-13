@@ -41,8 +41,8 @@ class RealBackend:
         from peft import PeftModel
         from transformers import AutoProcessor
 
-        #if not settings.hf_token:
-            #raise RuntimeError("HF_TOKEN is required in real mode (adapter repo is private).")
+        # HF_TOKEN is optional: the default adapter repo (Arga23/chickenstress-vlm-lora) is public.
+        # A token is only needed for a private or gated adapter repo.
         self._torch = torch
         self._lock = threading.Lock()
         device = "cuda" if torch.cuda.is_available() else "cpu"

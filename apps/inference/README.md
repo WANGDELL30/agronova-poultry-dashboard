@@ -10,13 +10,15 @@ python -m pytest
 ```
 
 Real mode (GPU, ~8-9 GB VRAM): `pip install -r requirements-real.txt`, set `INFERENCE_MODE=real`
-(`HF_TOKEN` is only needed if the adapter repo is private; never commit it), or use `docker compose --profile gpu up inference-gpu`.
+(`HF_TOKEN` is optional because the default adapter `Arga23/chickenstress-vlm-lora` is public; set it
+only for a private adapter repo, and never commit it), or use `docker compose --profile gpu up inference-gpu`.
 `GET /health` returns 503 until the model is loaded. `POST /v1/classify` takes a multipart `file`.
 
 ## Real model without a local GPU (Kaggle / Colab)
 
 Real mode on a laptop CPU is very slow (tens of minutes per image). The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.
-Add `HF_TOKEN` (read) as a Kaggle Secret and zip this folder (`apps/inference`) as a Kaggle Dataset.
+Zip this folder (`apps/inference`) as a Kaggle Dataset. `HF_TOKEN` is optional (the default adapter is public); for a private adapter
+repo, add a read token as a Kaggle Secret.
 
 **A. Parity check** (proves the service matches the notebook):
 
@@ -24,7 +26,7 @@ Add `HF_TOKEN` (read) as a Kaggle Secret and zip this folder (`apps/inference`) 
    as a new cell. It writes `/kaggle/working/notebook_reference.json`.
 2. Restart the kernel (frees VRAM). In a new cell, with the dataset mounted:
    `!pip install -q -r requirements.txt -r requirements-real.txt`, set `HF_TOKEN` from Kaggle Secrets into
-   `os.environ`, then `!python scripts/parity_check.py --reference /kaggle/working/notebook_reference.json`.
+   `os.environ` (only for a private adapter repo), then `!python scripts/parity_check.py --reference /kaggle/working/notebook_reference.json`.
 3. Expect `N/N identical`. Send back `parity_report.json` if anything differs.
 
 **B. Demo with the dashboard (free GPU on Colab):**
