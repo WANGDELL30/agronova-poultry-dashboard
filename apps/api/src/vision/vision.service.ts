@@ -55,7 +55,10 @@ export class VisionService {
 
     // Only a classified frame carries a usable result; never vote on any other status (K2, B5).
     const result = response?.status === 'classified' ? response.result : null;
-    const window = await this.repository.acceptedLabels(meta.camera_id, 4);
+    const window = await this.repository.acceptedLabels(meta.camera_id, 4, {
+      received_at: receivedAt,
+      message_id: messageId,
+    });
     const { vote } = evaluateVote({ result, window });
 
     const record: VisionResultV1 = {

@@ -38,12 +38,14 @@ describe('VisionService', () => {
   });
 
   const build = (classify: InferenceClient['classify']) => {
+    let tick = 0;
     const inference = { classify, health: vi.fn() } as unknown as InferenceClient;
     return new VisionService(
       new InMemoryVisionRepository(),
       new ImageStore(dir),
       inference,
-      () => new Date('2026-09-30T01:00:02.000Z'),
+      // One second per frame: frames in a voting sequence need distinct received_at (R14).
+      () => new Date(Date.parse('2026-09-30T01:00:02.000Z') + 1000 * tick++),
     );
   };
 
@@ -88,6 +90,33 @@ describe('VisionService', () => {
       vote: { status: 'ignored_no_result', window_filled: 0 },
     });
     expect(visionResultV1Schema.safeParse(last).success).toBe(true);
+  });
+
+  it('orders history and voting by received_at, not by when inference finished (R14)', async () => {
+    let releaseA!: (value: InferenceResponseV1) => void;
+    const classify = vi
+      .fn()
+      .mockReturnValueOnce(new Promise<InferenceResponseV1>((resolve) => (releaseA = resolve)))
+      .mockResolvedValueOnce(classified('stress', 1));
+    const times = ['2026-09-30T01:00:01.000Z', '2026-09-30T01:00:03.000Z'];
+    const inference = { classify, health: vi.fn() } as unknown as InferenceClient;
+    const service = new VisionService(
+      new InMemoryVisionRepository(),
+      new ImageStore(dir),
+      inference,
+      () => new Date(times.shift()!),
+    );
+    const pendingA = service.processFrame(meta, Buffer.from('a'), 'image/png');
+    const b = await service.processFrame(meta, Buffer.from('b'), 'image/png');
+    releaseA(classified('stress', 1));
+    const a = await pendingA;
+
+    expect((await service.list('cam-01', 5)).map((r) => r.message_id)).toEqual([
+      b.message_id,
+      a.message_id,
+    ]);
+    // B was received later, so it must not sit in A's voting window.
+    expect(a.vote.window_filled).toBe(1);
   });
 
   it('records inference failures explicitly (not as not_stress) and rethrows', async () => {
