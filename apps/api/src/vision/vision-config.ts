@@ -17,10 +17,17 @@ export const ALLOWED_IMAGE_TYPES: Readonly<Record<string, string>> = {
   'image/webp': 'webp',
 };
 
+/**
+ * Decimal digits only and >= 1: the same rule as apps/inference/app/config.py, so one value can
+ * never start one service and stop the other (AUDIT H8). `8e6` or `8388608.0` are rejected.
+ */
 function positiveInt(name: string, value: string | undefined, fallback: number): number {
-  const parsed = Number(value ?? fallback);
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    throw new Error(`${name} must be a positive integer.`);
+  if (value === undefined) return fallback;
+  const parsed = /^\d+$/.test(value) ? Number(value) : Number.NaN;
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    throw new Error(
+      `${name} must be a whole number of bytes >= 1 (digits only); received "${value}".`,
+    );
   }
   return parsed;
 }

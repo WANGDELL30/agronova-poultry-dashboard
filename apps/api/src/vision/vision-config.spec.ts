@@ -44,3 +44,19 @@ describe('loadVisionConfig INFERENCE_HEALTH_TIMEOUT_MS (AUDIT R13)', () => {
     }
   });
 });
+
+describe('loadVisionConfig VISION_MAX_IMAGE_BYTES (AUDIT H8)', () => {
+  // Same list as apps/inference/tests/test_config.py: both services must agree.
+  const rejected = ['-1', '0', '', 'abc', '8e6', '8388608.0'];
+  const load = (value: string) => loadVisionConfig({ VISION_MAX_IMAGE_BYTES: value });
+
+  it.each(rejected)('fails fast on %j', (value) => {
+    expect(() => load(value)).toThrow(/VISION_MAX_IMAGE_BYTES/);
+  });
+
+  it('accepts decimal digits >= 1 and defaults to 8 MiB', () => {
+    expect(load('1').maxImageBytes).toBe(1);
+    expect(load('8388608').maxImageBytes).toBe(8388608);
+    expect(loadVisionConfig({}).maxImageBytes).toBe(8 * 1024 * 1024);
+  });
+});
