@@ -15,7 +15,9 @@ notebooks used to train and evaluate the model, and local TimescaleDB plus MQTT 
 | MQTT ingestion, persistence | **Not implemented.** Simulator does not publish; no sensor data is stored        |
 | Vision result persistence   | **In-memory only.** Results are lost when the API restarts                       |
 | Real ESP32 devices, alerts  | HTTP contract ready; ESP32 firmware still needs to post telemetry                |
-| Notifications, CSV exports  | Not implemented                                                                  |
+| Operations modules          | Seven modules render the same live telemetry as the overview; later-phase controls are disabled |
+| Snapshot export             | `/exports` downloads the current snapshot as JSON or CSV; history export is disabled |
+| Notifications               | Not implemented                                                                  |
 
 ## How stress detection works
 
@@ -193,13 +195,13 @@ Inference service: `GET /health` and `POST /v1/classify` (multipart `file`, opti
 | `/overview`    | Complete responsive overview dashboard             |
 | `/mortality`   | Non-gas readiness; operational prediction disabled |
 | `/vision`      | Image upload, classification, history              |
-| `/live`        | Future-module placeholder                          |
-| `/history`     | Future-module placeholder                          |
-| `/alerts`      | Future-module placeholder                          |
-| `/devices`     | Future-module placeholder                          |
-| `/calibration` | Future-module placeholder                          |
-| `/exports`     | Future-module placeholder                          |
-| `/settings`    | Future-module placeholder                          |
+| `/live`        | Live telemetry from the shared telemetry provider  |
+| `/history`     | Trend of readings received in this browser session |
+| `/alerts`      | Alerts derived from live readings; acknowledge is local only |
+| `/devices`     | Device connectivity and sensor readiness           |
+| `/calibration` | Read-only calibration status; actions disabled     |
+| `/exports`     | Current snapshot as JSON/CSV; history scope disabled |
+| `/settings`    | Read-only settings; saving disabled                |
 
 Frontend mock scenarios (`NEXT_PUBLIC_MOCK_SCENARIO`): `normal`, `warning`, `sensor-not-installed`,
 `device-offline`. The frontend never connects directly to MQTT or to the inference service.
