@@ -90,7 +90,7 @@ corepack pnpm install --frozen-lockfile
 PowerShell:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item env.example .env
 Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
 Copy-Item apps/simulator/.env.example apps/simulator/.env
@@ -99,7 +99,7 @@ Copy-Item apps/simulator/.env.example apps/simulator/.env
 Bash:
 
 ```bash
-cp .env.example .env
+cp env.example .env
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 cp apps/simulator/.env.example apps/simulator/.env
