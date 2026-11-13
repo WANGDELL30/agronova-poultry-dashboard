@@ -110,6 +110,69 @@ describe('VisionController (HTTP)', () => {
     expect(img.body).toBe('abc');
   });
 
+  it('alerts after 5 uploads of stress frames with 3-4 YA; skipped and undefined frames do not vote (K1, K2)', async () => {
+    const stress = (ya: number): InferenceResponseV1 => ({
+      ...okResponse,
+      result: {
+        indicators: Object.fromEntries(
+          SCS_INDICATOR_KEYS.map((k, i) => [k, i < ya ? 'YA' : 'TIDAK']),
+        ) as never,
+        total_ya: ya,
+        visible_count: 7,
+        label: 'stress',
+        score_stress: ya / 7,
+        confidence: ya / 7,
+      },
+    });
+    const skipped: InferenceResponseV1 = {
+      ...okResponse,
+      quality: { status: 'skipped', issues: ['blur'] },
+      status: 'skipped_quality',
+      result: null,
+    };
+    const undetermined: InferenceResponseV1 = {
+      ...okResponse,
+      result: {
+        indicators: Object.fromEntries(
+          SCS_INDICATOR_KEYS.map((k, i) => [k, i < 3 ? 'TIDAK_TERLIHAT' : 'TIDAK']),
+        ) as never,
+        total_ya: 0,
+        visible_count: 4,
+        label: 'undefined',
+        score_stress: 0,
+        confidence: null,
+      },
+    };
+    const sequence = [stress(3), stress(4), skipped, stress(3), undetermined, stress(4), stress(3)];
+    // Distinct received_at per upload, so arrival order is not left to the random tie-break (R14).
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const votes = [];
+    try {
+      for (const [i, response] of sequence.entries()) {
+        vi.setSystemTime(new Date(Date.UTC(2026, 9, 1, 2, 0, i)));
+        classify.mockResolvedValueOnce(response);
+        const res = await upload(
+          { ...valid, camera_id: 'cam-vote' },
+          { data: 'a', type: 'image/png' },
+        );
+        expect(res.statusCode).toBe(201);
+        votes.push(res.json().vote);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(votes.map((v) => [v.status, v.window_filled])).toEqual([
+      ['waiting_window', 1],
+      ['waiting_window', 2],
+      ['ignored_no_result', 2],
+      ['waiting_window', 3],
+      ['ignored_undefined', 3],
+      ['waiting_window', 4],
+      ['alert', 5],
+    ]);
+    expect(votes.at(-1)).toMatchObject({ trigger_alert: true, majority_count: 5 });
+  });
+
   it('rejects missing metadata (400), wrong type (415), oversize (413), missing image (400)', async () => {
     expect((await upload({ camera_id: 'c' }, { data: 'a', type: 'image/png' })).statusCode).toBe(
       400,
