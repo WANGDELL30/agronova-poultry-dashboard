@@ -20,6 +20,28 @@ class BackendFailure(Exception):
         self.code, self.http_status = code, http_status
 
 
+class ClientDisconnected(Exception):
+    """The caller left before the model ran; nothing was generated (AUDIT R1)."""
+
+
+class GuardedBackend:
+    """Serialises model calls and skips the model when the client has already gone (R1).
+
+    `is_disconnected` is checked after the model lock is acquired, i.e. right before `generate`, so a
+    request that waited in the queue while its client timed out does not occupy the GPU.
+    """
+
+    def __init__(self, backend: Backend, lock, is_disconnected) -> None:
+        self._backend, self._lock, self._is_disconnected = backend, lock, is_disconnected
+        self.mode, self.model_info = backend.mode, backend.model_info
+
+    def generate(self, img):
+        with self._lock:
+            if self._is_disconnected():
+                raise ClientDisconnected()
+            return self._backend.generate(img)
+
+
 def _is_out_of_memory(exc: BaseException) -> bool:
     return type(exc).__name__ == "OutOfMemoryError" or "out of memory" in str(exc).lower()
 
@@ -57,6 +79,8 @@ def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT
     else:
         try:
             raw_text = backend.generate(img)
+        except ClientDisconnected:
+            raise
         except Exception as exc:  # noqa: BLE001 - any backend crash becomes a coded error (R12)
             # The backend's own `with lock:` has already released the lock at this point.
             logger.exception("backend.generate failed")

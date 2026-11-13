@@ -32,6 +32,7 @@ describe('vision error codes come from the contract (AUDIT H16)', () => {
       'inference_unavailable',
       'inference_gpu_oom',
       'inference_failed',
+      'inference_busy',
     ] as const;
     for (const dictionary of [id, en]) {
       const messages = codes.map((code) => dictionary[`vision.error.${code}`]);

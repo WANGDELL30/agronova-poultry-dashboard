@@ -69,6 +69,9 @@ export class InferenceClient {
       if (body?.error === 'gpu_oom') {
         throw new InferenceError('inference_gpu_oom', 'Inference ran out of GPU memory.');
       }
+      if (body?.error === 'queue_full') {
+        throw new InferenceError('inference_busy', 'Inference queue is full.');
+      }
       if (body?.status === 'error') {
         // The model failed to load: unlike `loading`, waiting a few seconds will not help (H11).
         throw new InferenceError('inference_unavailable', 'Inference model failed to load.');

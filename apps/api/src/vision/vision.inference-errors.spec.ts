@@ -81,6 +81,7 @@ describe('inference failures over HTTP (R12, H11)', () => {
     [503, { error: 'model_not_ready', status: 'error' }, 'inference_unavailable', 503, false],
     [503, { error: 'gpu_oom' }, 'inference_gpu_oom', 503, true],
     [500, { error: 'backend_error' }, 'inference_failed', 502, true],
+    [503, { error: 'queue_full' }, 'inference_busy', 503, false],
   ])('inference %i %j -> API %s', async (inferenceStatus, body, code, httpStatus, stored) => {
     vi.stubGlobal(
       'fetch',
@@ -92,6 +93,10 @@ describe('inference failures over HTTP (R12, H11)', () => {
     expect(res.json()).toMatchObject({ error: code });
     const records = await service.list('cam-err', 100);
     expect(records.length - before).toBe(stored ? 1 : 0);
+    // Only a full queue (R1) or a model still loading are worth an automatic retry.
+    expect(res.headers['retry-after'] !== undefined).toBe(
+      code === 'inference_busy' || code === 'inference_not_ready',
+    );
     if (stored) {
       expect(records[0]).toMatchObject({ status: 'inference_error', result: null });
       expect(res.json().message_id).toBe(records[0]!.message_id);

@@ -18,7 +18,9 @@ becomes `error`; in real mode the process then exits non-zero so the orchestrato
 (`INFERENCE_EXIT_ON_LOAD_ERROR`, default `true` in real mode, `false` in mock). While not ready,
 `POST /v1/classify` answers 503 `{"error": "model_not_ready", "status": "loading" | "error"}`; a backend
 crash answers 503 `{"error": "gpu_oom"}` or 500 `{"error": "backend_error"}`. `POST /v1/classify`
-takes a multipart `file`.
+takes a multipart `file`. At most one request runs the model; `INFERENCE_MAX_QUEUE` (default 2) more may
+wait, and any further request gets 503 `{"error": "queue_full"}` with `Retry-After` at once (AUDIT R1). A
+request whose client has already disconnected is dropped right before the model runs.
 
 ## Real model without a local GPU (Kaggle / Colab)
 

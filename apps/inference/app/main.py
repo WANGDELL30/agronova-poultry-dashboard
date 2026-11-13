@@ -6,15 +6,20 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+import anyio
+from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 from .backends import Backend, MockBackend, RealBackend
 from .config import Settings, load_settings
-from .pipeline import BackendFailure, classify_bytes
+from .pipeline import BackendFailure, ClientDisconnected, GuardedBackend, classify_bytes
 from .quality import image_pixels
 
 logger = logging.getLogger(__name__)
+
+# Seconds a caller should wait after 503 queue_full (AUDIT R1): about one inference on a T4.
+QUEUE_RETRY_AFTER_S = 15
 
 
 def _utc_now() -> str:
@@ -37,6 +42,20 @@ class State:
         self.loading_since: str | None = None
         self._exit_process = exit_process
         self._guard = threading.Lock()
+        self.model_lock = threading.Lock()  # one generate at a time (R1)
+        self._admitted = 0
+
+    def try_admit(self) -> bool:
+        """Admit one running request plus `max_queue` waiting ones; refuse the rest at once (R1)."""
+        with self._guard:
+            if self._admitted > self.settings.max_queue:
+                return False
+            self._admitted += 1
+            return True
+
+    def release(self) -> None:
+        with self._guard:
+            self._admitted -= 1
 
     def load(self) -> None:
         self.loading_since = _utc_now()
@@ -95,7 +114,7 @@ def create_app(settings: Settings | None = None, exit_process: Callable[[int], o
         return JSONResponse(body, status_code=200 if state.status == "ready" else 503)
 
     @app.post("/v1/classify")
-    def classify(file: UploadFile = File(...), x_api_key: str | None = Header(default=None)):
+    async def classify(request: Request, file: UploadFile = File(...), x_api_key: str | None = Header(default=None)):
         # Optional shared secret, for when the service is reachable through a public tunnel.
         expected = state.settings.api_key
         if expected and not hmac.compare_digest(x_api_key or "", expected):
@@ -103,7 +122,7 @@ def create_app(settings: Settings | None = None, exit_process: Callable[[int], o
         if state.status != "ready" or state.backend is None:
             # `status` lets the API tell a model still loading from one that failed (H11).
             return JSONResponse({"error": "model_not_ready", "status": state.status}, status_code=503)
-        data = file.file.read(state.settings.max_image_bytes + 1)
+        data = await file.read(state.settings.max_image_bytes + 1)
         if not data:
             raise HTTPException(status_code=400, detail="empty file")
         if len(data) > state.settings.max_image_bytes:
@@ -111,10 +130,22 @@ def create_app(settings: Settings | None = None, exit_process: Callable[[int], o
         pixels = image_pixels(data)  # header only: an 8000x8000 PNG is rejected before decoding (R2)
         if pixels is not None and pixels > state.settings.max_image_pixels:
             return JSONResponse({"error": "image_too_large"}, status_code=413)
+        if not state.try_admit():
+            return JSONResponse(
+                {"error": "queue_full"}, status_code=503, headers={"Retry-After": str(QUEUE_RETRY_AFTER_S)}
+            )
+        backend = GuardedBackend(
+            state.backend, state.model_lock, lambda: anyio.from_thread.run(request.is_disconnected)
+        )
         try:
-            return classify_bytes(data, state.backend, max_side=state.settings.max_image_side)
+            return await run_in_threadpool(classify_bytes, data, backend, max_side=state.settings.max_image_side)
         except BackendFailure as failure:  # generic body; the traceback is in the log (R12)
             return JSONResponse({"error": failure.code}, status_code=failure.http_status)
+        except ClientDisconnected:
+            logger.info("client disconnected before the model ran; skipped generate")
+            return Response(status_code=499)
+        finally:
+            state.release()
 
     return app
 

@@ -28,6 +28,8 @@ const resultsQuerySchema = z.object({ camera_id: optionalIdQuery, limit: limitQu
 
 /** Seconds a client should wait before retrying while the model is still loading. */
 export const NOT_READY_RETRY_AFTER_SECONDS = 30;
+/** Matches the inference queue_full Retry-After: about one inference on a T4 (R1). */
+export const BUSY_RETRY_AFTER_SECONDS = 15;
 
 function apiError(code: VisionApiErrorCode, message: string, status: HttpStatus): HttpException {
   return new HttpException({ error: code, message }, status);
@@ -116,9 +118,16 @@ export class VisionController {
       return await this.service.processFrame(meta.data, image.data, image.mimeType);
     } catch (error) {
       if (error instanceof VisionInferenceFailure) {
-        if (error.code === 'inference_not_ready') {
+        if (error.code === 'inference_not_ready' || error.code === 'inference_busy') {
           // Nothing was stored, so there is no message_id; the client may retry later.
-          reply.header('Retry-After', String(NOT_READY_RETRY_AFTER_SECONDS));
+          reply.header(
+            'Retry-After',
+            String(
+              error.code === 'inference_busy'
+                ? BUSY_RETRY_AFTER_SECONDS
+                : NOT_READY_RETRY_AFTER_SECONDS,
+            ),
+          );
           throw apiError(error.code, error.message, HttpStatus.SERVICE_UNAVAILABLE);
         }
         if (error.code === 'inference_unavailable') {

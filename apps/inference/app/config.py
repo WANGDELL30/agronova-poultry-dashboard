@@ -22,6 +22,8 @@ class Settings:
     # Model load limits (AUDIT H11). Tests build Settings directly, so the safe defaults live here;
     # load_settings() turns exit-on-error on by default in real mode.
     load_timeout_s: int = 1800
+    # Requests allowed to wait for the model while one runs; more get 503 queue_full (AUDIT R1).
+    max_queue: int = 2
     exit_on_load_error: bool = False
 
 
@@ -32,6 +34,16 @@ def _positive_int(name: str, default: int) -> int:
         return default
     if not re.fullmatch(r"[0-9]+", raw) or int(raw) < 1:
         raise ValueError(f'{name} must be a whole number >= 1 (digits only); received "{raw}".')
+    return int(raw)
+
+
+def _non_negative_int(name: str, default: int) -> int:
+    """Decimal digits only, 0 allowed."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    if not re.fullmatch(r"[0-9]+", raw):
+        raise ValueError(f'{name} must be a whole number >= 0 (digits only); received "{raw}".')
     return int(raw)
 
 
@@ -49,6 +61,7 @@ def load_settings() -> Settings:
         max_image_pixels=max_image_pixels_from_env(),
         max_image_side=_positive_int("INFERENCE_MAX_IMAGE_SIDE", DEFAULT_MAX_IMAGE_SIDE),
         load_timeout_s=_positive_int("INFERENCE_LOAD_TIMEOUT_S", 1800),
+        max_queue=_non_negative_int("INFERENCE_MAX_QUEUE", 2),
         exit_on_load_error=_bool("INFERENCE_EXIT_ON_LOAD_ERROR", default=mode == "real"),
     )
 

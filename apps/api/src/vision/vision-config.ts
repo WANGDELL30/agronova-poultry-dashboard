@@ -53,7 +53,7 @@ function timeoutMs(name: string, value: string | undefined, fallback: number): n
 export function loadVisionConfig(env: NodeJS.ProcessEnv = process.env): VisionConfig {
   return {
     inferenceUrl: (env.INFERENCE_URL ?? 'http://localhost:8000').replace(/\/+$/, ''),
-    inferenceTimeoutMs: timeoutMs('INFERENCE_TIMEOUT_MS', env.INFERENCE_TIMEOUT_MS, 30_000),
+    inferenceTimeoutMs: timeoutMs('INFERENCE_TIMEOUT_MS', env.INFERENCE_TIMEOUT_MS, 120_000),
     inferenceHealthTimeoutMs: timeoutMs(
       'INFERENCE_HEALTH_TIMEOUT_MS',
       env.INFERENCE_HEALTH_TIMEOUT_MS,

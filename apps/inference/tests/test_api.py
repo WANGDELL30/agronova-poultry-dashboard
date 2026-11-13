@@ -249,3 +249,80 @@ def test_exit_on_load_error_defaults(monkeypatch):
     monkeypatch.setenv("INFERENCE_EXIT_ON_LOAD_ERROR", "maybe")
     with pytest.raises(ValueError, match="INFERENCE_EXIT_ON_LOAD_ERROR"):
         load_settings()
+
+
+# --- R1: bounded queue and no model call for a client that already left ---
+
+
+def test_excess_concurrent_uploads_get_queue_full_at_once(monkeypatch):
+    """Audit scenario scaled down: 5 simultaneous uploads, ~11 s inference -> here 0.4 s per frame."""
+    import threading
+    import time
+
+    from app import main
+    from app.backends import MockBackend
+
+    class Slow(MockBackend):
+        def __init__(self):
+            self._lock = threading.Lock()
+
+        def generate(self, img):
+            with self._lock:  # serialised like RealBackend
+                time.sleep(0.4)
+                return super().generate(img)
+
+    monkeypatch.setattr(main, "MockBackend", Slow)
+    settings = Settings(mode="mock", hf_adapter_repo="x", base_model="y", hf_token=None, max_image_bytes=1_000_000, max_queue=2)
+    results = []
+    with TestClient(create_app(settings)) as c:
+        data = png(sharp_image())
+
+        def upload():
+            started = time.perf_counter()
+            r = post(c, data)
+            results.append((r.status_code, r.json(), r.headers.get("retry-after"), time.perf_counter() - started))
+
+        threads = [threading.Thread(target=upload) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+    busy = [r for r in results if r[0] == 503]
+    done = [r for r in results if r[0] == 200]
+    assert len(done) == 3 and len(busy) == 2  # 1 running + INFERENCE_MAX_QUEUE=2 waiting
+    assert all(body == {"error": "queue_full"} and retry for _, body, retry, _ in busy)
+    assert all(elapsed < 0.3 for *_, elapsed in busy)  # rejected at once, not after waiting
+
+
+def test_model_is_not_called_when_the_client_left_before_generate():
+    from app.backends import MockBackend
+    from app.pipeline import ClientDisconnected, GuardedBackend, classify_bytes
+
+    calls = []
+
+    class Recording(MockBackend):
+        def generate(self, img):
+            calls.append(1)
+            return super().generate(img)
+
+    import threading
+
+    import pytest as _pytest
+
+    with _pytest.raises(ClientDisconnected):
+        classify_bytes(png(sharp_image()), GuardedBackend(Recording(), threading.Lock(), lambda: True))
+    assert calls == []
+    classify_bytes(png(sharp_image()), GuardedBackend(Recording(), threading.Lock(), lambda: False))
+    assert calls == [1]
+
+
+def test_max_queue_env(monkeypatch):
+    from app.config import load_settings
+
+    monkeypatch.delenv("INFERENCE_MAX_QUEUE", raising=False)
+    assert load_settings().max_queue == 2
+    monkeypatch.setenv("INFERENCE_MAX_QUEUE", "0")
+    assert load_settings().max_queue == 0  # 0 = only the running request, nothing waits
+    monkeypatch.setenv("INFERENCE_MAX_QUEUE", "-1")
+    with pytest.raises(ValueError, match="INFERENCE_MAX_QUEUE"):
+        load_settings()

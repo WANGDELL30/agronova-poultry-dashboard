@@ -49,6 +49,7 @@ export class VisionService {
     if (
       failure?.code === 'inference_not_ready' ||
       failure?.code === 'inference_unavailable' ||
+      failure?.code === 'inference_busy' ||
       failure?.code === 'image_too_large'
     ) {
       // Nothing was analysed: store neither the frame nor a record, so a retry does not leave a
