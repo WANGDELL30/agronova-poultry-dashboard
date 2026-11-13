@@ -32,3 +32,27 @@ def test_compare_flags_quality_and_presence_differences():
     ours = {"quality": {"status": "ok"}, "result": None, "status": "skipped_quality"}
     problems = compare({"file": "a", "quality_status": "enhanced", "result": {"label": "stress"}}, ours)
     assert any("quality_status" in p for p in problems) and any("result presence" in p for p in problems)
+
+
+def test_notebook_parse_error_maps_to_the_service_parse_error_status():
+    """The notebook keeps a parse failure as label `undefined`; the service reports `parse_error` (P8)."""
+    ref = {"file": "a", "quality_status": "ok", "result": {"label": "undefined", "raw_response": "x", "parse_error": "no JSON"}}
+    ours = {"quality": {"status": "ok"}, "result": None, "status": "parse_error", "raw_response": "x"}
+    assert compare(ref, ours) == []
+    assert any("status" in p for p in compare(ref, {**ours, "status": "classified", "result": {"label": "undefined"}}))
+
+
+def test_raw_text_is_compared_when_both_sides_have_it():
+    ref = {"file": "a", "quality_status": "ok", "result": {"label": "undefined", "raw_response": "abc", "parse_error": "e"}}
+    ours = {"quality": {"status": "ok"}, "result": None, "status": "parse_error", "raw_response": "abd"}
+    assert any("raw_response" in p for p in compare(ref, ours))
+
+
+def test_write_reference_finds_jpeg_and_upper_case_extensions(tmp_path):
+    img = np.random.default_rng(0).integers(60, 200, (120, 160, 3), dtype=np.uint8)
+    for name in ("a.jpeg", "b.JPG", "c.PNG", "d.jpg"):
+        (tmp_path / name).write_bytes(cv2.imencode(".jpg" if "j" in name.lower() else ".png", img)[1].tobytes())
+    ref = tmp_path / "ref.json"
+    args = ["--backend", "mock", "--reference", str(ref), "--images", str(tmp_path), "--report", str(tmp_path / "r.json")]
+    assert main(args + ["--write-reference"]) == 0
+    assert sorted(i["file"] for i in json.loads(ref.read_text())["items"]) == ["a.jpeg", "b.JPG", "c.PNG", "d.jpg"]

@@ -14,6 +14,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.pipeline import classify_bytes  # noqa: E402
 
 COMPARED = ("label", "total_ya", "visible_count", "score_stress", "indicators")
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
+
+
+def image_files(image_dir: Path) -> list[Path]:
+    """JPEG/PNG files in any letter case, e.g. `.jpeg` and `.JPG` too (P8)."""
+    return sorted(p for p in image_dir.iterdir() if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES)
 
 
 def compare(reference_item: dict, ours: dict) -> list[str]:
@@ -23,6 +29,13 @@ def compare(reference_item: dict, ours: dict) -> list[str]:
     if reference_item["quality_status"] != quality:
         problems.append(f"quality_status: notebook={reference_item['quality_status']} service={quality}")
     ref = reference_item.get("result")
+    if ref is not None and ref.get("parse_error"):
+        # The notebook keeps an unparseable answer as label `undefined`; the service reports the
+        # distinct status `parse_error` with result null. That is the intended mapping (P8).
+        if ours["status"] != "parse_error":
+            problems.append(f"status: notebook=parse_error service={ours['status']}")
+        _compare_raw(ref, ours, problems)
+        return problems
     if ref is None or ours["result"] is None:
         if (ref is None) != (ours["result"] is None):
             problems.append(f"result presence: notebook={ref is not None} service={ours['result'] is not None} (status={ours['status']})")
@@ -30,7 +43,15 @@ def compare(reference_item: dict, ours: dict) -> list[str]:
     for key in COMPARED:
         if ref.get(key) != ours["result"].get(key):
             problems.append(f"{key}: notebook={ref.get(key)!r} service={ours['result'].get(key)!r}")
+    _compare_raw(ref, ours, problems)
     return problems
+
+
+def _compare_raw(ref: dict, ours: dict, problems: list[str]) -> None:
+    """Raw model text, when both sides kept it (the service drops it for `classified`, K4)."""
+    theirs, mine = ref.get("raw_response"), ours.get("raw_response")
+    if theirs is not None and mine is not None and theirs != mine:
+        problems.append(f"raw_response: notebook={theirs[:80]!r} service={mine[:80]!r}")
 
 
 def make_backend(name: str):
@@ -55,7 +76,7 @@ def main(argv=None) -> int:
             ap.error("--write-reference is only for the local mock self-test")
         image_dir = Path(args.images or ".")
         items = []
-        for path in sorted(image_dir.glob("*.[jp][pn]g")):
+        for path in image_files(image_dir):
             r = classify_bytes(path.read_bytes(), backend)
             items.append({"file": path.name, "quality_status": r["quality"]["status"], "result": r["result"]})
         Path(args.reference).write_text(json.dumps({"image_dir": str(image_dir), "items": items}))
