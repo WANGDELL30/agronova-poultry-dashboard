@@ -9,3 +9,15 @@ packages/mortality-model/src/model-artifact.json
 
 training
 .venv
+
+# Local reports, raw exports, evidence and notebooks: never reformat
+AUDIT*.md
+teks_subbab_*.md
+docs/kebutuhan deployment.md
+_tmp_raw/
+results/
+*.ipynb
+docs/kpi6/
+docs/leakage_check/
+docs/manifest/
+docs/perubahan_laporan_*.md
