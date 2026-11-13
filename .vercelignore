@@ -20,3 +20,13 @@ packages/mortality-model/src/reference-fixtures.json
 # Local build and TypeScript cache output.
 **/dist/
 **/*.tsbuildinfo
+
+# Datasets, notebooks, results, the inference service, and reports are not part of the web build.
+data/
+training/
+results/
+_tmp_raw/
+apps/inference/
+*.docx
+*.pdf
+*.zip
