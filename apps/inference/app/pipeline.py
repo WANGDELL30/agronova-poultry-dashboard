@@ -1,3 +1,5 @@
+import logging
+import sys
 import time
 
 from .backends import Backend
@@ -6,6 +8,27 @@ from .quality import run_quality_gate
 from .scs import SCS_INDICATORS, apply_scs_rule, parse_vlm_json
 
 SCHEMA_VERSION = 1
+
+logger = logging.getLogger(__name__)
+
+
+class BackendFailure(Exception):
+    """The model backend raised. Carries a stable code for the client; details go to the log (R12)."""
+
+    def __init__(self, code: str, http_status: int) -> None:
+        super().__init__(code)
+        self.code, self.http_status = code, http_status
+
+
+def _is_out_of_memory(exc: BaseException) -> bool:
+    return type(exc).__name__ == "OutOfMemoryError" or "out of memory" in str(exc).lower()
+
+
+def _release_gpu_memory() -> None:
+    """Best effort after an OOM. Only touches torch if real mode already imported it."""
+    torch = sys.modules.get("torch")
+    if torch is not None and torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 def confidence_from_result(label: str, score_stress: float) -> float | None:
@@ -32,7 +55,15 @@ def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT
     if img is None:
         response["status"] = "skipped_quality"
     else:
-        raw_text = backend.generate(img)
+        try:
+            raw_text = backend.generate(img)
+        except Exception as exc:  # noqa: BLE001 - any backend crash becomes a coded error (R12)
+            # The backend's own `with lock:` has already released the lock at this point.
+            logger.exception("backend.generate failed")
+            if _is_out_of_memory(exc):
+                _release_gpu_memory()
+                raise BackendFailure("gpu_oom", 503) from exc
+            raise BackendFailure("backend_error", 500) from exc
         try:
             parsed = parse_vlm_json(raw_text)
             normalized, total_ya, visible_count, label, score = apply_scs_rule(parsed.get("indicators", {}))

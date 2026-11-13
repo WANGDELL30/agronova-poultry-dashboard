@@ -125,7 +125,11 @@ export class VisionController {
           throw apiError(error.code, error.message, HttpStatus.PAYLOAD_TOO_LARGE);
         }
         const status =
-          error.code === 'inference_timeout' ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
+          error.code === 'inference_timeout'
+            ? HttpStatus.GATEWAY_TIMEOUT
+            : error.code === 'inference_gpu_oom'
+              ? HttpStatus.SERVICE_UNAVAILABLE
+              : HttpStatus.BAD_GATEWAY;
         throw new HttpException(
           { error: error.code, message: error.message, message_id: error.record?.message_id },
           status,

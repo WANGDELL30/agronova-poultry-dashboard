@@ -103,3 +103,49 @@ def test_image_over_the_pixel_limit_is_413_without_decoding():
         elapsed = time.perf_counter() - started
     assert r.status_code == 413 and r.json() == {"error": "image_too_large"}
     assert elapsed < 1
+
+
+class OutOfMemoryError(RuntimeError):
+    """Same class name as torch.cuda.OutOfMemoryError, without importing torch."""
+
+
+def flaky_client(monkeypatch, error):
+    """Mock-mode app whose backend raises `error` once (holding a lock like RealBackend), then works."""
+    import threading
+
+    from app import main
+    from app.backends import MockBackend
+
+    class Flaky(MockBackend):
+        def __init__(self):
+            self._lock, self.failed = threading.Lock(), False
+
+        def generate(self, img):
+            with self._lock:
+                if not self.failed:
+                    self.failed = True
+                    raise error
+                return super().generate(img)
+
+    backend = Flaky()
+    monkeypatch.setattr(main, "MockBackend", lambda: backend)
+    settings = Settings(mode="mock", hf_adapter_repo="x", base_model="y", hf_token=None, max_image_bytes=1_000_000)
+    return TestClient(create_app(settings)), backend
+
+
+@pytest.mark.parametrize(
+    ("error", "status", "code"),
+    [
+        (OutOfMemoryError("CUDA out of memory. Tried to allocate 2.00 GiB"), 503, "gpu_oom"),
+        (RuntimeError("CUDA error: out of memory"), 503, "gpu_oom"),
+        (RuntimeError("shape mismatch"), 500, "backend_error"),
+    ],
+)
+def test_backend_exception_is_a_coded_json_error_and_the_next_request_works(monkeypatch, error, status, code):
+    """AUDIT R12: a backend crash was a plain-text 500 the API could not tell from a contract bug."""
+    client, backend = flaky_client(monkeypatch, error)
+    with client as c:
+        first = post(c, png(sharp_image()))
+        assert first.status_code == status and first.json() == {"error": code}
+        assert not backend._lock.locked()
+        assert post(c, png(sharp_image())).status_code == 200

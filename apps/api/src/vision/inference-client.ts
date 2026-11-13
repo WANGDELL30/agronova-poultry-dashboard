@@ -62,10 +62,14 @@ export class InferenceClient {
       throw new InferenceError('image_too_large', 'Image exceeds the inference pixel limit.');
     }
     if (response.status === 503) {
+      const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+      if (body?.error === 'gpu_oom') {
+        throw new InferenceError('inference_gpu_oom', 'Inference ran out of GPU memory.');
+      }
       throw new InferenceError('inference_not_ready', 'Inference model is not ready.');
     }
     if (response.status >= 500) {
-      // Includes model crashes such as CUDA OOM: the service failed, the answer is not malformed.
+      // Includes {"error": "backend_error"} (R12): the service failed, the answer is not malformed.
       throw new InferenceError(
         'inference_failed',
         `Inference failed with HTTP ${response.status}.`,

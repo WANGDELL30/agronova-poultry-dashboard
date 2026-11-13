@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from .backends import Backend, MockBackend, RealBackend
 from .config import Settings, load_settings
-from .pipeline import classify_bytes
+from .pipeline import BackendFailure, classify_bytes
 from .quality import image_pixels
 
 
@@ -63,7 +63,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         pixels = image_pixels(data)  # header only: an 8000x8000 PNG is rejected before decoding (R2)
         if pixels is not None and pixels > state.settings.max_image_pixels:
             return JSONResponse({"error": "image_too_large"}, status_code=413)
-        return classify_bytes(data, state.backend, max_side=state.settings.max_image_side)
+        try:
+            return classify_bytes(data, state.backend, max_side=state.settings.max_image_side)
+        except BackendFailure as failure:  # generic body; the traceback is in the log (R12)
+            return JSONResponse({"error": failure.code}, status_code=failure.http_status)
 
     return app
 

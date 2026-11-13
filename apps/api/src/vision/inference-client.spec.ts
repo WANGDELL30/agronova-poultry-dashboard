@@ -77,6 +77,20 @@ describe('InferenceClient', () => {
     ).rejects.toMatchObject({ code: 'image_too_large' });
   });
 
+  it('maps the coded backend errors from inference, not to bad_response (R12)', async () => {
+    const respond = (status: number, body: string) =>
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status })));
+    const client = new InferenceClient('http://i', 1000);
+    respond(503, '{"error":"gpu_oom"}');
+    await expect(client.classify(Buffer.from('x'), 'image/png')).rejects.toMatchObject({
+      code: 'inference_gpu_oom',
+    });
+    respond(500, '{"error":"backend_error"}');
+    await expect(client.classify(Buffer.from('x'), 'image/png')).rejects.toMatchObject({
+      code: 'inference_failed',
+    });
+  });
+
   it('maps other 5xx answers from inference to inference_failed (R10)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 500 })));
     await expect(

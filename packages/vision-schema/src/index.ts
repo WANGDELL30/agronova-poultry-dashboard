@@ -200,6 +200,8 @@ export const VISION_API_ERROR_CODES = [
   'inference_not_ready',
   'inference_bad_response',
   'inference_failed',
+  /** The GPU ran out of memory on this frame; inference stays up and may succeed later (R12). */
+  'inference_gpu_oom',
   'invalid_metadata',
   'image_required',
   'image_empty',
