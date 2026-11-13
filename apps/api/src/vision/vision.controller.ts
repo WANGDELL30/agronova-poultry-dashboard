@@ -53,18 +53,25 @@ export class VisionController {
     let image: { data: Buffer; mimeType: string } | null = null;
     const exactlyOneImage = () =>
       apiError('image_required', 'Exactly one "image" file is required.', HttpStatus.BAD_REQUEST);
+    // A rejected file is not thrown right away: the rest of the body is drained first, otherwise
+    // the unread bytes block the next request on the same keep-alive connection (AUDIT R3).
+    let rejection: HttpException | null = null;
     try {
       for await (const part of request.parts({
         limits: { fileSize: this.config.maxImageBytes, files: 1 },
       })) {
         if (part.type === 'file') {
-          if (part.fieldname !== 'image' || image) throw exactlyOneImage();
-          if (!ALLOWED_IMAGE_TYPES[part.mimetype]) {
-            throw apiError(
+          if (!rejection && (part.fieldname !== 'image' || image)) rejection = exactlyOneImage();
+          if (!rejection && !ALLOWED_IMAGE_TYPES[part.mimetype]) {
+            rejection = apiError(
               'unsupported_image_type',
               'Only JPEG, PNG, or WebP images are accepted.',
               HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             );
+          }
+          if (rejection) {
+            part.file.resume();
+            continue;
           }
           let data: Buffer;
           try {
@@ -85,10 +92,14 @@ export class VisionController {
         }
       }
     } catch (error) {
+      // The multipart iterator itself failed, so the rest of the body cannot be drained here:
+      // close the connection after the error response instead of leaving it hanging (AUDIT R3).
+      reply.header('Connection', 'close');
       // @fastify/multipart reports a second file as 413 "reach files limit"; it is a bad request.
       if ((error as { code?: string }).code === 'FST_FILES_LIMIT') throw exactlyOneImage();
       throw error;
     }
+    if (rejection) throw rejection;
     if (!image) throw exactlyOneImage();
     // Checked before anything is stored or sent to inference (AUDIT R11).
     if (image.data.length === 0) {
