@@ -1,4 +1,5 @@
-import { modelInputsUnavailable } from '@agronova/mortality-model';
+// Contract subpath only: the constant 409 must not load TensorFlow.js on a cold start (D15).
+import { modelInputsUnavailable } from '@agronova/mortality-model/contract';
 
 export const runtime = 'nodejs';
 
