@@ -80,7 +80,9 @@ The window is rebuilt from stored records, so it does not depend on in-process s
 confidence >= 0.6 filter is a deliberate deviation from the voter in inference notebook 04 (decision
 2026-11-13, AUDIT K1/V1): with confidence = YA/7, stress frames with 3-4 `YA` never became votes.
 
-The thresholds are ported unchanged from the training notebook. They are defined in
+The SCS thresholds match the training notebook and inference notebook 04
+(`training/vlm-workflow/inference-vlm-lora-huggingface.ipynb`). The voting constants come only from the voter in inference notebook
+04, which the API deliberately deviates from since K1 (see above). They are defined in
 `packages/vision-schema` (TypeScript) and `apps/inference/app/scs.py` (Python) and must be changed
 together, only after re-evaluating the model.
 

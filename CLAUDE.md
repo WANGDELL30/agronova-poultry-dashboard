@@ -43,7 +43,7 @@ Vision flow: `web /vision` → multipart `POST /api/v1/vision/frames` on the API
 
 - `packages/vision-schema` (Zod) is the single contract between API, web, and inference. The Python response in `apps/inference/app` must be kept in sync with it manually.
 - `apps/inference/app`: `quality.py` (blur/brightness/blank gate with one enhancement pass), `backends.py` (`mock` vs `real` model backend, selected by `INFERENCE_MODE`; `HF_ADAPTER_REPO` may be a local folder; the LoRA is never merged, there is no `MERGE_ADAPTER`), `scs.py` (rule), `pipeline.py` (orchestration), `config.py`. `/health` returns 503 until the real model finishes loading.
-- `apps/api/src/vision`: controller → service → `inference-client.ts`; `voter.ts` implements the voting window; `vision.repository.ts` is an interface with an **in-memory** implementation (results lost on restart; Postgres is intentionally deferred and requires migrations). Uploaded frames go to `apps/api/data/` (never commit).
+- `apps/api/src/vision`: controller → service → `inference-client.ts`; `voter.ts` re-exports the voting window from `packages/vision-schema/src/voter.ts` (shared with the web mock client); `vision.repository.ts` is an interface with an **in-memory** implementation (results lost on restart; Postgres is intentionally deferred and requires migrations). Uploaded frames go to `apps/api/data/` (never commit).
 - `apps/web`: Next.js App Router; `components/vision` and `lib/vision` have a mock/api client switch driven by `NEXT_PUBLIC_DATA_MODE`. The browser never talks to MQTT or the inference service directly.
 - `apps/simulator`: telemetry placeholder that deliberately exits without publishing (`src/index.ts` only). There is no vision frame feeder; post frames with `curl` or the `/vision` page.
 - `training/`: notebooks (labeling tool, Kaggle training/eval, HF reference inference). `apps/inference` is a port of the reference inference notebook; `apps/inference/scripts/parity_check.py` and `tests/test_parity.py` verify they match. Datasets and weights are not stored here.
@@ -52,6 +52,6 @@ Real inference needs an NVIDIA GPU (~8-9 GB) via `docker compose --profile gpu u
 
 ## Constraints that need cross-file edits
 
-- SCS constants (stress at >= 3 `YA`, `undefined` if fewer than 5 of 7 visible) and voting constants (window 5, confidence >= 0.6, alert at >= 3 stress votes) mirror the training notebook. Change them only together in `packages/vision-schema` and `apps/inference/app/scs.py`, after re-evaluating the model.
+- SCS constants (stress at >= 3 `YA`, `undefined` if fewer than 5 of 7 visible) mirror the training notebook and inference notebook 04. Voting constants (window 5, alert at >= 3 stress votes) come from the voter in inference notebook 04 only, and since K1 (decision 2026-11-13) the voter deliberately deviates from it: no confidence filter (`VOTE_CONFIDENCE_THRESHOLD` is deprecated). Change them only together in `packages/vision-schema` and `apps/inference/app/scs.py`, after re-evaluating the model.
 - `skipped_quality`, `parse_error`, `inference_error`, and `undefined` are never `not_stress`; frames with no classification have `result: null`.
 - Telemetry: UTC timestamps, keep both `captured_at` and `received_at`, null is not zero, and MQ-5 is never shown as ppm.

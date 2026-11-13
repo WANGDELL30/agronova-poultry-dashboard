@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const VISION_SCHEMA_VERSION = 1 as const;
 
-// Rules ported unchanged from the inference notebook (04-inference-vlm-lora-huggingface).
+// SCS rule (STRESS_THRESHOLD, MIN_VISIBLE_INDICATORS): same as the training notebook and inference
+// notebook 04 (training/vlm-workflow/inference-vlm-lora-huggingface.ipynb). Voting constants: from
+// the voter in inference notebook 04 only, which the voter deliberately deviates from since K1.
 export const STRESS_THRESHOLD = 3 as const;
 export const MIN_VISIBLE_INDICATORS = 5 as const;
 export const VOTE_WINDOW_SIZE = 5 as const;

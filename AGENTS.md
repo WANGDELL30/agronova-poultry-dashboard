@@ -24,10 +24,12 @@ These rules apply permanently to every change in this repository.
   label, confidence, and quality-gate status without implying certainty.
 - `skipped_quality`, `parse_error`, `inference_error`, and label `undefined` are never equivalent to
   `not_stress`. Frames without a classification have `result: null`.
-- The SCS rule (stress when at least 3 indicators are `YA` and at least 5 of 7 are visible) and the
-  temporal voting window (5 frames, confidence >= 0.6, alert at >= 3 stress votes) mirror the
-  training notebook. Do not change these constants without re-evaluating the model and updating
-  `packages/vision-schema` and `apps/inference/app/scs.py` together.
+- The SCS rule (stress when at least 3 indicators are `YA` and at least 5 of 7 are visible) mirrors
+  the training notebook and the inference notebook 04 (`training/vlm-workflow/inference-vlm-lora-huggingface.ipynb`). The temporal
+  voting window (5 votes, alert at >= 3 stress votes) comes from the voter in inference notebook 04
+  only; since K1 (decision 2026-11-13) it deliberately deviates from it by dropping the confidence
+  > = 0.6 filter. Do not change these constants without re-evaluating the model and updating
+  > `packages/vision-schema` and `apps/inference/app/scs.py` together.
 - `packages/vision-schema` is the single contract between the API, the inference service, and the
   web app. Keep the Python response and the Zod schema in sync.
 - Store `captured_at` (camera) and `received_at` (backend) in UTC for every frame.

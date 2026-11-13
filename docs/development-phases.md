@@ -38,7 +38,7 @@ Delivered:
 - Model training and evaluation notebooks (`training/`) and the LoRA adapter on Hugging Face
 - `packages/vision-schema` contract with validation and tests
 - `apps/inference` FastAPI service (quality gate, Qwen3-VL + LoRA, SCS rule) with mock and real
-  modes, tests, and a parity check against the training notebook
+  modes, tests, and a parity check against the inference notebook 04
 - API vision module: upload, inference client with timeout and API key, temporal voter, image
   store, and results endpoints
 - Web `/vision` page with upload, per-indicator results, quality status, vote status, and mock mode
