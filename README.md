@@ -208,10 +208,10 @@ Frontend mock scenarios (`NEXT_PUBLIC_MOCK_SCENARIO`): `normal`, `warning`, `sen
 
 The `training/` folder holds the notebooks behind the model. Suggested order:
 
-1. `scs_labeling_tool_colab_multichicken.ipynb`: label chickens against the 7 SCS indicators.
-2. `chickenstress-kaggle.ipynb`: data balancing, LoRA fine-tuning of
+1. `training/vlm-workflow/scs_labeling_tool_kaggle_multichicken.ipynb`: label chickens against the 7 SCS indicators.
+2. `training/vlm-workflow/chickenstress-kaggle.ipynb`: data balancing, LoRA fine-tuning of
    Qwen3-VL-4B, evaluation, and push of the adapter to Hugging Face.
-3. `inference-vlm-lora-huggingface.ipynb`: reference inference pipeline loaded from Hugging Face.
+3. `training/vlm-workflow/inference-vlm-lora-huggingface.ipynb`: reference inference pipeline loaded from Hugging Face.
    `apps/inference` is a port of it, and `apps/inference/scripts/parity_check.py` verifies that both
    produce identical results.
 
