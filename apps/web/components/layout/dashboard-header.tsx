@@ -2,7 +2,7 @@
 
 import { ChevronDown, Clock3, Cpu, Leaf, UserRound } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { formatClock, formatRelativeTime } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
@@ -15,6 +15,16 @@ export function DashboardHeader() {
   const { language, locale, setLanguage, t } = useLanguage();
   const { mode, scenario, state } = useTelemetry();
   const [now, setNow] = useState<Date | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousPathname = useRef(pathname);
+
+  // After client navigation, move focus to the new page title so keyboard and screen-reader users
+  // do not stay on the sidebar link (AUDIT D12). Not on the first load.
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    headingRef.current?.focus();
+  }, [pathname]);
 
   useEffect(() => {
     setNow(new Date());
@@ -40,7 +50,9 @@ export function DashboardHeader() {
       <div className="header-title-row">
         <div>
           <p className="header-eyebrow">{t('app.tagline')}</p>
-          <h1>{t(pageTitleKey(pathname))}</h1>
+          <h1 ref={headingRef} tabIndex={-1}>
+            {t(pageTitleKey(pathname))}
+          </h1>
         </div>
         <div className="header-title-actions">
           <CollaborationMark />

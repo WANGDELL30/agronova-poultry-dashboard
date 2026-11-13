@@ -10,6 +10,8 @@
   --line-strong: #cbd7cd;
   --green: #1f7a4d;
   --green-dark: #14532d;
+  /* Opaque focus ring: >= 3:1 against every light background (AUDIT D12). */
+  --focus-ring: #1f7a4d;
   --green-soft: #dcefe3;
   --amber: #a85f06;
   --amber-soft: #fff1d8;
@@ -70,8 +72,32 @@ summary {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(31, 122, 77, 0.26);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* Programmatic focus targets (skip link, route change), not controls. */
+.dashboard-main:focus,
+.header-title-row h1:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--green-dark);
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+  transform: translateY(calc(-100% - 16px));
+}
+
+.skip-link:focus {
+  transform: none;
 }
 
 .sr-only {
@@ -1179,7 +1205,7 @@ summary {
 }
 
 .raw-toggle input:focus-visible + span {
-  outline: 3px solid rgba(31, 122, 77, 0.22);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 

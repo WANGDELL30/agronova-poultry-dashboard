@@ -99,7 +99,12 @@ export const TrendChart = memo(function TrendChart({
             aria-label={t('trend.chartLabel', { metric: metricLabel })}
           >
             <ResponsiveContainer width="100%" height="100%" debounce={80}>
-              <LineChart data={data} margin={{ top: 16, right: 12, left: -8, bottom: 0 }}>
+              {/* Out of the tab order: the sr-only table below carries the same data (AUDIT D12). */}
+              <LineChart
+                data={data}
+                margin={{ top: 16, right: 12, left: -8, bottom: 0 }}
+                tabIndex={-1}
+              >
                 <CartesianGrid stroke="#e5eae5" strokeDasharray="4 5" vertical={false} />
                 <XAxis
                   dataKey="captured_at"
