@@ -236,11 +236,6 @@ export const id = {
   'notFound.title': 'Halaman tidak ditemukan',
   'notFound.description': 'Alamat ini tidak ada di dashboard AgroNova.',
   'notFound.back': 'Kembali ke Ikhtisar',
-  'placeholder.eyebrow': 'Modul mendatang',
-  'placeholder.titleSuffix': 'belum tersedia pada fase F1',
-  'placeholder.description':
-    'Struktur navigasi sudah siap. Fungsi modul ini akan diterapkan pada fase pengembangan berikutnya.',
-  'placeholder.back': 'Kembali ke ikhtisar',
   'scenario.normal': 'Normal',
   'scenario.warning': 'Peringatan',
   'scenario.sensor-not-installed': 'Sensor belum terpasang',
@@ -569,11 +564,6 @@ export const en: Record<TranslationKey, string> = {
   'notFound.title': 'Page not found',
   'notFound.description': 'This address does not exist in the AgroNova dashboard.',
   'notFound.back': 'Back to Overview',
-  'placeholder.eyebrow': 'Future module',
-  'placeholder.titleSuffix': 'is not available in F1',
-  'placeholder.description':
-    'The navigation structure is ready. This module will be implemented in a later development phase.',
-  'placeholder.back': 'Back to overview',
   'scenario.normal': 'Normal',
   'scenario.warning': 'Warning',
   'scenario.sensor-not-installed': 'Sensor not installed',

@@ -1476,8 +1476,7 @@ summary {
   font-size: 9px;
 }
 
-.state-panel,
-.placeholder-module {
+.state-panel {
   min-height: min(560px, calc(100vh - 210px));
   padding: clamp(24px, 5vw, 58px);
   display: flex;
@@ -1533,16 +1532,14 @@ summary {
 }
 
 .state-heading h2,
-.error-state h2,
-.placeholder-module h2 {
+.error-state h2 {
   margin: 0;
   font-size: clamp(21px, 3vw, 30px);
   letter-spacing: -0.04em;
 }
 
 .state-heading p,
-.error-state p,
-.placeholder-module > p:not(.section-eyebrow) {
+.error-state p {
   max-width: 560px;
   margin: 6px 0 0;
   color: var(--muted);
@@ -1592,8 +1589,7 @@ summary {
   }
 }
 
-.state-icon,
-.placeholder-icon {
+.state-icon {
   width: 48px;
   height: 48px;
   flex: 0 0 auto;
@@ -1604,8 +1600,7 @@ summary {
   color: var(--green);
 }
 
-.state-icon.neutral,
-.placeholder-icon {
+.state-icon.neutral {
   background: var(--gray-soft);
   color: var(--gray);
 }
@@ -1664,15 +1659,6 @@ summary {
   margin: 3px 0 0;
   color: var(--muted);
   font-size: 11px;
-}
-
-.placeholder-module {
-  align-items: center;
-  text-align: center;
-}
-
-.placeholder-module .placeholder-icon {
-  margin-bottom: 18px;
 }
 
 .mobile-navigation,

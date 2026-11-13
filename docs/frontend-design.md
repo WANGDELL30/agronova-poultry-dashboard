@@ -36,8 +36,8 @@ The application header presents:
 - `DeviceHealthCard` presents ESP32 connectivity and sensor readiness.
 - `LoadingSkeleton`, `EmptyState`, and `ErrorState` cover loading, empty, unavailable, and unexpected
   error conditions.
-- `PlaceholderModule` keeps future navigation routes visually consistent without implementing their
-  later-phase functionality.
+- The seven operations modules (`/[module]`) are rendered by `components/operations`; unknown module
+  slugs return the bilingual 404 page. There is no placeholder component for future routes.
 
 ## Status presentation
 
