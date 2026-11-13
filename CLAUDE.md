@@ -42,13 +42,13 @@ Frontend-only dev: build both schema packages, then `corepack pnpm --filter @agr
 Vision flow: `web /vision` → multipart `POST /api/v1/vision/frames` on the API → `POST /v1/classify` on the inference service → quality gate → VLM answers `YA`/`TIDAK`/`TIDAK_TERLIHAT` for 7 SCS indicators → SCS rule → API applies a temporal vote over the last 5 accepted frames per camera.
 
 - `packages/vision-schema` (Zod) is the single contract between API, web, and inference. The Python response in `apps/inference/app` must be kept in sync with it manually.
-- `apps/inference/app`: `quality.py` (blur/brightness/blank gate with one enhancement pass), `backends.py` (`mock` vs `real` model backend, selected by `INFERENCE_MODE`; `HF_ADAPTER_REPO` may be a local folder, `MERGE_ADAPTER=1` merges LoRA), `scs.py` (rule), `pipeline.py` (orchestration), `config.py`. `/health` returns 503 until the real model finishes loading.
+- `apps/inference/app`: `quality.py` (blur/brightness/blank gate with one enhancement pass), `backends.py` (`mock` vs `real` model backend, selected by `INFERENCE_MODE`; `HF_ADAPTER_REPO` may be a local folder; the LoRA is never merged, there is no `MERGE_ADAPTER`), `scs.py` (rule), `pipeline.py` (orchestration), `config.py`. `/health` returns 503 until the real model finishes loading.
 - `apps/api/src/vision`: controller → service → `inference-client.ts`; `voter.ts` implements the voting window; `vision.repository.ts` is an interface with an **in-memory** implementation (results lost on restart; Postgres is intentionally deferred and requires migrations). Uploaded frames go to `apps/api/data/` (never commit).
 - `apps/web`: Next.js App Router; `components/vision` and `lib/vision` have a mock/api client switch driven by `NEXT_PUBLIC_DATA_MODE`. The browser never talks to MQTT or the inference service directly.
-- `apps/simulator`: telemetry placeholder that deliberately exits without publishing; `src/vision-feeder.ts` (`feed:vision`) posts frames from a folder or camera snapshot URL to the API on an interval.
+- `apps/simulator`: telemetry placeholder that deliberately exits without publishing (`src/index.ts` only). There is no vision frame feeder; post frames with `curl` or the `/vision` page.
 - `training/`: notebooks (labeling tool, Kaggle training/eval, HF reference inference). `apps/inference` is a port of the reference inference notebook; `apps/inference/scripts/parity_check.py` and `tests/test_parity.py` verify they match. Datasets and weights are not stored here.
 
-Real inference needs an NVIDIA GPU (~8-9 GB) via `docker compose --profile gpu up inference-gpu`, or Colab (`apps/inference/colab/run_inference_colab.ipynb`). `--profile mock` runs the CPU mock container.
+Real inference needs an NVIDIA GPU (~8-9 GB) via `docker compose --profile gpu up inference-gpu`, or Colab (`apps/inference/colab/run_inference_colab.ipynb`). `--profile inference` runs the CPU mock container (`inference` service).
 
 ## Constraints that need cross-file edits
 
