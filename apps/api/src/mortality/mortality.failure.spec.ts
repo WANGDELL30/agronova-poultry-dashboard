@@ -22,21 +22,33 @@ describe('MortalityController model failure (H12)', () => {
   });
 });
 
+/** Importing and booting Nest inside the test takes > 5 s when the whole suite runs in parallel. */
+const BOOT_TIMEOUT_MS = 30_000;
+
 describe('MortalityController model failure over HTTP (K9)', () => {
-  it('sends no-store on the 503 too', async () => {
-    const { NestFactory } = await import('@nestjs/core');
-    const { FastifyAdapter } = await import('@nestjs/platform-fastify');
-    const { MortalityModule } = await import('./mortality.module.js');
-    const app = await NestFactory.create(MortalityModule, new FastifyAdapter(), { logger: false });
-    await app.init();
-    await (app.getHttpAdapter().getInstance() as { ready(): Promise<void> }).ready();
-    const res = await (
-      app.getHttpAdapter().getInstance() as {
-        inject(o: object): Promise<{ statusCode: number; headers: Record<string, string> }>;
+  it(
+    'sends no-store on the 503 too',
+    async () => {
+      const { NestFactory } = await import('@nestjs/core');
+      const { FastifyAdapter } = await import('@nestjs/platform-fastify');
+      const { MortalityModule } = await import('./mortality.module.js');
+      const app = await NestFactory.create(MortalityModule, new FastifyAdapter(), {
+        logger: false,
+      });
+      try {
+        await app.init();
+        const fastify = app.getHttpAdapter().getInstance() as {
+          ready(): Promise<void>;
+          inject(o: object): Promise<{ statusCode: number; headers: Record<string, string> }>;
+        };
+        await fastify.ready();
+        const res = await fastify.inject({ method: 'GET', url: '/mortality/model' });
+        expect(res.statusCode).toBe(503);
+        expect(res.headers['cache-control']).toBe('no-store');
+      } finally {
+        await app.close();
       }
-    ).inject({ method: 'GET', url: '/mortality/model' });
-    await app.close();
-    expect(res.statusCode).toBe(503);
-    expect(res.headers['cache-control']).toBe('no-store');
-  });
+    },
+    BOOT_TIMEOUT_MS,
+  );
 });
