@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -24,6 +25,8 @@ import { limitQuery, optionalIdQuery, parseQuery } from '../common/query.js';
 
 import { ALLOWED_IMAGE_TYPES, type VisionConfig } from './vision-config.js';
 
+const logger = new Logger('VisionController');
+
 const resultsQuerySchema = z.object({ camera_id: optionalIdQuery, limit: limitQuery(20, 100) });
 
 /** Seconds a client should wait before retrying while the model is still loading. */
@@ -34,6 +37,7 @@ export const BUSY_RETRY_AFTER_SECONDS = 15;
 function apiError(code: VisionApiErrorCode, message: string, status: HttpStatus): HttpException {
   return new HttpException({ error: code, message }, status);
 }
+import { StorageUnavailableError } from './image-store.js';
 import { VISION_CONFIG } from './vision.tokens.js';
 import { VisionInferenceFailure, VisionService } from './vision.service.js';
 
@@ -117,6 +121,15 @@ export class VisionController {
     try {
       return await this.service.processFrame(meta.data, image.data, image.mimeType);
     } catch (error) {
+      if (error instanceof StorageUnavailableError) {
+        // Generic message to the client; the cause goes to the log only.
+        logger.error(error.message);
+        throw apiError(
+          'storage_unavailable',
+          'The frame could not be stored. Try again later.',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
       if (error instanceof VisionInferenceFailure) {
         if (error.code === 'inference_not_ready' || error.code === 'inference_busy') {
           // Nothing was stored, so there is no message_id; the client may retry later.

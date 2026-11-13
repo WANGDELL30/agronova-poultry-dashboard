@@ -214,6 +214,8 @@ export const VISION_API_ERROR_CODES = [
   'image_empty',
   'image_too_large',
   'unsupported_image_type',
+  /** The API could not write the frame to VISION_IMAGE_DIR (disk full, read-only); 503 (H9). */
+  'storage_unavailable',
 ] as const;
 export type VisionApiErrorCode = (typeof VISION_API_ERROR_CODES)[number];
 /** The subset raised when the API talks to the inference service. */

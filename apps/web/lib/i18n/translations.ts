@@ -314,6 +314,8 @@ export const id = {
     'Model belum siap (masih dimuat). Foto tidak disimpan; coba lagi sekitar 30 detik lagi.',
   'vision.error.inference_failed':
     'Layanan inferensi gagal memproses foto (galat server). Coba lagi nanti.',
+  'vision.error.storage_unavailable':
+    'Server tidak dapat menyimpan foto (penyimpanan penuh atau tidak bisa ditulis). Hubungi pengelola server.',
   'vision.error.inference_busy':
     'Layanan model sedang sibuk memproses foto lain. Foto tidak disimpan; coba lagi sekitar 15 detik lagi.',
   'vision.error.inference_unavailable':
@@ -653,6 +655,8 @@ export const en: Record<TranslationKey, string> = {
     'The model is not ready yet (still loading). The photo was not saved; try again in about 30 seconds.',
   'vision.error.inference_failed':
     'The inference service failed to process the photo (server error). Try again later.',
+  'vision.error.storage_unavailable':
+    'The server could not store the photo (storage full or not writable). Contact the server operator.',
   'vision.error.inference_busy':
     'The model service is busy with other photos. The photo was not saved; try again in about 15 seconds.',
   'vision.error.inference_unavailable':

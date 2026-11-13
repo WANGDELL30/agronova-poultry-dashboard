@@ -9,7 +9,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { ImageStore } from './image-store.js';
+import { ImageStore, StorageUnavailableError } from './image-store.js';
 import { InferenceClient, InferenceError } from './inference-client.js';
 import type { VisionConfig } from './vision-config.js';
 import { VisionController } from './vision.controller.js';
@@ -208,6 +208,17 @@ describe('VisionController (HTTP)', () => {
     expect(res.json()).toMatchObject({ error: 'inference_unavailable' });
     expect(res.headers['retry-after']).toBeUndefined();
     expect(await count()).toBe(before);
+  });
+
+  it('answers 503 storage_unavailable when the frame cannot be stored (H9)', async () => {
+    classify.mockResolvedValueOnce(okResponse);
+    const save = vi
+      .spyOn(ImageStore.prototype, 'save')
+      .mockRejectedValueOnce(new StorageUnavailableError('ENOSPC'));
+    const res = await upload(valid, { data: 'a', type: 'image/png' });
+    save.mockRestore();
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toMatchObject({ error: 'storage_unavailable' });
   });
 
   it('maps inference timeout to 504 and unreachable to 502 with the stored message_id', async () => {

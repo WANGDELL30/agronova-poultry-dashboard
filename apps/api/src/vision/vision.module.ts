@@ -20,17 +20,23 @@ import { VISION_CONFIG } from './vision.tokens.js';
     {
       provide: VisionService,
       inject: [VISION_REPOSITORY, VISION_CONFIG],
-      useFactory: (repository: VisionRepository, config: ReturnType<typeof loadVisionConfig>) =>
-        new VisionService(
+      useFactory: async (
+        repository: VisionRepository,
+        config: ReturnType<typeof loadVisionConfig>,
+      ) => {
+        const images = new ImageStore(config.imageDir);
+        await images.ensureWritable(); // fail fast at startup instead of 500 on every upload (H9)
+        return new VisionService(
           repository,
-          new ImageStore(config.imageDir),
+          images,
           new InferenceClient(
             config.inferenceUrl,
             config.inferenceTimeoutMs,
             config.inferenceApiKey,
             config.inferenceHealthTimeoutMs,
           ),
-        ),
+        );
+      },
     },
   ],
 })
