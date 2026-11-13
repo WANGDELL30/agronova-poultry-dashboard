@@ -30,7 +30,13 @@ export function visionTone(record: VisionResultV1): 'ok' | 'danger' | 'neutral' 
 
 export function VisionStatusBadge({ record }: Readonly<{ record: VisionResultV1 }>) {
   const { t } = useLanguage();
-  const Icon = record.result?.label === 'stress' ? CircleAlert : statusIcon[record.status];
+  // `undefined` gets the help icon: a check mark would read as "safe" (K7).
+  const Icon =
+    record.result?.label === 'stress'
+      ? CircleAlert
+      : record.result?.label === 'undefined'
+        ? CircleHelp
+        : statusIcon[record.status];
   const text =
     record.status === 'classified' && record.result
       ? t(`vision.label.${record.result.label}`)
@@ -107,7 +113,12 @@ export function VisionResultCard({
             <>
               <div>
                 <dt>{t('vision.field.score')}</dt>
-                <dd>{formatNumber(result.score_stress, locale, 2)}</dd>
+                <dd>
+                  {/* A score for an undeterminable frame reads as "slightly stressed" (K7). */}
+                  {result.label === 'undefined'
+                    ? t('vision.field.scoreNone')
+                    : formatNumber(result.score_stress, locale, 2)}
+                </dd>
               </div>
               <div>
                 <dt>{t('vision.field.confidence')}</dt>
