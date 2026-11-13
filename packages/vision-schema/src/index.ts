@@ -156,7 +156,8 @@ export const visionResultV1Schema = z
     kandang_id: z.string().min(1).max(64).nullable(),
     captured_at: utcTimestamp,
     received_at: utcTimestamp,
-    inference_mode: inferenceModeSchema,
+    /** Null only for `inference_error`: the API cannot tell which backend failed (AUDIT K5). */
+    inference_mode: inferenceModeSchema.nullable(),
     model: modelInfoSchema.nullable(),
     inference_ms: z.number().nonnegative().nullable(),
     quality: qualitySchema.nullable(),
@@ -174,6 +175,13 @@ export const visionResultV1Schema = z
         code: z.ZodIssueCode.custom,
         path: ['result'],
         message: 'result must be present if and only if status is "classified"',
+      });
+    }
+    if (value.inference_mode === null && value.status !== 'inference_error') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['inference_mode'],
+        message: 'inference_mode may be null only when status is "inference_error"',
       });
     }
   });

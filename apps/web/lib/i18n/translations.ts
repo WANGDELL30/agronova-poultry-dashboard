@@ -293,6 +293,8 @@ export const id = {
   'vision.field.capturedAt': 'Diambil',
   'vision.field.receivedAt': 'Diterima server',
   'vision.field.model': 'Model',
+  'vision.field.mode': 'Mode inferensi',
+  'vision.field.modeUnknown': 'Tidak diketahui',
   'vision.field.rawResponse': 'Jawaban mentah model',
   'vision.field.error': 'Pesan galat',
   'vision.field.noResult': 'Tidak ada hasil klasifikasi. Ini bukan berarti ayam tidak stres.',
@@ -621,6 +623,8 @@ export const en: Record<TranslationKey, string> = {
   'vision.field.capturedAt': 'Captured',
   'vision.field.receivedAt': 'Received by server',
   'vision.field.model': 'Model',
+  'vision.field.mode': 'Inference mode',
+  'vision.field.modeUnknown': 'Unknown',
   'vision.field.rawResponse': 'Raw model answer',
   'vision.field.error': 'Error message',
   'vision.field.noResult':

@@ -68,7 +68,8 @@ export class VisionService {
       kandang_id: meta.kandang_id ?? null,
       captured_at: meta.captured_at,
       received_at: receivedAt,
-      inference_mode: response?.inference_mode ?? 'real',
+      // Unknown when inference failed: never guess 'real' (K5).
+      inference_mode: response?.inference_mode ?? null,
       model: response?.model ?? null,
       inference_ms: response?.inference_ms ?? null,
       quality: response?.quality ?? null,

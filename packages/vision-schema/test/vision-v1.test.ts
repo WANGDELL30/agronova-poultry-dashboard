@@ -56,6 +56,18 @@ describe('visionResultV1Schema', () => {
     expect(visionResultV1Schema.safeParse({ ...base, result }).success).toBe(false);
   });
 
+  it('allows an unknown inference_mode only on inference_error records (K5)', () => {
+    expect(visionResultV1Schema.safeParse({ ...base, inference_mode: null }).success).toBe(true);
+    expect(
+      visionResultV1Schema.safeParse({
+        ...base,
+        inference_mode: null,
+        status: 'skipped_quality',
+        error_message: null,
+      }).success,
+    ).toBe(false);
+  });
+
   it('rejects timestamps with a non-UTC offset', () => {
     expect(
       visionResultV1Schema.safeParse({ ...base, captured_at: '2026-09-30T08:00:00+07:00' }).success,

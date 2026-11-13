@@ -123,8 +123,14 @@ export function VisionResultCard({
             <div>
               <dt>{t('vision.field.model')}</dt>
               <dd>
-                {record.model.adapter} ({record.inference_mode})
+                {record.model.adapter} ({record.inference_mode ?? t('vision.field.modeUnknown')})
               </dd>
+            </div>
+          )}
+          {record.inference_mode === null && !record.model && (
+            <div>
+              <dt>{t('vision.field.mode')}</dt>
+              <dd>{t('vision.field.modeUnknown')}</dd>
             </div>
           )}
         </dl>

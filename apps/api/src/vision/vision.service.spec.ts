@@ -130,6 +130,19 @@ describe('VisionService', () => {
     expect(saved).toMatchObject({ status: 'inference_error', result: null, error_message: 'slow' });
   });
 
+  it('does not label a failed frame as real when the mode is unknown (K5)', async () => {
+    // The mock backend crashing returns HTTP 500 without a body that names the mode.
+    const service = build(
+      vi.fn().mockRejectedValue(new InferenceError('inference_failed', 'HTTP 500')),
+    );
+    await expect(service.processFrame(meta, Buffer.from('x'), 'image/png')).rejects.toBeInstanceOf(
+      VisionInferenceFailure,
+    );
+    const [saved] = await service.list('cam-01', 5);
+    expect(saved).toMatchObject({ status: 'inference_error', inference_mode: null });
+    expect(visionResultV1Schema.safeParse(saved).success).toBe(true);
+  });
+
   it('stores neither the record nor the image when the model is not ready (R10)', async () => {
     const service = build(
       vi.fn().mockRejectedValue(new InferenceError('inference_not_ready', 'model loading')),
