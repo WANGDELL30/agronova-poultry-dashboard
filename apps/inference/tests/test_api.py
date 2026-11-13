@@ -89,3 +89,17 @@ def test_api_key_is_required_only_when_configured():
         assert c.post("/v1/classify", files={"file": ("f.png", data, "image/png")}, headers={"X-API-Key": "wrong"}).status_code == 401
         assert c.post("/v1/classify", files={"file": ("f.png", data, "image/png")}, headers={"X-API-Key": "s3cret"}).status_code == 200
         assert c.get("/health").status_code == 200  # health stays open so readiness can be probed
+
+
+def test_image_over_the_pixel_limit_is_413_without_decoding():
+    """AUDIT R2: a small PNG of 8000x8000 px used to take minutes in the quality gate."""
+    import time
+
+    settings = Settings(mode="mock", hf_adapter_repo="x", base_model="y", hf_token=None, max_image_bytes=50_000_000)
+    big = cv2.imencode(".png", np.zeros((8000, 8000, 3), np.uint8))[1].tobytes()
+    with TestClient(create_app(settings)) as c:
+        started = time.perf_counter()
+        r = post(c, big)
+        elapsed = time.perf_counter() - started
+    assert r.status_code == 413 and r.json() == {"error": "image_too_large"}
+    assert elapsed < 1

@@ -67,6 +67,16 @@ describe('InferenceClient', () => {
     ).rejects.toMatchObject({ code: 'inference_bad_response' });
   });
 
+  it('maps a 413 from inference (pixel limit) to image_too_large (R2)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('{"error":"image_too_large"}', { status: 413 })),
+    );
+    await expect(
+      new InferenceClient('http://i', 1000).classify(Buffer.from('x'), 'image/png'),
+    ).rejects.toMatchObject({ code: 'image_too_large' });
+  });
+
   it('maps other 5xx answers from inference to inference_failed (R10)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 500 })));
     await expect(

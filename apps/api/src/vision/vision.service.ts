@@ -46,9 +46,10 @@ export class VisionService {
       if (!(error instanceof InferenceError)) throw error;
       failure = error;
     }
-    if (failure?.code === 'inference_not_ready') {
+    if (failure?.code === 'inference_not_ready' || failure?.code === 'image_too_large') {
       // Nothing was analysed: store neither the frame nor a record, so a retry does not leave a
-      // duplicate inference_error entry in the history (AUDIT R10).
+      // duplicate inference_error entry in the history (AUDIT R10). An image over the inference
+      // pixel limit is rejected like an oversized upload (R2).
       throw new VisionInferenceFailure(failure.code, failure.message, null);
     }
     await this.images.save(messageId, mimeType, image);

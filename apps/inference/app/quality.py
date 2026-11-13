@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 
+from .config import DEFAULT_MAX_IMAGE_PIXELS, DEFAULT_MAX_IMAGE_SIDE
+
 
 def quality_score(img_bgr, blur_threshold=100, dark_thresh=40, bright_thresh=215):
     """[A] Quality Scoring -- dijalankan cepat, TANPA deep learning, di edge device
@@ -65,17 +67,44 @@ def is_truncated(image_bytes: bytes) -> bool:
     return False
 
 
-def run_quality_gate(image_bytes, blur_threshold=100):
+def image_pixels(image_bytes: bytes) -> int | None:
+    """Width x height from the file header (Pillow reads no pixel data), or None if unknown (R2)."""
+    try:
+        with Image.open(BytesIO(image_bytes)) as img:
+            width, height = img.size
+    except Image.DecompressionBombError:
+        return DEFAULT_MAX_IMAGE_PIXELS * 4  # Pillow refused the header itself: far too large
+    except Exception:  # noqa: BLE001 - not an image Pillow knows; cv2 reports it as unreadable
+        return None
+    return width * height
+
+
+def downscale(img_bgr, max_side=DEFAULT_MAX_IMAGE_SIDE):
+    """Shrink so the longer side is `max_side` (INTER_AREA). Smaller images are returned unchanged (R2)."""
+    height, width = img_bgr.shape[:2]
+    longest = max(height, width)
+    if longest <= max_side:
+        return img_bgr
+    scale = max_side / longest
+    size = (max(1, round(width * scale)), max(1, round(height * scale)))
+    return cv2.resize(img_bgr, size, interpolation=cv2.INTER_AREA)
+
+
+def run_quality_gate(image_bytes, blur_threshold=100, max_side=DEFAULT_MAX_IMAGE_SIDE):
     """Bytes variant of `image_quality_gate` (same [A]->[C] flow, no file path / skip log).
 
     Returns (img_bgr | None, status, issues). `issues` = problems that were fixed when
     status == "enhanced", or the remaining problems when status == "skipped".
     Deliberate change: an undecodable image is reported as skipped (notebook would crash in
     enhance_image(None)). A truncated file is skipped with `gambar_rusak` before decoding (R9).
+    Frames whose longer side exceeds `max_side` are downscaled before the gate (R2, deliberate
+    deviation from notebook 04); frames up to `max_side`, such as the 640 px dataset, are untouched.
     """
     if is_truncated(image_bytes):
         return None, "skipped", ["gambar_rusak"]
     img_bgr = cv2.imdecode(np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+    if img_bgr is not None:
+        img_bgr = downscale(img_bgr, max_side)
     score = quality_score(img_bgr, blur_threshold=blur_threshold)
     if score["ok"]:
         return img_bgr, "ok", []

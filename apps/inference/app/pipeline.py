@@ -1,6 +1,7 @@
 import time
 
 from .backends import Backend
+from .config import DEFAULT_MAX_IMAGE_SIDE
 from .quality import run_quality_gate
 from .scs import SCS_INDICATORS, apply_scs_rule, parse_vlm_json
 
@@ -16,9 +17,9 @@ def confidence_from_result(label: str, score_stress: float) -> float | None:
     return None
 
 
-def classify_bytes(image_bytes: bytes, backend: Backend) -> dict:
+def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT_MAX_IMAGE_SIDE) -> dict:
     started = time.perf_counter()
-    img, quality_status, issues = run_quality_gate(image_bytes)
+    img, quality_status, issues = run_quality_gate(image_bytes, max_side=max_side)
     response = {
         "schema_version": SCHEMA_VERSION,
         "inference_mode": backend.mode,

@@ -3,6 +3,12 @@ import re
 from dataclasses import dataclass
 
 
+# Image size limits applied before the quality gate (AUDIT R2, decision 2026-11-13). Deliberate
+# deviation from notebook 04, which works at full resolution; dataset frames (640 px) are unaffected.
+DEFAULT_MAX_IMAGE_PIXELS = 40_000_000  # INFERENCE_MAX_IMAGE_PIXELS: larger -> 413 without decoding
+DEFAULT_MAX_IMAGE_SIDE = 1280  # INFERENCE_MAX_IMAGE_SIDE: longer side is downscaled to this (INTER_AREA)
+
+
 @dataclass(frozen=True)
 class Settings:
     mode: str  # "mock" | "real"
@@ -11,6 +17,8 @@ class Settings:
     hf_token: str | None
     max_image_bytes: int
     api_key: str | None = None
+    max_image_pixels: int = DEFAULT_MAX_IMAGE_PIXELS
+    max_image_side: int = DEFAULT_MAX_IMAGE_SIDE
 
 
 def _positive_int(name: str, default: int) -> int:
@@ -34,4 +42,10 @@ def load_settings() -> Settings:
         hf_token=os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or None,
         max_image_bytes=_positive_int("VISION_MAX_IMAGE_BYTES", 8 * 1024 * 1024),
         api_key=os.environ.get("INFERENCE_API_KEY") or None,
+        max_image_pixels=max_image_pixels_from_env(),
+        max_image_side=_positive_int("INFERENCE_MAX_IMAGE_SIDE", DEFAULT_MAX_IMAGE_SIDE),
     )
+
+
+def max_image_pixels_from_env() -> int:
+    return _positive_int("INFERENCE_MAX_IMAGE_PIXELS", DEFAULT_MAX_IMAGE_PIXELS)

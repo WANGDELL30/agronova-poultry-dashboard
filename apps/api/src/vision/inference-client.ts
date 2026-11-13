@@ -4,9 +4,12 @@ import {
   type InferenceResponseV1,
 } from '@agronova/vision-schema';
 
+/** Codes the client raises: inference_* plus image_too_large when inference rejects the pixel count (R2). */
+export type InferenceClientErrorCode = InferenceErrorCode | 'image_too_large';
+
 export class InferenceError extends Error {
   constructor(
-    readonly code: InferenceErrorCode,
+    readonly code: InferenceClientErrorCode,
     message: string,
   ) {
     super(message);
@@ -53,6 +56,10 @@ export class InferenceClient {
     }
     if (response.status === 401) {
       throw new InferenceError('inference_bad_response', 'Inference rejected the API key.');
+    }
+    if (response.status === 413) {
+      // Inference rejects images above its pixel limit from the header, before decoding (R2).
+      throw new InferenceError('image_too_large', 'Image exceeds the inference pixel limit.');
     }
     if (response.status === 503) {
       throw new InferenceError('inference_not_ready', 'Inference model is not ready.');

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from .backends import Backend, MockBackend, RealBackend
 from .config import Settings, load_settings
 from .pipeline import classify_bytes
+from .quality import image_pixels
 
 
 class State:
@@ -59,7 +60,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="empty file")
         if len(data) > state.settings.max_image_bytes:
             raise HTTPException(status_code=413, detail="image too large")
-        return classify_bytes(data, state.backend)
+        pixels = image_pixels(data)  # header only: an 8000x8000 PNG is rejected before decoding (R2)
+        if pixels is not None and pixels > state.settings.max_image_pixels:
+            return JSONResponse({"error": "image_too_large"}, status_code=413)
+        return classify_bytes(data, state.backend, max_side=state.settings.max_image_side)
 
     return app
 

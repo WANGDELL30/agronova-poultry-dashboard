@@ -184,6 +184,20 @@ describe('VisionController (HTTP)', () => {
     expect((await upload(valid)).statusCode).toBe(400);
   });
 
+  it('answers 413 image_too_large when inference rejects the pixel count, storing nothing (R2)', async () => {
+    const before = (
+      await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })
+    ).json().length;
+    classify.mockRejectedValueOnce(new InferenceError('image_too_large', 'too many pixels'));
+    const res = await upload(valid, { data: 'a', type: 'image/png' });
+    expect(res.statusCode).toBe(413);
+    expect(res.json()).toMatchObject({ error: 'image_too_large' });
+    const after = (
+      await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })
+    ).json().length;
+    expect(after).toBe(before);
+  });
+
   it('maps inference timeout to 504 and unreachable to 502 with the stored message_id', async () => {
     classify.mockRejectedValueOnce(new InferenceError('inference_timeout', 'slow'));
     const timeout = await upload(valid, { data: 'a', type: 'image/png' });

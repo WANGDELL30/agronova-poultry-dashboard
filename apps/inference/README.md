@@ -34,6 +34,12 @@ repo, add a read token as a Kaggle Secret.
 - **Truncated files (AUDIT R9).** A JPEG, PNG, or WebP cut off mid-file is `skipped_quality` with the
   issue `gambar_rusak`, detected before decoding. The notebook decodes it anyway; `cv2.imdecode`
   fills the missing part with uninitialised memory, so the result changed on every call.
+- **Image size limits (AUDIT R2, decision 2026-11-13).** Before decoding, the pixel count is read
+  from the file header; above `INFERENCE_MAX_IMAGE_PIXELS` (default 40 MP) the service answers 413
+  `{"error": "image_too_large"}`, and `OPENCV_IO_MAX_IMAGE_PIXELS` is set to the same value as a second
+  safeguard. A frame whose longer side exceeds `INFERENCE_MAX_IMAGE_SIDE` (default 1280 px) is
+  downscaled with `INTER_AREA` before the quality gate. The notebook works at full resolution; frames
+  up to 1280 px (including the 640 px dataset) are not changed, so parity on the dataset holds.
 
 **B. Demo with the dashboard (free GPU on Colab):**
 

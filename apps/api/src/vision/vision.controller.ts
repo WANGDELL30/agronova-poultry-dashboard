@@ -121,6 +121,9 @@ export class VisionController {
           reply.header('Retry-After', String(NOT_READY_RETRY_AFTER_SECONDS));
           throw apiError(error.code, error.message, HttpStatus.SERVICE_UNAVAILABLE);
         }
+        if (error.code === 'image_too_large') {
+          throw apiError(error.code, error.message, HttpStatus.PAYLOAD_TOO_LARGE);
+        }
         const status =
           error.code === 'inference_timeout' ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
         throw new HttpException(
