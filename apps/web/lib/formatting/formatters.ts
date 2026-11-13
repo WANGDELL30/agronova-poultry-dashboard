@@ -1,11 +1,26 @@
 export const APPLICATION_TIMEZONE = 'Asia/Jakarta';
 
+/** Shown instead of a time that cannot be placed on the UTC timeline (AUDIT R18). */
+export const MISSING_TIME = '—';
+
+/** Ends in `Z` or a numeric offset such as `+07:00`; anything else would be read as browser-local time. */
+const EXPLICIT_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+/** Parses an ISO timestamp only when it carries an offset and is a real date; otherwise null. */
+function parseTimestamp(timestamp: string): Date | null {
+  if (!EXPLICIT_OFFSET.test(timestamp)) return null;
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function formatDateTime(timestamp: string, locale: string): string {
+  const date = parseTimestamp(timestamp);
+  if (!date) return MISSING_TIME;
   return new Intl.DateTimeFormat(locale, {
     timeZone: APPLICATION_TIMEZONE,
     dateStyle: 'medium',
     timeStyle: 'medium',
-  }).format(new Date(timestamp));
+  }).format(date);
 }
 
 export function formatClock(date: Date, locale: string): string {
@@ -19,16 +34,20 @@ export function formatClock(date: Date, locale: string): string {
 }
 
 export function formatChartTime(timestamp: string, locale: string): string {
+  const date = parseTimestamp(timestamp);
+  if (!date) return MISSING_TIME;
   return new Intl.DateTimeFormat(locale, {
     timeZone: APPLICATION_TIMEZONE,
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date(timestamp));
+  }).format(date);
 }
 
 export function formatRelativeTime(timestamp: string, locale: string, now = new Date()): string {
-  const deltaSeconds = Math.round((new Date(timestamp).getTime() - now.getTime()) / 1000);
+  const date = parseTimestamp(timestamp);
+  if (!date) return MISSING_TIME;
+  const deltaSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
   const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
   if (Math.abs(deltaSeconds) < 60) {
@@ -40,7 +59,12 @@ export function formatRelativeTime(timestamp: string, locale: string, now = new 
     return formatter.format(deltaMinutes, 'minute');
   }
 
-  return formatter.format(Math.round(deltaMinutes / 60), 'hour');
+  const deltaHours = Math.round(deltaMinutes / 60);
+  if (Math.abs(deltaHours) < 24) {
+    return formatter.format(deltaHours, 'hour');
+  }
+
+  return formatter.format(Math.round(deltaHours / 24), 'day');
 }
 
 export function formatNumber(value: number, locale: string, digits = 1): string {
