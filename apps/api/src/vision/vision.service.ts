@@ -53,8 +53,10 @@ export class VisionService {
     }
     await this.images.save(messageId, mimeType, image);
 
+    // Only a classified frame carries a usable result; never vote on any other status (K2, B5).
+    const result = response?.status === 'classified' ? response.result : null;
     const window = await this.repository.acceptedLabels(meta.camera_id, 4);
-    const { vote } = evaluateVote({ result: response?.result ?? null, window });
+    const { vote } = evaluateVote({ result, window });
 
     const record: VisionResultV1 = {
       schema_version: VISION_SCHEMA_VERSION,
@@ -68,7 +70,7 @@ export class VisionService {
       inference_ms: response?.inference_ms ?? null,
       quality: response?.quality ?? null,
       status: response?.status ?? 'inference_error',
-      result: response?.result ?? null,
+      result,
       raw_response: response?.raw_response ?? null,
       error_message: response?.error_message ?? failure?.message ?? null,
       vote,

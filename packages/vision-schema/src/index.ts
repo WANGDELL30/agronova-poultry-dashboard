@@ -88,7 +88,33 @@ export const inferenceResponseV1Schema = z
     raw_response: z.string().nullable(),
     error_message: z.string().nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    // Cross-field invariants (AUDIT K2): a response that breaks them is rejected as a whole, so a
+    // contradictory result can never reach the voter or the stored history.
+    const fail = (path: (string | number)[], message: string) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path, message });
+    const { result } = value;
+    if ((value.status === 'classified') !== (result !== null)) {
+      fail(['result'], 'result must be present if and only if status is "classified"');
+    }
+    if (result === null) return;
+    if (result.total_ya > result.visible_count) {
+      fail(['result', 'total_ya'], 'total_ya must not exceed visible_count');
+    }
+    if ((result.confidence === null) !== (result.label === 'undefined')) {
+      fail(['result', 'confidence'], 'confidence must be null if and only if label is "undefined"');
+    }
+    const expected =
+      result.visible_count < MIN_VISIBLE_INDICATORS
+        ? 'undefined'
+        : result.total_ya >= STRESS_THRESHOLD
+          ? 'stress'
+          : 'not_stress';
+    if (result.label !== expected) {
+      fail(['result', 'label'], `label must be "${expected}" under the SCS rule`);
+    }
+  });
 
 export const voteStatusSchema = z.enum([
   'ignored_no_result',

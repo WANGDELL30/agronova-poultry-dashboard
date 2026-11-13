@@ -66,6 +66,20 @@ describe('VisionService', () => {
     expect(last?.vote.status).toBe('alert');
   });
 
+  it('never votes on a result attached to a non-classified status (K2, B5)', async () => {
+    const skipped = { ...classified('stress', 1), status: 'skipped_quality' as const };
+    const service = build(vi.fn().mockResolvedValue(skipped));
+    let last;
+    for (let i = 0; i < 5; i++)
+      last = await service.processFrame(meta, Buffer.from('x'), 'image/png');
+    expect(last).toMatchObject({
+      status: 'skipped_quality',
+      result: null,
+      vote: { status: 'ignored_no_result', window_filled: 0 },
+    });
+    expect(visionResultV1Schema.safeParse(last).success).toBe(true);
+  });
+
   it('records inference failures explicitly (not as not_stress) and rethrows', async () => {
     const service = build(
       vi.fn().mockRejectedValue(new InferenceError('inference_timeout', 'slow')),

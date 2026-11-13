@@ -1,3 +1,4 @@
+import { SCS_INDICATOR_KEYS } from '@agronova/vision-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { InferenceClient, InferenceError } from './inference-client.js';
@@ -35,6 +36,35 @@ describe('InferenceClient', () => {
     await expect(client.classify(Buffer.from('x'), 'image/png')).rejects.toBeInstanceOf(
       InferenceError,
     );
+  });
+
+  it('rejects a response whose fields contradict each other as bad_response (K2)', async () => {
+    const indicators = Object.fromEntries(SCS_INDICATOR_KEYS.map((k) => [k, 'YA']));
+    const body = {
+      schema_version: 1,
+      inference_mode: 'mock',
+      model: { base_model: 'b', adapter: 'a', adapter_revision: null },
+      inference_ms: 1,
+      quality: { status: 'skipped', issues: ['blur'] },
+      status: 'skipped_quality',
+      result: {
+        indicators,
+        total_ya: 7,
+        visible_count: 7,
+        label: 'stress',
+        score_stress: 1,
+        confidence: 1,
+      },
+      raw_response: null,
+      error_message: null,
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })),
+    );
+    await expect(
+      new InferenceClient('http://i', 1000).classify(Buffer.from('x'), 'image/png'),
+    ).rejects.toMatchObject({ code: 'inference_bad_response' });
   });
 
   it('maps other 5xx answers from inference to inference_failed (R10)', async () => {

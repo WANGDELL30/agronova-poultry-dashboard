@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   SCS_INDICATOR_KEYS,
+  inferenceResponseV1Schema,
   visionResultV1Schema,
   visionFrameMetadataSchema,
 } from '../src/index.js';
@@ -71,5 +72,79 @@ describe('visionFrameMetadataSchema', () => {
     expect(
       visionFrameMetadataSchema.safeParse({ captured_at: '2026-09-30T01:00:00Z' }).success,
     ).toBe(false);
+  });
+});
+
+describe('inferenceResponseV1Schema invariants (AUDIT K2)', () => {
+  const answers = (ya: number, hidden = 0) =>
+    Object.fromEntries(
+      SCS_INDICATOR_KEYS.map((k, i) => [
+        k,
+        i < hidden ? 'TIDAK_TERLIHAT' : i < hidden + ya ? 'YA' : 'TIDAK',
+      ]),
+    ) as never;
+  const result = (
+    label: 'stress' | 'not_stress' | 'undefined',
+    totalYa: number,
+    visible: number,
+    confidence: number | null,
+  ) => ({
+    indicators: answers(totalYa, 7 - visible),
+    total_ya: totalYa,
+    visible_count: visible,
+    label,
+    score_stress: totalYa / 7,
+    confidence,
+  });
+  const response = {
+    schema_version: 1,
+    inference_mode: 'mock',
+    model: { base_model: 'b', adapter: 'a', adapter_revision: null },
+    inference_ms: 3,
+    quality: { status: 'ok', issues: [] },
+    status: 'classified',
+    result: result('not_stress', 1, 7, 6 / 7),
+    raw_response: null,
+    error_message: null,
+  };
+  const ok = (value: object) => inferenceResponseV1Schema.safeParse(value).success;
+
+  it('accepts consistent responses for every label and non-result status', () => {
+    expect(ok(response)).toBe(true);
+    expect(ok({ ...response, result: result('stress', 3, 7, 3 / 7) })).toBe(true);
+    expect(ok({ ...response, result: result('undefined', 1, 4, null) })).toBe(true);
+    expect(ok({ ...response, status: 'skipped_quality', result: null })).toBe(true);
+    expect(
+      ok({
+        ...response,
+        status: 'parse_error',
+        result: null,
+        raw_response: 'x',
+        error_message: 'e',
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects a result on a non-classified status, and a classified status without one', () => {
+    expect(ok({ ...response, status: 'skipped_quality' })).toBe(false);
+    expect(ok({ ...response, status: 'parse_error' })).toBe(false);
+    expect(ok({ ...response, result: null })).toBe(false);
+  });
+
+  it('rejects total_ya above visible_count', () => {
+    expect(
+      ok({ ...response, result: { ...result('stress', 3, 7, 3 / 7), visible_count: 2 } }),
+    ).toBe(false);
+  });
+
+  it('rejects confidence that does not match the undefined label', () => {
+    expect(ok({ ...response, result: result('undefined', 1, 4, 0.1) })).toBe(false);
+    expect(ok({ ...response, result: result('not_stress', 1, 7, null) })).toBe(false);
+  });
+
+  it('rejects a label that contradicts the SCS rule', () => {
+    expect(ok({ ...response, result: result('not_stress', 3, 7, 4 / 7) })).toBe(false);
+    expect(ok({ ...response, result: result('stress', 2, 7, 2 / 7) })).toBe(false);
+    expect(ok({ ...response, result: result('stress', 3, 4, 3 / 7) })).toBe(false);
   });
 });
