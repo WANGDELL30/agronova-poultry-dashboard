@@ -232,8 +232,10 @@ dashboard, not in this repository):
 - **Node.js:** 22.x, pinned by `engines.node` in `apps/web/package.json`.
 - **`ENABLE_EXPERIMENTAL_COREPACK=1`:** optional. The build no longer calls `corepack`; set it only to
   make Vercel use the exact pnpm from `packageManager` (`pnpm@10.15.1`).
-- **Do not set `NODE_ENV`.** With `NODE_ENV=production`, pnpm skips devDependencies at install time,
-  and the build needs them (`typescript`, `@types/*`).
+- **Do not set `NODE_ENV`** and do not install with `--prod`. The build needs devDependencies
+  (`typescript` for every `tsc` build, `@types/*` for `next build`). Vercel skips devDependencies when
+  `NODE_ENV=production` is set, and `pnpm install --prod` fails the schema builds with
+  `'tsc' is not recognized`, even when `typescript` is declared in each package.
 - **Required env:** `NEXT_PUBLIC_API_BASE_URL` (absolute `https:` URL) and `NEXT_PUBLIC_DEVICE_ID`.
 
 Use these public frontend settings in Vercel when an explicit deployment configuration is needed:
