@@ -93,6 +93,12 @@ export async function getModelStatus(): Promise<ModelStatus> {
   };
 }
 
+/**
+ * Runs the LSTM on one 24x9 window. Intentionally has no production path (AUDIT H15): prediction
+ * is disabled by design (A1), so the predict and diagnostics endpoints answer 409
+ * `MODEL_INPUTS_UNAVAILABLE` and this function is not exported from `index.ts`. It is kept so
+ * `runtime.test.ts` keeps checking the artifact end to end, and for enabling prediction later.
+ */
 export async function runDiagnostic(input: unknown): Promise<DiagnosticResult> {
   const request = diagnosticInputSchema.parse(input);
   const model = await getModel();
