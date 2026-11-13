@@ -33,6 +33,7 @@ __pycache__/
 
 # Vision runtime data (uploaded frames) and local model/cache artifacts
 apps/api/data/
+data/vision-images/
 *.pkl
 *.pt
 *.safetensors
@@ -45,3 +46,9 @@ training/**/indicators_ground_truth*.csv
 
 # Laporan / dokumen Word
 *.docx
+
+# Local reports, raw exports and working notes (never commit)
+*.pdf
+_tmp_raw/
+AUDIT*.md
+teks_subbab_*.md
