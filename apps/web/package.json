@@ -2,9 +2,12 @@
   "name": "@agronova/web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "next dev",
-    "prebuild": "corepack pnpm --filter @agronova/telemetry-schema --filter @agronova/mortality-model --filter @agronova/vision-schema build",
+    "prebuild": "node prebuild.mjs",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",

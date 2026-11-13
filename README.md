@@ -223,6 +223,19 @@ Use the existing Vercel project for `apps/web`; NestJS, the simulator, PostgreSQ
 are not part of this deployment. The mortality server endpoints run as Next.js Route Handlers on
 Vercel. The web package builds the shared telemetry schema, vision schema, and mortality runtime before Next.js.
 
+Vercel project settings (to be confirmed by the owner of the Vercel project; they live in the
+dashboard, not in this repository):
+
+- **Root Directory:** `apps/web`. Keep the default install and build commands (`pnpm install`,
+  `pnpm run build`); no `vercel.json` is needed. `prebuild` (`apps/web/prebuild.mjs`) runs the
+  schema builds with the same pnpm that started it, so it works with or without `corepack` on PATH.
+- **Node.js:** 22.x, pinned by `engines.node` in `apps/web/package.json`.
+- **`ENABLE_EXPERIMENTAL_COREPACK=1`:** optional. The build no longer calls `corepack`; set it only to
+  make Vercel use the exact pnpm from `packageManager` (`pnpm@10.15.1`).
+- **Do not set `NODE_ENV`.** With `NODE_ENV=production`, pnpm skips devDependencies at install time,
+  and the build needs them (`typescript`, `@types/*`).
+- **Required env:** `NEXT_PUBLIC_API_BASE_URL` (absolute `https:` URL) and `NEXT_PUBLIC_DEVICE_ID`.
+
 Use these public frontend settings in Vercel when an explicit deployment configuration is needed:
 
 ```env
