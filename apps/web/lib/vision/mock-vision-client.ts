@@ -1,21 +1,25 @@
 import {
   SCS_INDICATOR_KEYS,
   VISION_SCHEMA_VERSION,
+  VOTE_WINDOW_SIZE,
+  evaluateVote,
   type ClassificationResult,
   type IndicatorAnswer,
   type VisionResultV1,
+  type VotedLabel,
 } from '@agronova/vision-schema';
 
 import type { SubmitFrameInput, VisionClient } from './vision-client';
 
 const MODEL = { base_model: 'mock', adapter: 'mock', adapter_revision: null };
 
+/** Same formulas as `apps/inference/app/scs.py` and `pipeline.py`: score = YA/7 (AUDIT K6). */
 function classification(
   ya: number,
   hidden: number,
   label: ClassificationResult['label'],
-  confidence: number | null,
 ): ClassificationResult {
+  const score = ya / SCS_INDICATOR_KEYS.length;
   const answers: IndicatorAnswer[] = SCS_INDICATOR_KEYS.map((_, index) =>
     index < ya ? 'YA' : index >= SCS_INDICATOR_KEYS.length - hidden ? 'TIDAK_TERLIHAT' : 'TIDAK',
   );
@@ -26,8 +30,8 @@ function classification(
     total_ya: ya,
     visible_count: SCS_INDICATOR_KEYS.length - hidden,
     label,
-    score_stress: confidence === null ? 0 : label === 'stress' ? confidence : 1 - confidence,
-    confidence,
+    score_stress: score,
+    confidence: label === 'stress' ? score : label === 'not_stress' ? 1 - score : null,
   };
 }
 
@@ -37,21 +41,21 @@ const scenarios: Array<
 > = [
   {
     status: 'classified',
-    result: classification(0, 0, 'not_stress', 1),
+    result: classification(0, 0, 'not_stress'),
     quality: { status: 'ok', issues: [] },
     raw_response: null,
     error_message: null,
   },
   {
     status: 'classified',
-    result: classification(5, 0, 'stress', 0.71),
+    result: classification(5, 0, 'stress'),
     quality: { status: 'enhanced', issues: ['terlalu_gelap'] },
     raw_response: null,
     error_message: null,
   },
   {
     status: 'classified',
-    result: classification(1, 3, 'undefined', null),
+    result: classification(1, 3, 'undefined'),
     quality: { status: 'ok', issues: [] },
     raw_response: null,
     error_message: null,
@@ -72,10 +76,12 @@ const scenarios: Array<
   },
 ];
 
-/** Browser-only stand-in for the API (no network, no persistence). The vote is not simulated. */
+/** Browser-only stand-in for the API (no network, no persistence). Votes with the API's voter. */
 export class MockVisionClient implements VisionClient {
   readonly mode = 'mock' as const;
   private readonly records: VisionResultV1[] = [];
+  /** Voted labels per camera, oldest first (uploads arrive in order here). */
+  private readonly windows = new Map<string, VotedLabel[]>();
   private readonly urls = new Map<string, string>();
 
   async submit({
@@ -86,6 +92,11 @@ export class MockVisionClient implements VisionClient {
   }: SubmitFrameInput): Promise<VisionResultV1> {
     const scenario = scenarios[this.records.length % scenarios.length]!;
     const messageId = crypto.randomUUID();
+    const window = this.windows.get(cameraId) ?? [];
+    const { vote, accepted } = evaluateVote({ result: scenario.result, window });
+    if (accepted && scenario.result && scenario.result.label !== 'undefined') {
+      this.windows.set(cameraId, [...window, scenario.result.label].slice(-VOTE_WINDOW_SIZE));
+    }
     const record: VisionResultV1 = {
       schema_version: VISION_SCHEMA_VERSION,
       message_id: messageId,
@@ -97,14 +108,7 @@ export class MockVisionClient implements VisionClient {
       model: MODEL,
       inference_ms: 0,
       ...scenario,
-      vote: {
-        status: 'waiting_window',
-        trigger_alert: false,
-        window_size: 5,
-        window_filled: 0,
-        majority_label: null,
-        majority_count: null,
-      },
+      vote,
       image_available: true,
     };
     this.urls.set(messageId, URL.createObjectURL(file));

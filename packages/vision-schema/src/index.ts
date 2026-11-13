@@ -224,3 +224,5 @@ export type ClassificationResult = z.infer<typeof classificationResultSchema>;
 export type InferenceResponseV1 = z.infer<typeof inferenceResponseV1Schema>;
 export type VisionResultV1 = z.infer<typeof visionResultV1Schema>;
 export type VisionFrameMetadata = z.infer<typeof visionFrameMetadataSchema>;
+
+export { evaluateVote, type VotedLabel, type VoteInput } from './voter.js';
