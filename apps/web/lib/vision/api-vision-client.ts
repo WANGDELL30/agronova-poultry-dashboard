@@ -1,6 +1,11 @@
 import { visionResultV1Schema, type VisionResultV1 } from '@agronova/vision-schema';
 
-import { VisionClientError, type SubmitFrameInput, type VisionClient } from './vision-client';
+import {
+  RESULTS_SHOWN,
+  VisionClientError,
+  type SubmitFrameInput,
+  type VisionClient,
+} from './vision-client';
 
 interface ApiErrorBody {
   error?: string;
@@ -36,7 +41,7 @@ export class ApiVisionClient implements VisionClient {
   }
 
   async list(): Promise<VisionResultV1[]> {
-    const response = await this.request(`${this.base}/results?limit=20`);
+    const response = await this.request(`${this.base}/results?limit=${RESULTS_SHOWN}`);
     return visionResultV1Schema.array().parse(await response.json());
   }
 

@@ -9,7 +9,10 @@ import {
   type VotedLabel,
 } from '@agronova/vision-schema';
 
-import type { SubmitFrameInput, VisionClient } from './vision-client';
+import { RESULTS_SHOWN, type SubmitFrameInput, type VisionClient } from './vision-client';
+
+/** Uploads kept in the tab; older ones are dropped and their blob URLs revoked (AUDIT H18). */
+export const MOCK_RECORDS_KEPT = RESULTS_SHOWN;
 
 const MODEL = { base_model: 'mock', adapter: 'mock', adapter_revision: null };
 
@@ -83,6 +86,7 @@ export class MockVisionClient implements VisionClient {
   /** Voted labels per camera, oldest first (uploads arrive in order here). */
   private readonly windows = new Map<string, VotedLabel[]>();
   private readonly urls = new Map<string, string>();
+  private uploads = 0;
 
   async submit({
     file,
@@ -90,7 +94,7 @@ export class MockVisionClient implements VisionClient {
     kandangId,
     capturedAt,
   }: SubmitFrameInput): Promise<VisionResultV1> {
-    const scenario = scenarios[this.records.length % scenarios.length]!;
+    const scenario = scenarios[this.uploads++ % scenarios.length]!;
     const messageId = crypto.randomUUID();
     const window = this.windows.get(cameraId) ?? [];
     const { vote, accepted } = evaluateVote({ result: scenario.result, window });
@@ -113,6 +117,11 @@ export class MockVisionClient implements VisionClient {
     };
     this.urls.set(messageId, URL.createObjectURL(file));
     this.records.unshift(record);
+    for (const dropped of this.records.splice(MOCK_RECORDS_KEPT)) {
+      const url = this.urls.get(dropped.message_id);
+      if (url) URL.revokeObjectURL(url);
+      this.urls.delete(dropped.message_id);
+    }
     return record;
   }
 

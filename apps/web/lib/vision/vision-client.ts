@@ -1,5 +1,8 @@
 import type { VisionResultV1 } from '@agronova/vision-schema';
 
+/** How many recent results the /vision page lists (API `?limit=`, mock retention). */
+export const RESULTS_SHOWN = 20;
+
 export interface SubmitFrameInput {
   file: File;
   cameraId: string;
