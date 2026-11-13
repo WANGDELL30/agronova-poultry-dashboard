@@ -24,6 +24,7 @@ describe('Vercel mortality endpoints', () => {
   it('never returns an invented mortality prediction', async () => {
     const response = await predict();
     expect(response.status).toBe(409);
+    expect(response.headers.get('cache-control')).toBe('no-store'); // same as NestJS (K9)
     const body = await response.json();
     expect(body.code).toBe('MODEL_INPUTS_UNAVAILABLE');
     expect(body.mortality_prediction).toBeNull();

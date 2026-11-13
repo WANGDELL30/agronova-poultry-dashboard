@@ -15,6 +15,7 @@ export function rejectWithoutReadingBody(
 ): void {
   response.statusCode = 409;
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
+  response.setHeader('Cache-Control', 'no-store'); // K9
   response.end(JSON.stringify(modelInputsUnavailable));
 }
 

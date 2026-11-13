@@ -21,3 +21,22 @@ describe('MortalityController model failure (H12)', () => {
     error.mockRestore();
   });
 });
+
+describe('MortalityController model failure over HTTP (K9)', () => {
+  it('sends no-store on the 503 too', async () => {
+    const { NestFactory } = await import('@nestjs/core');
+    const { FastifyAdapter } = await import('@nestjs/platform-fastify');
+    const { MortalityModule } = await import('./mortality.module.js');
+    const app = await NestFactory.create(MortalityModule, new FastifyAdapter(), { logger: false });
+    await app.init();
+    await (app.getHttpAdapter().getInstance() as { ready(): Promise<void> }).ready();
+    const res = await (
+      app.getHttpAdapter().getInstance() as {
+        inject(o: object): Promise<{ statusCode: number; headers: Record<string, string> }>;
+      }
+    ).inject({ method: 'GET', url: '/mortality/model' });
+    await app.close();
+    expect(res.statusCode).toBe(503);
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
+});

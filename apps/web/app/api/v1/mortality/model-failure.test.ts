@@ -14,7 +14,9 @@ describe('Vercel mortality model failure (H12)', () => {
     // Set here, not in the factory: the web config restores mocks before each test.
     vi.mocked(getModelStatus).mockRejectedValue(new Error('Model weight checksum mismatch.'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    expect((await GET()).status).toBe(503);
+    const first = await GET();
+    expect(first.status).toBe(503);
+    expect(first.headers.get('cache-control')).toBe('no-store'); // K9
     expect((await GET()).status).toBe(503);
     expect(error).toHaveBeenCalledTimes(1);
     expect(String(error.mock.calls[0]![0])).toContain('checksum mismatch');

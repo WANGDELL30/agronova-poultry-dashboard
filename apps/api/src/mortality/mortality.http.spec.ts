@@ -35,6 +35,7 @@ describe('Mortality endpoints over HTTP (K8)', () => {
       ]) {
         const res = await post(path, payload!, type!);
         expect(res.statusCode, `${path} ${type}`).toBe(409);
+        expect(res.headers['cache-control']).toBe('no-store'); // K9
         expect(res.json()).toMatchObject({
           code: 'MODEL_INPUTS_UNAVAILABLE',
           mortality_prediction: null,
@@ -42,4 +43,10 @@ describe('Mortality endpoints over HTTP (K8)', () => {
       }
     },
   );
+
+  it('GET model is no-store like the Vercel route (K9)', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mortality/model' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
 });
