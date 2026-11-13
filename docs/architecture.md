@@ -51,7 +51,9 @@ Simulator or ESP32 -> Mosquitto -> API ingestion -> shared validation -> Timesca
 - The API is responsible for validating untrusted telemetry before persistence.
 - Shared packages contain contracts, not application orchestration or infrastructure access.
 - `packages/vision-schema` is the single contract between the API, the web app, and the inference
-  service. The Python response model must stay in sync with its Zod schema.
+  service. There is no Pydantic model on the Python side (decision 2026-11-13, AUDIT K3): the
+  Python response is a plain dict, and the contract is enforced by the Zod schema in the API plus
+  tests (the cross-field invariants of K2 and the notebook/prompt checks of P8).
 
 ## Vision pipeline (chicken stress detection)
 
@@ -76,7 +78,8 @@ The API then applies a **temporal vote**: every classified frame labelled `stres
 a vote, with no confidence filter. The window holds the last 5 votes per camera, and an alert is
 raised when `stress` is the majority with at least 3 votes. `undefined` is reported as
 `ignored_undefined` and frames without a result as `ignored_no_result`; neither enters the window.
-The window is rebuilt from stored records, so it does not depend on in-process state. Dropping the
+The window is rebuilt from stored records, but those records are held in memory (the Postgres
+repository is deferred), so the window is in-process state and is lost when the API restarts. Dropping the
 confidence >= 0.6 filter is a deliberate deviation from the voter in inference notebook 04 (decision
 2026-11-13, AUDIT K1/V1): with confidence = YA/7, stress frames with 3-4 `YA` never became votes.
 
@@ -96,7 +99,8 @@ together, only after re-evaluating the model.
   voting.
 - `captured_at` (camera) and `received_at` (backend) are both stored in UTC and converted only for
   display.
-- The raw model response is preserved alongside the parsed result.
+- The raw model response is stored for every frame with model output (`classified` and
+  `parse_error`), alongside the parsed result (decision 2026-11-13, AUDIT K4).
 - Output is decision support for farm staff, not a diagnosis.
 
 ### Inference modes and deployment
@@ -144,8 +148,10 @@ volatile; durable history still requires a migration and TimescaleDB repository.
 
 Docker Compose supplies a PostgreSQL 16-compatible TimescaleDB image and Eclipse Mosquitto 2. The
 inference service is available as opt-in Compose profiles (`inference` for mock, `gpu` for real)
-and is not started by `docker compose up -d`. All services have health checks, a private project network, configurable host ports, restart policies, and
-explicitly named persistent volumes. Mosquitto permits anonymous access only for Phase 1 local
+and is not started by `docker compose up -d`. All services have health checks, a project network, configurable host ports, restart policies, and
+explicitly named persistent volumes. The network is not private: every published port is bound to
+all host interfaces (`0.0.0.0`). Restricting that is part of the security findings (S4-S6, D17), which
+are outside the current fixes. Mosquitto permits anonymous access only for Phase 1 local
 development and must not be exposed to an untrusted network. Authentication and TLS belong in a
 later integration/security phase.
 
