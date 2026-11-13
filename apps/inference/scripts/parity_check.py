@@ -64,7 +64,7 @@ def compare(reference_item: dict, ours: dict) -> list[str]:
 
 
 def _compare_raw(ref: dict, ours: dict, problems: list[str]) -> None:
-    """Raw model text, when both sides kept it (the service drops it for `classified`, K4)."""
+    """Raw model text. Both sides keep it for every frame with model output since K4."""
     theirs, mine = ref.get("raw_response"), ours.get("raw_response")
     if theirs is not None and mine is not None and theirs != mine:
         problems.append(f"raw_response: notebook={theirs[:80]!r} service={mine[:80]!r}")

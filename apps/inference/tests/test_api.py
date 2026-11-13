@@ -326,3 +326,12 @@ def test_max_queue_env(monkeypatch):
     monkeypatch.setenv("INFERENCE_MAX_QUEUE", "-1")
     with pytest.raises(ValueError, match="INFERENCE_MAX_QUEUE"):
         load_settings()
+
+
+def test_classified_frames_keep_the_raw_model_answer(client):
+    """AUDIT K4 (decision 2026-11-13): raw_response is stored for every frame with model output."""
+    from app.backends import MockBackend
+
+    body = post(client, png(sharp_image())).json()
+    assert body["status"] == "classified"
+    assert body["raw_response"] == MockBackend().generate(cv2.imdecode(np.frombuffer(png(sharp_image()), np.uint8), cv2.IMREAD_COLOR))

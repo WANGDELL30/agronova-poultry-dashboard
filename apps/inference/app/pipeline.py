@@ -98,6 +98,8 @@ def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT
             response["error_message"] = str(exc)
         else:
             response["status"] = "classified"
+            # Kept for every frame with model output, as the notebook does (AUDIT K4, decision 2026-11-13).
+            response["raw_response"] = raw_text
             response["result"] = {
                 "indicators": normalized,
                 "total_ya": total_ya,
