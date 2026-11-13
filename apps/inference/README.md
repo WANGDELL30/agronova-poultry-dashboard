@@ -54,6 +54,15 @@ repo, add a read token as a Kaggle Secret.
   downscaled with `INTER_AREA` before the quality gate. The notebook works at full resolution; frames
   up to 1280 px (including the 640 px dataset) are not changed, so parity on the dataset holds.
 
+**Known difference from the training data, not from notebook 04 (AUDIT P10).** The service
+(`cv2.imdecode`) and notebook 04 (`cv2.imread`) decode identically: both rotate a JPEG according to
+its EXIF Orientation tag and scale a 16-bit PNG down to 8 bits. The training notebook opens images
+with PIL (`Image.open(...).convert("RGB")`), which does not apply EXIF orientation and clips 16-bit
+values instead of scaling them. None of the 126 dataset images (frames and crops) has an EXIF
+orientation other than 1, so the current data is not affected. A future phone or camera photo with an
+EXIF rotation, or a 16-bit PNG, would reach the model differently from how the training data did; if
+crops are prepared elsewhere, apply the same EXIF handling there.
+
 **B. Demo with the dashboard (free GPU on Colab):**
 
 1. Open `colab/run_inference_colab.ipynb` in Google Colab and set the runtime to **T4 GPU**.
