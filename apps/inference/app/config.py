@@ -19,6 +19,10 @@ class Settings:
     api_key: str | None = None
     max_image_pixels: int = DEFAULT_MAX_IMAGE_PIXELS
     max_image_side: int = DEFAULT_MAX_IMAGE_SIDE
+    # Model load limits (AUDIT H11). Tests build Settings directly, so the safe defaults live here;
+    # load_settings() turns exit-on-error on by default in real mode.
+    load_timeout_s: int = 1800
+    exit_on_load_error: bool = False
 
 
 def _positive_int(name: str, default: int) -> int:
@@ -44,7 +48,21 @@ def load_settings() -> Settings:
         api_key=os.environ.get("INFERENCE_API_KEY") or None,
         max_image_pixels=max_image_pixels_from_env(),
         max_image_side=_positive_int("INFERENCE_MAX_IMAGE_SIDE", DEFAULT_MAX_IMAGE_SIDE),
+        load_timeout_s=_positive_int("INFERENCE_LOAD_TIMEOUT_S", 1800),
+        exit_on_load_error=_bool("INFERENCE_EXIT_ON_LOAD_ERROR", default=mode == "real"),
     )
+
+
+def _bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    value = raw.strip().lower()
+    if value in ("1", "true", "yes"):
+        return True
+    if value in ("0", "false", "no"):
+        return False
+    raise ValueError(f'{name} must be true or false; received "{raw}".')
 
 
 def max_image_pixels_from_env() -> int:

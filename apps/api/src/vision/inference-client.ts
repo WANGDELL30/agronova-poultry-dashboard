@@ -62,9 +62,16 @@ export class InferenceClient {
       throw new InferenceError('image_too_large', 'Image exceeds the inference pixel limit.');
     }
     if (response.status === 503) {
-      const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+      const body = (await response.json().catch(() => null)) as {
+        error?: unknown;
+        status?: unknown;
+      } | null;
       if (body?.error === 'gpu_oom') {
         throw new InferenceError('inference_gpu_oom', 'Inference ran out of GPU memory.');
+      }
+      if (body?.status === 'error') {
+        // The model failed to load: unlike `loading`, waiting a few seconds will not help (H11).
+        throw new InferenceError('inference_unavailable', 'Inference model failed to load.');
       }
       throw new InferenceError('inference_not_ready', 'Inference model is not ready.');
     }

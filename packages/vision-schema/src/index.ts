@@ -198,6 +198,8 @@ export const VISION_API_ERROR_CODES = [
   'inference_unreachable',
   'inference_timeout',
   'inference_not_ready',
+  /** The model failed to load (inference /health `error`); retrying soon will not help (H11). */
+  'inference_unavailable',
   'inference_bad_response',
   'inference_failed',
   /** The GPU ran out of memory on this frame; inference stays up and may succeed later (R12). */

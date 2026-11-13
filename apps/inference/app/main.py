@@ -1,7 +1,10 @@
 import hmac
+import logging
 import os
 import threading
+from collections.abc import Callable
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
@@ -11,32 +14,71 @@ from .config import Settings, load_settings
 from .pipeline import BackendFailure, classify_bytes
 from .quality import image_pixels
 
+logger = logging.getLogger(__name__)
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
 
 class State:
-    """Honest readiness: `ready` only after the model is fully loaded."""
+    """Honest readiness: `ready` only after the model is fully loaded.
 
-    def __init__(self, settings: Settings) -> None:
+    A load can no longer hang in `loading` or die silently (AUDIT H11): any BaseException becomes
+    `error`, a load that exceeds `load_timeout_s` becomes `error`, and with `exit_on_load_error` the
+    process exits non-zero so the orchestrator restarts it.
+    """
+
+    def __init__(self, settings: Settings, exit_process: Callable[[int], object] = os._exit) -> None:
         self.settings = settings
         self.status = "loading"
         self.detail: str | None = None
         self.backend: Backend | None = None
+        self.loading_since: str | None = None
+        self._exit_process = exit_process
+        self._guard = threading.Lock()
 
     def load(self) -> None:
+        self.loading_since = _utc_now()
         try:
-            self.backend = MockBackend() if self.settings.mode == "mock" else RealBackend(self.settings)
-            self.status = "ready"
-        except Exception as exc:  # noqa: BLE001
-            self.status, self.detail = "error", f"{type(exc).__name__}: {exc}"
+            backend = MockBackend() if self.settings.mode == "mock" else RealBackend(self.settings)
+        except BaseException as exc:  # noqa: BLE001 - SystemExit/KeyboardInterrupt must not leave `loading`
+            self._fail(f"{type(exc).__name__}: {exc}")
+            return
+        with self._guard:
+            if self.status != "loading":  # timed out meanwhile: stay `error`
+                return
+            self.backend, self.status, self.loading_since = backend, "ready", None
+
+    def start_watchdog(self) -> None:
+        timer = threading.Timer(self.settings.load_timeout_s, self._timed_out)
+        timer.daemon = True
+        timer.start()
+
+    def _timed_out(self) -> None:
+        if self.status == "loading":
+            self._fail(f"model load timed out after {self.settings.load_timeout_s} s")
+
+    def _fail(self, detail: str) -> None:
+        with self._guard:
+            if self.status != "loading":
+                return
+            self.status, self.detail = "error", detail
+        logger.error("model load failed: %s", detail)
+        if self.settings.exit_on_load_error:
+            logger.error("exiting so the orchestrator restarts the service (INFERENCE_EXIT_ON_LOAD_ERROR)")
+            self._exit_process(3)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    state = State(settings or load_settings())
+def create_app(settings: Settings | None = None, exit_process: Callable[[int], object] = os._exit) -> FastAPI:
+    state = State(settings or load_settings(), exit_process)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         if state.settings.mode == "mock" or os.environ.get("INFERENCE_LOAD_BLOCKING") == "1":
             state.load()
         else:  # model loading takes minutes; serve /health (503) meanwhile
+            state.start_watchdog()
             threading.Thread(target=state.load, daemon=True).start()
         yield
 
@@ -44,7 +86,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/health")
     def health():
-        body = {"status": state.status, "inference_mode": state.settings.mode, "detail": state.detail}
+        body = {
+            "status": state.status,
+            "inference_mode": state.settings.mode,
+            "detail": state.detail,
+            "loading_since": state.loading_since,
+        }
         return JSONResponse(body, status_code=200 if state.status == "ready" else 503)
 
     @app.post("/v1/classify")
@@ -54,7 +101,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if expected and not hmac.compare_digest(x_api_key or "", expected):
             raise HTTPException(status_code=401, detail="invalid or missing API key")
         if state.status != "ready" or state.backend is None:
-            raise HTTPException(status_code=503, detail=f"model {state.status}")
+            # `status` lets the API tell a model still loading from one that failed (H11).
+            return JSONResponse({"error": "model_not_ready", "status": state.status}, status_code=503)
         data = file.file.read(state.settings.max_image_bytes + 1)
         if not data:
             raise HTTPException(status_code=400, detail="empty file")

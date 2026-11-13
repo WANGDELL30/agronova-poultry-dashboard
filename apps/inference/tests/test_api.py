@@ -149,3 +149,103 @@ def test_backend_exception_is_a_coded_json_error_and_the_next_request_works(monk
         assert first.status_code == status and first.json() == {"error": code}
         assert not backend._lock.locked()
         assert post(c, png(sharp_image())).status_code == 200
+
+
+# --- H11: model load can no longer hang in `loading` or stay in `error` forever ---
+
+
+def real_settings(**overrides):
+    base = dict(mode="real", hf_adapter_repo="x", base_model="y", hf_token=None, max_image_bytes=1_000_000)
+    return Settings(**{**base, **overrides})
+
+
+def wait_for_status(c, wanted, seconds=5.0):
+    import time
+
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        body = c.get("/health").json()
+        if body["status"] == wanted:
+            return body
+        time.sleep(0.05)
+    raise AssertionError(f"status never became {wanted}: {body}")
+
+
+def test_system_exit_during_load_is_error_not_loading_forever(monkeypatch):
+    from app import main
+
+    def boom(_settings):
+        raise SystemExit(3)
+
+    monkeypatch.setattr(main, "RealBackend", boom)
+    with TestClient(create_app(real_settings())) as c:
+        body = wait_for_status(c, "error")
+    assert "SystemExit" in body["detail"]
+
+
+def test_health_reports_loading_since_in_utc(monkeypatch):
+    import re
+    import threading
+
+    from app import main
+
+    release = threading.Event()
+    monkeypatch.setattr(main, "RealBackend", lambda _s: release.wait(5))
+    with TestClient(create_app(real_settings())) as c:
+        body = c.get("/health").json()
+        release.set()
+    assert body["status"] == "loading"
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z", body["loading_since"])
+
+
+def test_load_over_the_timeout_becomes_error(monkeypatch):
+    import threading
+
+    from app import main
+
+    release = threading.Event()
+    monkeypatch.setattr(main, "RealBackend", lambda _s: release.wait(10))
+    with TestClient(create_app(real_settings(load_timeout_s=1))) as c:
+        body = wait_for_status(c, "error", seconds=4)
+        release.set()
+    assert "timed out" in body["detail"]
+
+
+def test_load_error_exits_the_process_when_configured(monkeypatch):
+    from app import main
+
+    def boom(_settings):
+        raise RuntimeError("no weights")
+
+    exits = []
+    monkeypatch.setattr(main, "RealBackend", boom)
+    with TestClient(create_app(real_settings(exit_on_load_error=True), exit_process=exits.append)) as c:
+        wait_for_status(c, "error")
+    assert exits and exits[0] != 0
+
+
+def test_classify_503_body_says_whether_the_model_is_loading_or_failed(monkeypatch):
+    from app import main
+
+    def boom(_settings):
+        raise RuntimeError("no weights")
+
+    monkeypatch.setattr(main, "RealBackend", boom)
+    with TestClient(create_app(real_settings())) as c:
+        wait_for_status(c, "error")
+        r = c.post("/v1/classify", files={"file": ("f", b"x", "image/png")})
+    assert r.status_code == 503 and r.json()["status"] == "error"
+
+
+def test_exit_on_load_error_defaults(monkeypatch):
+    from app.config import load_settings
+
+    monkeypatch.delenv("INFERENCE_EXIT_ON_LOAD_ERROR", raising=False)
+    monkeypatch.setenv("INFERENCE_MODE", "real")
+    assert load_settings().exit_on_load_error is True
+    assert load_settings().load_timeout_s == 1800
+    monkeypatch.setenv("INFERENCE_MODE", "mock")
+    assert load_settings().exit_on_load_error is False
+    monkeypatch.setenv("INFERENCE_EXIT_ON_LOAD_ERROR", "maybe")
+    with pytest.raises(ValueError, match="INFERENCE_EXIT_ON_LOAD_ERROR"):
+        load_settings()

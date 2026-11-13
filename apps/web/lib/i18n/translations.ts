@@ -314,6 +314,8 @@ export const id = {
     'Model belum siap (masih dimuat). Foto tidak disimpan; coba lagi sekitar 30 detik lagi.',
   'vision.error.inference_failed':
     'Layanan inferensi gagal memproses foto (galat server). Coba lagi nanti.',
+  'vision.error.inference_unavailable':
+    'Layanan model bermasalah: model gagal dimuat. Foto tidak disimpan. Hubungi pengelola server.',
   'vision.error.inference_gpu_oom':
     'Memori GPU server penuh saat memproses foto ini. Foto tetap tersimpan; coba lagi sebentar lagi.',
   'vision.error.image_required': 'Kirim tepat satu foto dalam satu unggahan.',
@@ -649,6 +651,8 @@ export const en: Record<TranslationKey, string> = {
     'The model is not ready yet (still loading). The photo was not saved; try again in about 30 seconds.',
   'vision.error.inference_failed':
     'The inference service failed to process the photo (server error). Try again later.',
+  'vision.error.inference_unavailable':
+    'The model service has a problem: the model failed to load. The photo was not saved. Contact the server operator.',
   'vision.error.inference_gpu_oom':
     'The server ran out of GPU memory on this photo. The photo was saved; try again shortly.',
   'vision.error.image_required': 'Send exactly one photo per upload.',

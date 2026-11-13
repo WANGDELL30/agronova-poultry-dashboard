@@ -121,6 +121,10 @@ export class VisionController {
           reply.header('Retry-After', String(NOT_READY_RETRY_AFTER_SECONDS));
           throw apiError(error.code, error.message, HttpStatus.SERVICE_UNAVAILABLE);
         }
+        if (error.code === 'inference_unavailable') {
+          // Nothing was stored. No Retry-After: the model failed to load and needs a restart (H11).
+          throw apiError(error.code, error.message, HttpStatus.SERVICE_UNAVAILABLE);
+        }
         if (error.code === 'image_too_large') {
           throw apiError(error.code, error.message, HttpStatus.PAYLOAD_TOO_LARGE);
         }

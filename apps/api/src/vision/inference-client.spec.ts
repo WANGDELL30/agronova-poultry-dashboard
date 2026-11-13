@@ -91,6 +91,20 @@ describe('InferenceClient', () => {
     });
   });
 
+  it('tells a model still loading from one that failed to load (H11)', async () => {
+    const respond = (body: string) =>
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 503 })));
+    const client = new InferenceClient('http://i', 1000);
+    respond('{"error":"model_not_ready","status":"loading"}');
+    await expect(client.classify(Buffer.from('x'), 'image/png')).rejects.toMatchObject({
+      code: 'inference_not_ready',
+    });
+    respond('{"error":"model_not_ready","status":"error"}');
+    await expect(client.classify(Buffer.from('x'), 'image/png')).rejects.toMatchObject({
+      code: 'inference_unavailable',
+    });
+  });
+
   it('maps other 5xx answers from inference to inference_failed (R10)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 500 })));
     await expect(

@@ -198,6 +198,18 @@ describe('VisionController (HTTP)', () => {
     expect(after).toBe(before);
   });
 
+  it('answers 503 inference_unavailable without Retry-After or a stored record when the model failed (H11)', async () => {
+    const count = async () =>
+      (await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })).json().length;
+    const before = await count();
+    classify.mockRejectedValueOnce(new InferenceError('inference_unavailable', 'model failed'));
+    const res = await upload(valid, { data: 'a', type: 'image/png' });
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toMatchObject({ error: 'inference_unavailable' });
+    expect(res.headers['retry-after']).toBeUndefined();
+    expect(await count()).toBe(before);
+  });
+
   it('maps inference timeout to 504 and unreachable to 502 with the stored message_id', async () => {
     classify.mockRejectedValueOnce(new InferenceError('inference_timeout', 'slow'));
     const timeout = await upload(valid, { data: 'a', type: 'image/png' });
