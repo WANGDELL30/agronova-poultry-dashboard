@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -174,6 +174,22 @@ describe('VisionController (HTTP)', () => {
       await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })
     ).json();
     expect(after).toHaveLength(before.length);
+  });
+
+  it('rejects an empty image with 400 before storing anything (R11)', async () => {
+    const list = async () =>
+      (await app.inject({ method: 'GET', url: '/api/v1/vision/results?limit=100' })).json();
+    const before = await list();
+    const filesBefore = await readdir(dir);
+    classify.mockClear();
+
+    const res = await upload(valid, { data: '', type: 'image/jpeg' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'image_empty' });
+    expect(classify).not.toHaveBeenCalled();
+    expect(await list()).toHaveLength(before.length);
+    expect(await readdir(dir)).toEqual(filesBefore);
   });
 
   it('never resolves non-UUID image ids to files', async () => {

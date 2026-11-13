@@ -155,6 +155,7 @@ export const VISION_API_ERROR_CODES = [
   'inference_failed',
   'invalid_metadata',
   'image_required',
+  'image_empty',
   'image_too_large',
   'unsupported_image_type',
 ] as const;

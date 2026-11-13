@@ -85,6 +85,10 @@ export class VisionController {
       throw error;
     }
     if (!image) throw exactlyOneImage();
+    // Checked before anything is stored or sent to inference (AUDIT R11).
+    if (image.data.length === 0) {
+      throw apiError('image_empty', 'The image file is empty.', HttpStatus.BAD_REQUEST);
+    }
 
     const meta = visionFrameMetadataSchema.safeParse(fields);
     if (!meta.success) {
