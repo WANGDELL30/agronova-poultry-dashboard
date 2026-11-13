@@ -2,9 +2,13 @@ import type { NextConfig } from 'next';
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 
 import { checkApiBaseUrl, checkDeviceId } from './lib/config/api-base-url-check';
+import { securityHeaders } from './lib/config/security-headers';
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
+  },
 };
 
 export default function config(phase: string): NextConfig {
