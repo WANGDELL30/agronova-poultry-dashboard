@@ -5,17 +5,17 @@
 AgroNova is a pnpm TypeScript monorepo. Its deployable applications are isolated from one another,
 and cross-application contracts live in focused shared packages.
 
-| Component                   | Responsibility                                                            | Direct dependencies                 |
-| --------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
-| `apps/web`                  | Responsive operator interface and backend health presentation; mortality Route Handlers (`app/api/v1/mortality/*`) on Vercel | HTTP API, `packages/mortality-model` (server only) |
+| Component                   | Responsibility                                                                                                                                        | Direct dependencies                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `apps/web`                  | Responsive operator interface and backend health presentation; mortality Route Handlers (`app/api/v1/mortality/*`) on Vercel                          | HTTP API, `packages/mortality-model` (server only)              |
 | `apps/api`                  | Backend boundary, health endpoint, PostgreSQL check, vision orchestration, telemetry module (HTTP ingest, in-memory latest reading), mortality module | PostgreSQL, inference service, disk, `packages/mortality-model` |
-| `apps/inference`            | Image quality gate, Qwen3-VL + LoRA classification, SCS rule (Python)     | Hugging Face model repositories     |
-| `apps/simulator`            | Future development telemetry source; idle in Phase 1                      | Shared telemetry contract           |
-| `packages/telemetry-schema` | Versioned Zod validation, inferred TypeScript types, enums, and example   | Zod                                 |
-| `packages/vision-schema`    | Versioned vision result, vote, and inference response contract            | Zod                                 |
-| `packages/mortality-model`  | Checksum-verified LSTM mortality artifact and server-side runtime, shared by the API and the web Route Handlers | TensorFlow.js, Zod |
-| TimescaleDB                 | Future durable telemetry and operational data store                       | API only                            |
-| Eclipse Mosquitto           | Future MQTT transport for simulator and devices                           | Future API ingestion and publishers |
+| `apps/inference`            | Image quality gate, Qwen3-VL + LoRA classification, SCS rule (Python)                                                                                 | Hugging Face model repositories                                 |
+| `apps/simulator`            | Future development telemetry source; idle in Phase 1                                                                                                  | Shared telemetry contract                                       |
+| `packages/telemetry-schema` | Versioned Zod validation, inferred TypeScript types, enums, and example                                                                               | Zod                                                             |
+| `packages/vision-schema`    | Versioned vision result, vote, and inference response contract                                                                                        | Zod                                                             |
+| `packages/mortality-model`  | Checksum-verified LSTM mortality artifact and server-side runtime, shared by the API and the web Route Handlers                                       | TensorFlow.js, Zod                                              |
+| TimescaleDB                 | Future durable telemetry and operational data store                                                                                                   | API only                                                        |
+| Eclipse Mosquitto           | Future MQTT transport for simulator and devices                                                                                                       | Future API ingestion and publishers                             |
 
 The TypeScript side is a modular monolith, not a collection of microservices. The API will gain bounded
 domain modules as requirements arrive. A single backend keeps operations and consistency simple

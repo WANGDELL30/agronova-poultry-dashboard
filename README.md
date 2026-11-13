@@ -7,17 +7,17 @@ notebooks used to train and evaluate the model, and local TimescaleDB plus MQTT 
 
 ## Current scope
 
-| Area                        | Status                                                                           |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| Overview dashboard          | Live API polling by default; waits without fabricating values until data arrives |
-| HTTP telemetry ingestion    | `POST /api/v1/telemetry`, schema-v1 validated; latest reading kept in memory     |
-| Vision (stress detection)   | Working end to end: upload frame → quality gate → VLM → SCS rule → temporal vote |
-| MQTT ingestion, persistence | **Not implemented.** Simulator does not publish; no sensor data is stored        |
-| Vision result persistence   | **In-memory only.** Results are lost when the API restarts                       |
-| Real ESP32 devices, alerts  | HTTP contract ready; ESP32 firmware still needs to post telemetry                |
+| Area                        | Status                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| Overview dashboard          | Live API polling by default; waits without fabricating values until data arrives                |
+| HTTP telemetry ingestion    | `POST /api/v1/telemetry`, schema-v1 validated; latest reading kept in memory                    |
+| Vision (stress detection)   | Working end to end: upload frame → quality gate → VLM → SCS rule → temporal vote                |
+| MQTT ingestion, persistence | **Not implemented.** Simulator does not publish; no sensor data is stored                       |
+| Vision result persistence   | **In-memory only.** Results are lost when the API restarts                                      |
+| Real ESP32 devices, alerts  | HTTP contract ready; ESP32 firmware still needs to post telemetry                               |
 | Operations modules          | Seven modules render the same live telemetry as the overview; later-phase controls are disabled |
-| Snapshot export             | `/exports` downloads the current snapshot as JSON or CSV; history export is disabled |
-| Notifications               | Not implemented                                                                  |
+| Snapshot export             | `/exports` downloads the current snapshot as JSON or CSV; history export is disabled            |
+| Notifications               | Not implemented                                                                                 |
 
 ## How stress detection works
 
@@ -161,14 +161,14 @@ reference inference notebook (`training/vlm-workflow/inference-vlm-lora-huggingf
 
 ### Service addresses
 
-| Service    | URL / address                         | Configuration                     |
-| ---------- | ------------------------------------- | --------------------------------- |
+| Service    | URL / address                         | Configuration                                                                                   |
+| ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Web        | `http://localhost:3000`               | `PORT=… corepack pnpm --filter @agronova/web dev` or `next dev -p` (not read from `.env.local`) |
-| API        | `http://localhost:4000`               | `API_HOST`, `API_PORT`            |
-| Health     | `http://localhost:4000/api/v1/health` | API environment                   |
-| Inference  | `http://localhost:8000`               | `INFERENCE_PORT`, `INFERENCE_URL` |
-| PostgreSQL | `localhost:5432`                      | `POSTGRES_PORT`, `DATABASE_URL`   |
-| MQTT       | `mqtt://localhost:1883`               | `MQTT_PORT`, `MQTT_BROKER_URL`    |
+| API        | `http://localhost:4000`               | `API_HOST`, `API_PORT`                                                                          |
+| Health     | `http://localhost:4000/api/v1/health` | API environment                                                                                 |
+| Inference  | `http://localhost:8000`               | `INFERENCE_PORT`, `INFERENCE_URL`                                                               |
+| PostgreSQL | `localhost:5432`                      | `POSTGRES_PORT`, `DATABASE_URL`                                                                 |
+| MQTT       | `mqtt://localhost:1883`               | `MQTT_PORT`, `MQTT_BROKER_URL`                                                                  |
 
 Stop local infrastructure without deleting its named volumes:
 
@@ -178,35 +178,35 @@ corepack pnpm infra:down
 
 ## API endpoints (prefix `/api/v1`)
 
-| Method | Path                        | Purpose                                                              |
-| ------ | --------------------------- | -------------------------------------------------------------------- |
-| GET    | `/health`                   | API and database status (`degraded` when PostgreSQL is unavailable)  |
-| POST   | `/vision/frames`            | Multipart upload: one `image` (JPEG/PNG/WebP, up to 8 MB) + metadata |
-| GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)            |
-| GET    | `/vision/results/:id/image` | Stored frame for a result                                            |
-| GET    | `/vision/health`            | Vision pipeline status                                               |
-| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid)    |
-| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held    |
-| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure) |
+| Method | Path                        | Purpose                                                                 |
+| ------ | --------------------------- | ----------------------------------------------------------------------- |
+| GET    | `/health`                   | API and database status (`degraded` when PostgreSQL is unavailable)     |
+| POST   | `/vision/frames`            | Multipart upload: one `image` (JPEG/PNG/WebP, up to 8 MB) + metadata    |
+| GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)               |
+| GET    | `/vision/results/:id/image` | Stored frame for a result                                               |
+| GET    | `/vision/health`            | Vision pipeline status                                                  |
+| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid)       |
+| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held       |
+| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure)  |
 | POST   | `/mortality/predict`        | Always **409** `MODEL_INPUTS_UNAVAILABLE` while gas inputs are deferred |
-| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)              |
+| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)                 |
 
 Inference service: `GET /health` and `POST /v1/classify` (multipart `file`, optional `X-API-Key`).
 
 ## Frontend routes
 
-| Route          | State                                              |
-| -------------- | -------------------------------------------------- |
-| `/overview`    | Complete responsive overview dashboard             |
-| `/mortality`   | Non-gas readiness; operational prediction disabled |
-| `/vision`      | Image upload, classification, history              |
-| `/live`        | Live telemetry from the shared telemetry provider  |
-| `/history`     | Trend of readings received in this browser session |
+| Route          | State                                                        |
+| -------------- | ------------------------------------------------------------ |
+| `/overview`    | Complete responsive overview dashboard                       |
+| `/mortality`   | Non-gas readiness; operational prediction disabled           |
+| `/vision`      | Image upload, classification, history                        |
+| `/live`        | Live telemetry from the shared telemetry provider            |
+| `/history`     | Trend of readings received in this browser session           |
 | `/alerts`      | Alerts derived from live readings; acknowledge is local only |
-| `/devices`     | Device connectivity and sensor readiness           |
-| `/calibration` | Read-only calibration status; actions disabled     |
-| `/exports`     | Current snapshot as JSON/CSV; history scope disabled |
-| `/settings`    | Read-only settings; saving disabled                |
+| `/devices`     | Device connectivity and sensor readiness                     |
+| `/calibration` | Read-only calibration status; actions disabled               |
+| `/exports`     | Current snapshot as JSON/CSV; history scope disabled         |
+| `/settings`    | Read-only settings; saving disabled                          |
 
 Frontend mock scenarios (`NEXT_PUBLIC_MOCK_SCENARIO`): `normal`, `warning`, `sensor-not-installed`,
 `device-offline`. The frontend never connects directly to MQTT or to the inference service.
@@ -310,42 +310,42 @@ does not connect to MQTT or publish telemetry.
 
 ## Environment variable reference
 
-| Variable                       | Purpose                                               | Default / requirement               |
-| ------------------------------ | ----------------------------------------------------- | ----------------------------------- |
-| `POSTGRES_DB`                  | Compose database name                                 | `agronova`                          |
-| `POSTGRES_USER`                | Compose database user                                 | `agronova`                          |
-| `POSTGRES_PASSWORD`            | Compose database password                             | Required; local secret              |
-| `POSTGRES_PORT`                | Host PostgreSQL port                                  | `5432`                              |
-| `MQTT_PORT`                    | Host MQTT port                                        | `1883`                              |
-| `INFERENCE_PORT`               | Host port of the inference container                  | `8000`                              |
-| `API_HOST`                     | API bind address                                      | `0.0.0.0`                           |
-| `API_PORT`                     | API port                                              | `4000`                              |
-| `APP_VERSION`                  | Version reported by health                            | `0.1.0`                             |
-| `WEB_ORIGIN`                   | Allowed browser origins, comma-separated; no `*`      | `http://localhost:3000`             |
-| `DATABASE_URL`                 | PostgreSQL connection string used by API health       | Omit to report `not_configured`     |
-| `DATABASE_CONNECT_TIMEOUT_MS`  | Health-query connection timeout                       | `3000`                              |
-| `INFERENCE_URL`                | Inference service base URL used by the API            | `http://localhost:8000`             |
-| `INFERENCE_API_KEY`            | Shared secret (`X-API-Key`) for the inference service | Empty = no auth; set for tunnels    |
-| `INFERENCE_TIMEOUT_MS`         | API timeout for one inference call                    | `30000` (`120000` recommended real) |
-| `INFERENCE_HEALTH_TIMEOUT_MS`  | API timeout for the inference health check            | `5000`                              |
-| `VISION_IMAGE_DIR`             | Where uploaded frames are stored                      | `./data/vision-images`              |
-| `VISION_MAX_IMAGE_BYTES`       | Maximum image size; read by **both** the API and the inference service (compose passes it to both inference containers). Keep the values equal | `8388608`                           |
-| `INFERENCE_MODE`               | Inference backend: `mock` or `real`                   | `mock`                              |
-| `INFERENCE_LOAD_BLOCKING`      | `1` loads the real model synchronously at startup instead of in a background thread | unset (background load, `/health` 503 meanwhile) |
-| `HF_ADAPTER_REPO`              | LoRA adapter repository (real mode)                   | `Arga23/chickenstress-vlm-lora`     |
-| `HF_BASE_MODEL`                | Base VLM (real mode)                                  | `Qwen/Qwen3-VL-4B-Instruct`         |
-| `HF_TOKEN`                     | Optional; default adapter is public (private repo only). Alias: `HUGGING_FACE_HUB_TOKEN` | Never commit                        |
-| `PORT`                         | Next.js web port; process environment only (Next ignores it in `.env*` files) | `3000`                              |
-| `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL (https on Vercel prod)   | none: empty = "API not configured"  |
-| `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`    | `api`                               |
-| `NEXT_PUBLIC_DEVICE_ID`        | Optional live device filter                           | all devices                         |
-| `NEXT_PUBLIC_LIVE_INTERVAL_MS` | Live telemetry polling interval                       | `3000`                              |
-| `DEVICE_OFFLINE_AFTER_MS`      | API threshold derived from `last_seen_at`             | `30000`                             |
-| `NEXT_PUBLIC_MOCK_SCENARIO`    | Deterministic frontend simulation scenario            | `normal`                            |
-| `NEXT_PUBLIC_MOCK_INTERVAL_MS` | Mock snapshot interval in milliseconds                | `5000`                              |
-| `MQTT_BROKER_URL`              | Future simulator broker URL                           | `mqtt://localhost:1883`             |
-| `MQTT_TELEMETRY_TOPIC`         | Future shared simulator/device topic template         | example file value                  |
-| `SIMULATOR_DEVICE_ID`          | Future simulator device identity                      | `AGRONOVA-SIM-01`                   |
+| Variable                       | Purpose                                                                                                                                        | Default / requirement                            |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `POSTGRES_DB`                  | Compose database name                                                                                                                          | `agronova`                                       |
+| `POSTGRES_USER`                | Compose database user                                                                                                                          | `agronova`                                       |
+| `POSTGRES_PASSWORD`            | Compose database password                                                                                                                      | Required; local secret                           |
+| `POSTGRES_PORT`                | Host PostgreSQL port                                                                                                                           | `5432`                                           |
+| `MQTT_PORT`                    | Host MQTT port                                                                                                                                 | `1883`                                           |
+| `INFERENCE_PORT`               | Host port of the inference container                                                                                                           | `8000`                                           |
+| `API_HOST`                     | API bind address                                                                                                                               | `0.0.0.0`                                        |
+| `API_PORT`                     | API port                                                                                                                                       | `4000`                                           |
+| `APP_VERSION`                  | Version reported by health                                                                                                                     | `0.1.0`                                          |
+| `WEB_ORIGIN`                   | Allowed browser origins, comma-separated; no `*`                                                                                               | `http://localhost:3000`                          |
+| `DATABASE_URL`                 | PostgreSQL connection string used by API health                                                                                                | Omit to report `not_configured`                  |
+| `DATABASE_CONNECT_TIMEOUT_MS`  | Health-query connection timeout                                                                                                                | `3000`                                           |
+| `INFERENCE_URL`                | Inference service base URL used by the API                                                                                                     | `http://localhost:8000`                          |
+| `INFERENCE_API_KEY`            | Shared secret (`X-API-Key`) for the inference service                                                                                          | Empty = no auth; set for tunnels                 |
+| `INFERENCE_TIMEOUT_MS`         | API timeout for one inference call                                                                                                             | `30000` (`120000` recommended real)              |
+| `INFERENCE_HEALTH_TIMEOUT_MS`  | API timeout for the inference health check                                                                                                     | `5000`                                           |
+| `VISION_IMAGE_DIR`             | Where uploaded frames are stored                                                                                                               | `./data/vision-images`                           |
+| `VISION_MAX_IMAGE_BYTES`       | Maximum image size; read by **both** the API and the inference service (compose passes it to both inference containers). Keep the values equal | `8388608`                                        |
+| `INFERENCE_MODE`               | Inference backend: `mock` or `real`                                                                                                            | `mock`                                           |
+| `INFERENCE_LOAD_BLOCKING`      | `1` loads the real model synchronously at startup instead of in a background thread                                                            | unset (background load, `/health` 503 meanwhile) |
+| `HF_ADAPTER_REPO`              | LoRA adapter repository (real mode)                                                                                                            | `Arga23/chickenstress-vlm-lora`                  |
+| `HF_BASE_MODEL`                | Base VLM (real mode)                                                                                                                           | `Qwen/Qwen3-VL-4B-Instruct`                      |
+| `HF_TOKEN`                     | Optional; default adapter is public (private repo only). Alias: `HUGGING_FACE_HUB_TOKEN`                                                       | Never commit                                     |
+| `PORT`                         | Next.js web port; process environment only (Next ignores it in `.env*` files)                                                                  | `3000`                                           |
+| `NEXT_PUBLIC_API_BASE_URL`     | Browser-visible API base URL (https on Vercel prod)                                                                                            | none: empty = "API not configured"               |
+| `NEXT_PUBLIC_DATA_MODE`        | Frontend data source: `api` or explicit dev `mock`                                                                                             | `api`                                            |
+| `NEXT_PUBLIC_DEVICE_ID`        | Optional live device filter                                                                                                                    | all devices                                      |
+| `NEXT_PUBLIC_LIVE_INTERVAL_MS` | Live telemetry polling interval                                                                                                                | `3000`                                           |
+| `DEVICE_OFFLINE_AFTER_MS`      | API threshold derived from `last_seen_at`                                                                                                      | `30000`                                          |
+| `NEXT_PUBLIC_MOCK_SCENARIO`    | Deterministic frontend simulation scenario                                                                                                     | `normal`                                         |
+| `NEXT_PUBLIC_MOCK_INTERVAL_MS` | Mock snapshot interval in milliseconds                                                                                                         | `5000`                                           |
+| `MQTT_BROKER_URL`              | Future simulator broker URL                                                                                                                    | `mqtt://localhost:1883`                          |
+| `MQTT_TELEMETRY_TOPIC`         | Future shared simulator/device topic template                                                                                                  | example file value                               |
+| `SIMULATOR_DEVICE_ID`          | Future simulator device identity                                                                                                               | `AGRONOVA-SIM-01`                                |
 
 The web dashboard does not receive `DEVICE_OFFLINE_AFTER_MS` from the API. It assumes the API default
 (30000 ms, `DEVICE_OFFLINE_AFTER_MS` in `apps/web/lib/telemetry/freshness.ts`) to mark data as stale,
