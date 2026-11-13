@@ -4,6 +4,11 @@ The supplied `model_mortalitas_lstm.h5` remains installed as a checksum-verified
 artifact in `@agronova/mortality-model`. The model is intentionally inactive for operational
 predictions while gas inputs are deferred. It is not exposed to browser code.
 
+**Data provenance.** The H5 weights (and the exported weights in `src/model-artifact.json`) were
+trained on dummy/synthetic data, not on partner farm sensor data. They are not a production model.
+Publishing them in this public repository is intentional. "Not exposed to browser code" describes
+the runtime boundary, not confidentiality: the files themselves are public.
+
 ## Verified training contract
 
 The supplied notebook builds the same architecture and saves the H5 model:
