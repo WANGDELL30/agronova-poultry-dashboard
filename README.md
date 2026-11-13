@@ -286,6 +286,15 @@ corepack pnpm inference:test        # Python tests (pytest), needs requirements-
 docker compose config
 ```
 
+`inference:mock` and `inference:test` run the `python` found on `PATH`. Activate the inference venv
+first, or they use a global Python that may lack the dependencies:
+
+```bash
+python -m venv apps/inference/.venv
+source apps/inference/.venv/Scripts/activate   # Windows Git Bash; Linux/macOS: .venv/bin/activate
+pip install -r apps/inference/requirements-dev.txt
+```
+
 Run an individual workspace when needed:
 
 ```bash
@@ -295,8 +304,9 @@ corepack pnpm --filter @agronova/vision-schema test
 corepack pnpm --filter @agronova/telemetry-schema test
 ```
 
-The simulator prints an idle startup message and exits successfully. It deliberately does not
-connect to MQTT or publish telemetry.
+The simulator prints an idle startup message. With `start` (`node dist/index.js`) it then exits
+successfully; under `corepack pnpm dev` (`tsx watch`) the watcher keeps running idle. It deliberately
+does not connect to MQTT or publish telemetry.
 
 ## Environment variable reference
 
