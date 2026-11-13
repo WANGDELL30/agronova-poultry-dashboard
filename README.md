@@ -214,8 +214,16 @@ The `training/` folder holds the notebooks behind the model. Suggested order:
    `apps/inference` is a port of it, and `apps/inference/scripts/parity_check.py` verifies that both
    produce identical results.
 
-The dataset (Roboflow "Stressed chicken" v19, COCO format), model weights, and run artifacts are
-not stored in this repository.
+### Dataset and attribution
+
+All training images come from the Roboflow Universe dataset
+[**Stressed chicken**, version 19](https://universe.roboflow.com/chicken-stress-detection/stressed-chicken-vgdf1)
+("Provided by a Roboflow user"), licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). No photos from partner farms are used.
+The full raw export (COCO format) is not stored here, but derived images are: the per-chicken crops
+under `data/working/dataset/`, image outputs embedded in the training notebooks, and figures and
+YOLO batch mosaics under `results/`. These derived images are shared under the same CC BY 4.0
+license. Details of the source export are in `docs/manifest/manifest_dataset.md`.
 
 ### Deploy the frontend to Vercel
 

@@ -32,7 +32,8 @@ These rules apply permanently to every change in this repository.
   web app. Keep the Python response and the Zod schema in sync.
 - Store `captured_at` (camera) and `received_at` (backend) in UTC for every frame.
 - Never commit uploaded frames (`apps/api/data/`), Hugging Face tokens, inference API keys, or
-  tunnel URLs. Model weights and datasets live on Hugging Face / Roboflow, not in this repository.
+  tunnel URLs. The VLM adapter lives on Hugging Face and the raw dataset on Roboflow (CC BY 4.0;
+  derived crops and figures in this repository keep that attribution, see README).
 - The inference service is a separate Python process by design (GPU and model dependencies). This
   is the only service boundary beyond the API; do not split further without measurements.
 
