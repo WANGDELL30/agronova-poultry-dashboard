@@ -52,3 +52,7 @@ training/**/indicators_ground_truth*.csv
 _tmp_raw/
 AUDIT*.md
 teks_subbab_*.md
+
+# Written (and re-added) by `next dev` in Next 16; not part of this repo (AUDIT DOC10)
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
