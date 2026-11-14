@@ -89,6 +89,13 @@ The SCS thresholds match the training notebook and inference notebook 04
 `packages/vision-schema` (TypeScript) and `apps/inference/app/scs.py` (Python) and must be changed
 together, only after re-evaluating the model.
 
+The service system prompt (`apps/inference/app/scs.py`, same as notebook 04) deliberately differs
+from the training prompt (`_meta.system_prompt` in `results/vlm/vlm_experiments.json`), decision
+2026-11-14, AUDIT P1. The metrics in `results/vlm` were measured with the training prompt, not with
+the service. Service accuracy measured on a T4 (2026-11-14, small samples): 16/17 labelled crops and
+33/47 full frames. The training prompt scored 15/17 on the same crops, which is not a meaningful
+difference at n = 17.
+
 ### Vision data semantics
 
 - Frames without a classification have `result: null`. `skipped_quality`, `parse_error`,

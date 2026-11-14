@@ -63,6 +63,14 @@ orientation other than 1, so the current data is not affected. A future phone or
 EXIF rotation, or a 16-bit PNG, would reach the model differently from how the training data did; if
 crops are prepared elsewhere, apply the same EXIF handling there.
 
+**The service prompt deliberately differs from the training prompt (AUDIT P1, decision 2026-11-14).**
+The system prompt in `app/scs.py` is the one from notebook 04, not the training prompt
+(`_meta.system_prompt` in `results/vlm/vlm_experiments.json`). The metrics in `results/vlm` were
+measured with the training prompt (the T4 run reproduced `predictions.csv` 8/8), so they are not the
+accuracy of this service. Measured on a T4 with the service prompt (PV2/PV3, 2026-11-14): 16/17
+labelled crops and 33/47 full frames correct. The training prompt scored 15/17 on the same crops; at
+n = 17 the difference is not meaningful, so the service prompt stays. Both samples are small.
+
 **B. Demo with the dashboard (free GPU on Colab):**
 
 1. Open `colab/run_inference_colab.ipynb` in Google Colab and set the runtime to **T4 GPU**.

@@ -15,7 +15,6 @@ from app import scs
 
 REPO = Path(__file__).resolve().parents[3]
 NOTEBOOK = REPO / "training" / "vlm-workflow" / "inference-vlm-lora-huggingface.ipynb"
-EXPERIMENTS = REPO / "results" / "vlm" / "vlm_experiments.json"
 SCS_CELL = 7  # "7 indikator SCS + aturan" in notebook 04
 
 # Locked on 2026-11-13. A prompt change must be deliberate: update these hashes in the same commit.
@@ -59,7 +58,7 @@ def test_service_prompts_are_locked():
     assert sha256(scs.SCS_USER_PROMPT) == USER_PROMPT_SHA256
 
 
-@pytest.mark.xfail(reason="P1: prompt layanan belum diganti ke prompt training")
-def test_service_prompt_equals_the_training_prompt():
-    meta = json.loads(EXPERIMENTS.read_text(encoding="utf-8"))["_meta"]
-    assert sha256(scs.SCS_SYSTEM_PROMPT) == sha256(meta["system_prompt"])
+# The service system prompt deliberately differs from the training prompt (`_meta.system_prompt` in
+# results/vlm/vlm_experiments.json): decision P1, 2026-11-14. On the T4 run (PV2, 17 labelled crops,
+# same input array) the service prompt scored 16/17 and the training prompt 15/17, with the same label
+# on 16/17; not a meaningful difference at n = 17. The service prompt stays and is locked above.
