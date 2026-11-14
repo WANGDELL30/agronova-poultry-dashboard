@@ -53,7 +53,9 @@ function timeoutMs(name: string, value: string | undefined, fallback: number): n
 export function loadVisionConfig(env: NodeJS.ProcessEnv = process.env): VisionConfig {
   return {
     inferenceUrl: (env.INFERENCE_URL ?? 'http://localhost:8000').replace(/\/+$/, ''),
-    inferenceTimeoutMs: timeoutMs('INFERENCE_TIMEOUT_MS', env.INFERENCE_TIMEOUT_MS, 120_000),
+    // Measured on a T4 (PV9, 2026-11-14): (1 + INFERENCE_MAX_QUEUE 2) x p95 11.55 s x 1.5 = 52 s,
+    // rounded up to 60 s with room for the 13.8 s maximum. T4 only: re-measure on another GPU.
+    inferenceTimeoutMs: timeoutMs('INFERENCE_TIMEOUT_MS', env.INFERENCE_TIMEOUT_MS, 60_000),
     inferenceHealthTimeoutMs: timeoutMs(
       'INFERENCE_HEALTH_TIMEOUT_MS',
       env.INFERENCE_HEALTH_TIMEOUT_MS,

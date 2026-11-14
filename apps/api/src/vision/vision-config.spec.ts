@@ -6,8 +6,10 @@ describe('loadVisionConfig INFERENCE_TIMEOUT_MS (AUDIT H6)', () => {
   const load = (value: string | undefined) =>
     loadVisionConfig({ INFERENCE_TIMEOUT_MS: value }).inferenceTimeoutMs;
 
-  it('defaults to 120 s (real mode, R1) and accepts the timer range 1..2147483647', () => {
-    expect(load(undefined)).toBe(120_000);
+  // 60 s from the T4 measurement (PV9, 2026-11-14): (1 + INFERENCE_MAX_QUEUE 2) x p95 11.55 s x 1.5
+  // = 52 s, rounded up with room for the 13.8 s maximum. Other GPUs need a new measurement.
+  it('defaults to 60 s (T4 measurement, R1) and accepts the timer range 1..2147483647', () => {
+    expect(load(undefined)).toBe(60_000);
     expect(load('1')).toBe(1);
     expect(load('120000')).toBe(120_000);
     expect(load('2147483647')).toBe(2_147_483_647);
@@ -28,9 +30,9 @@ describe('loadVisionConfig INFERENCE_TIMEOUT_MS (AUDIT H6)', () => {
 
 describe('loadVisionConfig INFERENCE_HEALTH_TIMEOUT_MS (AUDIT R13)', () => {
   it('defaults to 5 s, separate from the upload timeout', () => {
-    const config = loadVisionConfig({ INFERENCE_TIMEOUT_MS: '120000' });
+    const config = loadVisionConfig({});
     expect(config.inferenceHealthTimeoutMs).toBe(5_000);
-    expect(config.inferenceTimeoutMs).toBe(120_000);
+    expect(config.inferenceTimeoutMs).toBe(60_000);
   });
 
   it('reads and validates the env var like INFERENCE_TIMEOUT_MS', () => {
