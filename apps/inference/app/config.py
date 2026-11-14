@@ -8,6 +8,11 @@ from dataclasses import dataclass
 DEFAULT_MAX_IMAGE_PIXELS = 40_000_000  # INFERENCE_MAX_IMAGE_PIXELS: larger -> 413 without decoding
 DEFAULT_MAX_IMAGE_SIDE = 1280  # INFERENCE_MAX_IMAGE_SIDE: longer side is downscaled to this (INTER_AREA)
 
+# Model revisions that passed the GPU parity check on a T4 (PV1, 2026-11-14; AUDIT S10/P7). Hub ids are
+# loaded at these commits; for a local folder they are only reported, because a folder has no revision.
+DEFAULT_BASE_REVISION = "ebb281ec70b05090aa6165b016eac8ec08e71b17"  # INFERENCE_BASE_REVISION
+DEFAULT_ADAPTER_REVISION = "51b653173b0ef8945508bd10f2ebdcaebfd3e441"  # INFERENCE_ADAPTER_REVISION
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -25,6 +30,9 @@ class Settings:
     # Requests allowed to wait for the model while one runs; more get 503 queue_full (AUDIT R1).
     max_queue: int = 2
     exit_on_load_error: bool = False
+    # None = no pin (Hub `main`), reported as whatever commit was actually loaded.
+    base_revision: str | None = DEFAULT_BASE_REVISION
+    adapter_revision: str | None = DEFAULT_ADAPTER_REVISION
 
 
 def _positive_int(name: str, default: int) -> int:
@@ -63,7 +71,17 @@ def load_settings() -> Settings:
         load_timeout_s=_positive_int("INFERENCE_LOAD_TIMEOUT_S", 1800),
         max_queue=_non_negative_int("INFERENCE_MAX_QUEUE", 2),
         exit_on_load_error=_bool("INFERENCE_EXIT_ON_LOAD_ERROR", default=mode == "real"),
+        base_revision=_revision("INFERENCE_BASE_REVISION", DEFAULT_BASE_REVISION),
+        adapter_revision=_revision("INFERENCE_ADAPTER_REVISION", DEFAULT_ADAPTER_REVISION),
     )
+
+
+def _revision(name: str, default: str) -> str | None:
+    """Unset -> the parity pin; set but empty -> no pin (None)."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip() or None
 
 
 def _bool(name: str, default: bool) -> bool:

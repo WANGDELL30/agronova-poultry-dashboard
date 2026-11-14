@@ -1,6 +1,7 @@
 """VLM backends. Both return the raw text a VLM would produce, so the parsing/rule path is shared."""
 import hashlib
 import json
+import os
 import threading
 from pathlib import PurePath
 from typing import Protocol
@@ -47,6 +48,13 @@ def adapter_revision(peft_model, repo: str) -> str | None:
     return parts[-2] if len(parts) >= 3 and parts[-3] == "snapshots" else None
 
 
+def _revision_kwargs(name_or_path: str, revision: str | None) -> dict:
+    """`revision=` for a Hub id; nothing for a local folder or when no revision is pinned."""
+    if revision is None or os.path.isdir(name_or_path):
+        return {}
+    return {"revision": revision}
+
+
 class MockBackend:
     """Deterministic fake VLM (no GPU). Output depends only on the image bytes."""
 
@@ -80,35 +88,41 @@ class RealBackend:
         # factor is the Qwen2-VL convention: Qwen3-VL uses 32 px per visual token (patch 16 x merge 2),
         # so this is roughly 196-392 visual tokens, not 256-512. A 640x640 frame exceeds max_pixels
         # and is downscaled. Effective token counts are measured in Colab (PV9).
+        # Hub ids are loaded at the pinned revisions (S10); a local folder has none, so no `revision=`.
+        base_pin = _revision_kwargs(settings.base_model, settings.base_revision)
+        adapter_pin = _revision_kwargs(settings.hf_adapter_repo, settings.adapter_revision)
         self._processor = AutoProcessor.from_pretrained(
-            settings.base_model, min_pixels=256 * 28 * 28, max_pixels=512 * 28 * 28
+            settings.base_model, min_pixels=256 * 28 * 28, max_pixels=512 * 28 * 28, **base_pin
         )
-        base = self._load_base(settings.base_model, dtype).to(device)
+        base = self._load_base(settings.base_model, dtype, base_pin).to(device)
         base.eval()
-        self._model = PeftModel.from_pretrained(base, settings.hf_adapter_repo, token=settings.hf_token)
+        self._model = PeftModel.from_pretrained(base, settings.hf_adapter_repo, token=settings.hf_token, **adapter_pin)
         self._model.eval()
-        # Revisions of the files actually loaded (P7); pinning them is S10 and not done here.
+        # Revisions of what was loaded (P7). A local folder records no commit, so the configured revision
+        # is reported instead of null (PV8, 2026-11-14): it states which commit the folder should hold.
         self.model_info = {
             "base_model": settings.base_model,
             "adapter": settings.hf_adapter_repo,
-            "adapter_revision": adapter_revision(self._model, settings.hf_adapter_repo),
-            "base_revision": base_revision(base),
+            "adapter_revision": adapter_revision(self._model, settings.hf_adapter_repo) or settings.adapter_revision,
+            "base_revision": base_revision(base) or settings.base_revision,
         }
 
     @staticmethod
-    def _load_base(model_name: str, dtype):
+    def _load_base(model_name: str, dtype, pin: dict):
         errors = []
         if "qwen3-vl" in model_name.lower() or "qwen3_vl" in model_name.lower():
             try:
                 from transformers import Qwen3VLForConditionalGeneration
 
-                return Qwen3VLForConditionalGeneration.from_pretrained(model_name, dtype=dtype, low_cpu_mem_usage=True)
+                return Qwen3VLForConditionalGeneration.from_pretrained(
+                    model_name, dtype=dtype, low_cpu_mem_usage=True, **pin
+                )
             except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
         try:
             from transformers import AutoModelForImageTextToText
 
-            return AutoModelForImageTextToText.from_pretrained(model_name, dtype=dtype, low_cpu_mem_usage=True)
+            return AutoModelForImageTextToText.from_pretrained(model_name, dtype=dtype, low_cpu_mem_usage=True, **pin)
         except Exception as e:  # noqa: BLE001
             errors.append(str(e))
         raise ImportError("Failed to load VLM:\n" + "\n".join(errors))
