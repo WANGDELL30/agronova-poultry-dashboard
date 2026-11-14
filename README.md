@@ -159,6 +159,10 @@ Real inference on a CPU takes tens of minutes per image. Use one of:
   runtime to T4 GPU, run all cells, then copy the printed `INFERENCE_URL` and `INFERENCE_API_KEY`
   into `apps/api/.env` and restart the API. The tunnel URL changes on every run.
 
+Measured on a Colab T4 (fp16, 2026-11-14, 68 images): peak VRAM 8.7 GB, model load about 38 s
+(plus about 112 s to download it the first time), generation p50 9.8 s / p95 11.2 s per image, and
+identical output on 5 of 5 repeated images. Other GPUs need their own measurement.
+
 See [`apps/inference/README.md`](apps/inference/README.md) for the parity check against the
 reference inference notebook (`training/vlm-workflow/inference-vlm-lora-huggingface.ipynb`).
 

@@ -22,6 +22,15 @@ takes a multipart `file`. At most one request runs the model; `INFERENCE_MAX_QUE
 wait, and any further request gets 503 `{"error": "queue_full"}` with `Retry-After` at once (AUDIT R1). A
 request whose client has already disconnected is dropped right before the model runs.
 
+Measured on a Colab T4 (fp16, GPU parity run 2026-11-14, 68 images): peak VRAM 8.7 GB, model load
+about 38 s (plus about 112 s to download base and adapter the first time), generation p50 9.8 s /
+p95 11.2 s per image, and identical raw output on 5 of 5 repeated images. Other GPUs need their own
+measurement.
+
+Using the service in-process (importing `app` in a Colab or Jupyter kernel instead of running
+uvicorn in a separate process) requires `INFERENCE_EXIT_ON_LOAD_ERROR=false`: the exit on a load
+error (AUDIT H11) would otherwise kill the kernel.
+
 ## Real model without a local GPU (Kaggle / Colab)
 
 Real mode on a laptop CPU is very slow (tens of minutes per image). The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.
