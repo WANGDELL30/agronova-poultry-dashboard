@@ -17,7 +17,8 @@ notebooks used to train and evaluate the model, and local TimescaleDB plus MQTT 
 | Real ESP32 devices, alerts  | HTTP contract ready; ESP32 firmware still needs to post telemetry                               |
 | Operations modules          | Seven modules render the same live telemetry as the overview; later-phase controls are disabled |
 | Snapshot export             | `/exports` downloads the current snapshot as JSON or CSV; history export is disabled            |
-| Notifications               | Not implemented                                                                                 |
+| Notifications               | Not implemented in the dashboard                                                                |
+| WhatsApp bot                | Separate app (`apps/whatsapp-bot`): warnings and Q&A; device control answered "not available"   |
 
 ## How stress detection works
 
@@ -62,6 +63,7 @@ apps/
   api/                      NestJS API (Fastify): health, telemetry, mortality, vision
   inference/                FastAPI service: quality gate, Qwen3-VL + LoRA, SCS rule (Python)
   simulator/                Non-publishing telemetry simulator placeholder
+  whatsapp-bot/             WhatsApp warnings and Q&A; reads the API over HTTP (see its README)
   web/                      Next.js App Router frontend
 packages/
   telemetry-schema/         Versioned telemetry types, validation, example, and tests
@@ -360,6 +362,11 @@ does not connect to MQTT or publish telemetry.
 | `MQTT_BROKER_URL`              | Future simulator broker URL                                                                                                                            | `mqtt://localhost:1883`                          |
 | `MQTT_TELEMETRY_TOPIC`         | Future shared simulator/device topic template                                                                                                          | example file value                               |
 | `SIMULATOR_DEVICE_ID`          | Future simulator device identity                                                                                                                       | `AGRONOVA-SIM-01`                                |
+
+The WhatsApp bot has its own variables (`WA_*`, `AGRONOVA_API_*`; answers come from an open-source
+model such as `qwen3:4b` served by Ollama through `WA_LLM_BASE_URL`), documented in
+`apps/whatsapp-bot/.env.example` and [`apps/whatsapp-bot/README.md`](apps/whatsapp-bot/README.md). It
+is not started by `corepack pnpm dev`; run `corepack pnpm --filter @agronova/whatsapp-bot dev`.
 
 The web dashboard does not receive `DEVICE_OFFLINE_AFTER_MS` from the API. It assumes the API default
 (30000 ms, `DEVICE_OFFLINE_AFTER_MS` in `apps/web/lib/telemetry/freshness.ts`) to mark data as stale,

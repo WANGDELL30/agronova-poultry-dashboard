@@ -1,0 +1,25 @@
+{
+  "name": "@agronova/whatsapp-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "device:fake": "node scripts/fake-device.mjs",
+    "message:fake": "node scripts/send-message.mjs"
+  },
+  "dependencies": {
+    "@agronova/telemetry-schema": "workspace:*",
+    "@agronova/vision-schema": "workspace:*",
+    "dotenv": "17.2.2",
+    "fastify": "5.4.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "tsx": "4.20.5"
+  }
+}

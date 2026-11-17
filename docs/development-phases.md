@@ -39,6 +39,17 @@ disabled. This does not activate the Phase 4 alert lifecycle or device managemen
 `/exports` downloads the current telemetry snapshot as JSON or CSV in the browser. It exports what the
 dashboard already shows; there is no server-side export or history archive.
 
+### Authorized extension: WhatsApp bot (2026-11-17)
+
+Requested by the user on 2026-11-17; confirmation by the repository owner is still pending. A
+separate app, `apps/whatsapp-bot`, reads the existing API over HTTP `GET` and uses the WhatsApp Cloud
+API to send warnings (device offline, sensor disconnected/invalid, vision vote alert) and to answer
+free-text questions about the house. No existing application or package code was changed. Device
+control is recognised but answered with "not available": there are no actuators and no command path.
+This does not activate the Phase 4 alert lifecycle, threshold policies, authentication, MQTT, or
+persistence; the bot keeps its state in memory. See
+[`apps/whatsapp-bot/README.md`](../apps/whatsapp-bot/README.md).
+
 - pnpm TypeScript monorepo and consistent quality tooling
 - Next.js web shell with honest backend health rendering
 - NestJS/Fastify API with PostgreSQL-aware health endpoint
@@ -106,7 +117,8 @@ the ingestion transaction around the existing shared schema.
 - CSV exports with UTC source timestamps and explicit display timezone
 - Role-based access and production-ready authentication
 
-WhatsApp integration remains out of scope until a separately approved phase.
+WhatsApp integration beyond the authorized extension above (device control, alert lifecycle,
+persisted notification settings) remains out of scope until a separately approved phase.
 
 ## Phase 5 — ESP32 integration and production hardening
 
