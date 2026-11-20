@@ -1,7 +1,7 @@
 import { validTelemetryV1Example } from '@agronova/telemetry-schema';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { TelemetryModule } from './telemetry.module.js';
 
@@ -87,5 +87,81 @@ describe('POST /telemetry is idempotent per message_id (R5)', () => {
     expect(conflict.statusCode).toBe(409);
     expect(conflict.json()).toMatchObject({ error: 'duplicate_message_id' });
     expect(await latestCelsius('dev-r5b')).toBe(25);
+  });
+});
+
+describe('POST /telemetry with TELEMETRY_DEVICE_KEYS set', () => {
+  const KEY_01 = 'key-for-esp32-01-0123456789';
+  const KEY_02 = 'key-for-esp32-02-0123456789';
+  let app: NestFastifyApplication;
+
+  beforeAll(async () => {
+    vi.stubEnv('TELEMETRY_DEVICE_KEYS', `ESP32-01=${KEY_01},ESP32-02=${KEY_02}`);
+    app = await NestFactory.create<NestFastifyApplication>(TelemetryModule, new FastifyAdapter(), {
+      logger: false,
+    });
+    app.setGlobalPrefix('api/v1');
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+  });
+  afterAll(async () => {
+    await app.close();
+    vi.unstubAllEnvs();
+  });
+
+  let counter = 0;
+  const reading = (device: string) => ({
+    ...validTelemetryV1Example,
+    device_id: device,
+    message_id: `44444444-4444-4444-8444-${String(++counter).padStart(12, '0')}`,
+  });
+  const send = (payload: object, key?: string) =>
+    app.inject({
+      method: 'POST',
+      url: '/api/v1/telemetry',
+      payload,
+      headers: key === undefined ? {} : { 'x-device-key': key },
+    });
+  const latestStatus = async (device: string) =>
+    (await app.inject({ method: 'GET', url: `/api/v1/telemetry/latest?device_id=${device}` }))
+      .statusCode;
+
+  it('accepts a reading whose device_id matches its key', async () => {
+    expect((await send(reading('ESP32-01'), KEY_01)).statusCode).toBe(201);
+    expect(await latestStatus('ESP32-01')).toBe(200);
+  });
+
+  it('rejects a missing or unknown key with 401 and stores nothing', async () => {
+    for (const key of [undefined, '', 'not-a-configured-key-000']) {
+      const res = await send(reading('ESP32-02'), key);
+      expect(res.statusCode).toBe(401);
+      expect(res.json()).toMatchObject({ error: 'invalid_device_key' });
+    }
+    expect(await latestStatus('ESP32-02')).toBe(204);
+  });
+
+  it('checks the key before the body: an invalid body without a key is 401, not 400', async () => {
+    const res = await send({ nonsense: true });
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).not.toHaveProperty('issues');
+  });
+
+  it('still validates the body once the key is valid', async () => {
+    const res = await send({ nonsense: true }, KEY_01);
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'invalid_telemetry' });
+  });
+
+  it('rejects a key used for another device with 403 and stores nothing (S15)', async () => {
+    for (const device of ['ESP32-02', 'UNREGISTERED-99']) {
+      const res = await send(reading(device), KEY_01);
+      expect(res.statusCode).toBe(403);
+      expect(res.json()).toMatchObject({ error: 'device_id_mismatch' });
+      expect(await latestStatus(device)).toBe(204);
+    }
+  });
+
+  it('keeps reads open for the dashboard', async () => {
+    expect(await latestStatus('ESP32-01')).toBe(200);
   });
 });

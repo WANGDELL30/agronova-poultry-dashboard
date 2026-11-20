@@ -6,6 +6,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 
 import { AppModule } from './app.module.js';
 import { parseAllowedOrigins } from './cors.js';
+import { parseTrustProxy } from './trust-proxy.js';
 
 function parsePort(value: string | undefined): number {
   const port = Number(value ?? '4000');
@@ -19,9 +20,12 @@ function parsePort(value: string | undefined): number {
 
 async function bootstrap(): Promise<void> {
   const allowedOrigins = parseAllowedOrigins(process.env.WEB_ORIGIN);
+  // Behind cloudflared on the same machine every request comes from 127.0.0.1; trusting only that
+  // proxy makes request.ip (logs, future rate limits) the real client address (AUDIT D17).
+  const trustProxy = parseTrustProxy(process.env.API_TRUST_PROXY);
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true }),
+    new FastifyAdapter({ logger: true, trustProxy }),
   );
 
   app.enableCors({
