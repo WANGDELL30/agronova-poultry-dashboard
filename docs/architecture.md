@@ -5,17 +5,16 @@
 AgroNova is a pnpm TypeScript monorepo. Its deployable applications are isolated from one another,
 and cross-application contracts live in focused shared packages.
 
-| Component                   | Responsibility                                                                                                                                        | Direct dependencies                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `apps/web`                  | Responsive operator interface and backend health presentation; mortality Route Handlers (`app/api/v1/mortality/*`) on Vercel                          | HTTP API, `packages/mortality-model` (server only)              |
-| `apps/api`                  | Backend boundary, health endpoint, PostgreSQL check, vision orchestration, telemetry module (HTTP ingest, in-memory latest reading), mortality module | PostgreSQL, inference service, disk, `packages/mortality-model` |
-| `apps/inference`            | Image quality gate, Qwen3-VL + LoRA classification, SCS rule (Python)                                                                                 | Hugging Face model repositories                                 |
-| `apps/simulator`            | Future development telemetry source; idle in Phase 1                                                                                                  | Shared telemetry contract                                       |
-| `packages/telemetry-schema` | Versioned Zod validation, inferred TypeScript types, enums, and example                                                                               | Zod                                                             |
-| `packages/vision-schema`    | Versioned vision result, vote, and inference response contract                                                                                        | Zod                                                             |
-| `packages/mortality-model`  | Checksum-verified LSTM mortality artifact and server-side runtime, shared by the API and the web Route Handlers                                       | TensorFlow.js, Zod                                              |
-| TimescaleDB                 | Future durable telemetry and operational data store                                                                                                   | API only                                                        |
-| Eclipse Mosquitto           | Future MQTT transport for simulator and devices                                                                                                       | Future API ingestion and publishers                             |
+| Component                   | Responsibility                                                                                                                                    | Direct dependencies                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `apps/web`                  | Responsive operator interface and backend health presentation; mortality Route Handlers (`app/api/v1/mortality/*`) on Vercel                      | HTTP API, `packages/mortality-model` (server only)              |
+| `apps/api`                  | Backend boundary, health endpoint, PostgreSQL check, vision orchestration, telemetry module (HTTP ingest, device keys, latest reading), mortality | PostgreSQL, inference service, disk, `packages/mortality-model` |
+| `apps/inference`            | Image quality gate, Qwen3-VL + LoRA classification, SCS rule (Python)                                                                             | Hugging Face model repositories                                 |
+| `apps/simulator`            | Future development telemetry source; idle in Phase 1                                                                                              | Shared telemetry contract                                       |
+| `packages/telemetry-schema` | Versioned Zod validation, inferred TypeScript types, enums, and example                                                                           | Zod                                                             |
+| `packages/vision-schema`    | Versioned vision result, vote, and inference response contract                                                                                    | Zod                                                             |
+| `packages/mortality-model`  | Checksum-verified LSTM mortality artifact and server-side runtime, shared by the API and the web Route Handlers                                   | TensorFlow.js, Zod                                              |
+| TimescaleDB                 | Future durable telemetry and operational data store                                                                                               | API only                                                        |
 
 The TypeScript side is a modular monolith, not a collection of microservices. The API will gain bounded
 domain modules as requirements arrive. A single backend keeps operations and consistency simple
@@ -37,17 +36,19 @@ Browser -> Next.js web -> NestJS/Fastify API -> Inference service (FastAPI) -> H
                                 +-> image store (disk) + vision result repository
 
 Current live telemetry path:
-ESP32 or gateway -> HTTP POST -> API shared-schema validation -> volatile latest-reading store
-Browser -> HTTP polling -> API latest-reading endpoint
+ESP32 -> HTTPS -> Cloudflare Tunnel -> API (device key, shared-schema validation) -> volatile latest-reading store
+Browser -> HTTPS polling -> Cloudflare Tunnel -> API latest-reading endpoint
 
 Target persistent telemetry path:
-Simulator or ESP32 -> Mosquitto -> API ingestion -> shared validation -> TimescaleDB
+Simulator or ESP32 -> HTTP POST -> API ingestion -> shared validation -> TimescaleDB
 ```
 
-- The browser never connects to PostgreSQL, MQTT, or the inference service.
+- The browser never connects to PostgreSQL or the inference service.
 - The web application treats the API as its only data boundary.
-- The simulator and eventual ESP32 firmware must publish the same versioned payload shape to the
-  same topic convention.
+- Telemetry arrives over HTTP only. MQTT is not used (decision 2026-11-20): devices post to
+  `POST /api/v1/telemetry`, reached through a Cloudflare Tunnel that terminates TLS.
+- The simulator and eventual ESP32 firmware must send the same versioned payload shape to the same
+  HTTP endpoint.
 - The API is responsible for validating untrusted telemetry before persistence.
 - Shared packages contain contracts, not application orchestration or infrastructure access.
 - `packages/vision-schema` is the single contract between the API, the web app, and the inference
@@ -151,16 +152,26 @@ The HTTP ingestion endpoint adds and preserves `received_at` in UTC. Device onli
 derived from `last_seen_at`, not trusted from a device payload. The current latest-reading store is
 volatile; durable history still requires a migration and TimescaleDB repository.
 
+When `TELEMETRY_DEVICE_KEYS` is set, each device authenticates with its own key in the
+`X-Device-Key` header. The key is checked before the body (401 `invalid_device_key`), and a key may
+only write its own `device_id` (403 `device_id_mismatch`), so a leaked key cannot overwrite another
+device and unregistered device ids are never stored (AUDIT S15). Empty `TELEMETRY_DEVICE_KEYS`
+leaves ingest open and logs a warning at startup; that is acceptable only while the API is not
+reachable from outside the machine. Reads (`GET /telemetry/latest`) stay open for the dashboard.
+
 ## Infrastructure
 
-Docker Compose supplies a PostgreSQL 16-compatible TimescaleDB image and Eclipse Mosquitto 2. The
-inference service is available as opt-in Compose profiles (`inference` for mock, `gpu` for real)
-and is not started by `docker compose up -d`. All services have health checks, a project network, configurable host ports, restart policies, and
-explicitly named persistent volumes. The network is not private: every published port is bound to
-all host interfaces (`0.0.0.0`). Restricting that is part of the security findings (S4-S6, D17), which
-are outside the current fixes. Mosquitto permits anonymous access only for Phase 1 local
-development and must not be exposed to an untrusted network. Authentication and TLS belong in a
-later integration/security phase.
+Docker Compose supplies a PostgreSQL 16-compatible TimescaleDB image. The inference service is
+available as opt-in Compose profiles (`inference` for mock, `gpu` for real) and is not started by
+`docker compose up -d`. All services have health checks, a project network, configurable host ports,
+restart policies, and explicitly named persistent volumes. Published ports are bound to `127.0.0.1`
+(AUDIT S4, S6): the API runs on the same host and is the only caller. The Mosquitto broker was
+removed with the decision to use HTTP only (2026-11-20, closes AUDIT S5).
+
+The API is exposed through a Cloudflare Tunnel (named tunnel on a fixed hostname), which provides
+TLS. Only the API port is routed; inference and PostgreSQL never are. With cloudflared on the same
+machine, `API_HOST=127.0.0.1` and `API_TRUST_PROXY=127.0.0.1,::1` make the API unreachable except
+through the tunnel and let `request.ip` show the real client (AUDIT D17).
 
 Database changes will be applied through migrations once the persistence model is introduced; no
 application is allowed to mutate schema ad hoc.
