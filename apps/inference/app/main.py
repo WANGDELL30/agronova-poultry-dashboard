@@ -31,7 +31,8 @@ class State:
 
     A load can no longer hang in `loading` or die silently (AUDIT H11): any BaseException becomes
     `error`, a load that exceeds `load_timeout_s` becomes `error`, and with `exit_on_load_error` the
-    process exits non-zero so the orchestrator restarts it.
+    process exits non-zero so a supervisor (systemd `Restart=on-failure`) restarts it. Off by default:
+    without a supervisor the process stays up and `/health` reports the error.
     """
 
     def __init__(self, settings: Settings, exit_process: Callable[[int], object] = os._exit) -> None:
@@ -85,7 +86,7 @@ class State:
             self.status, self.detail = "error", detail
         logger.error("model load failed: %s", detail)
         if self.settings.exit_on_load_error:
-            logger.error("exiting so the orchestrator restarts the service (INFERENCE_EXIT_ON_LOAD_ERROR)")
+            logger.error("exiting so the supervisor restarts the service (INFERENCE_EXIT_ON_LOAD_ERROR)")
             self._exit_process(3)
 
 

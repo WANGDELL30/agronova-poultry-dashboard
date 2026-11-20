@@ -240,12 +240,16 @@ def test_classify_503_body_says_whether_the_model_is_loading_or_failed(monkeypat
 def test_exit_on_load_error_defaults(monkeypatch):
     from app.config import load_settings
 
+    # No Docker (decision 2026-11-20): nothing restarts an exited process unless a supervisor is set
+    # up, so the default is to stay up and report the error in every mode.
     monkeypatch.delenv("INFERENCE_EXIT_ON_LOAD_ERROR", raising=False)
     monkeypatch.setenv("INFERENCE_MODE", "real")
-    assert load_settings().exit_on_load_error is True
+    assert load_settings().exit_on_load_error is False
     assert load_settings().load_timeout_s == 1800
     monkeypatch.setenv("INFERENCE_MODE", "mock")
     assert load_settings().exit_on_load_error is False
+    monkeypatch.setenv("INFERENCE_EXIT_ON_LOAD_ERROR", "true")
+    assert load_settings().exit_on_load_error is True
     monkeypatch.setenv("INFERENCE_EXIT_ON_LOAD_ERROR", "maybe")
     with pytest.raises(ValueError, match="INFERENCE_EXIT_ON_LOAD_ERROR"):
         load_settings()
