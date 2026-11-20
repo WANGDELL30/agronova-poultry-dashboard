@@ -1,6 +1,6 @@
 /**
  * Device control is designed but not implemented: the system has no actuators, no command
- * endpoint and no MQTT path (telemetry flows one way, device to API). A control request is
+ * endpoint and no command path (telemetry flows one way, device to API). A control request is
  * recognised here, with fixed rules and before the LLM sees the message, so that the user gets a
  * clear "not available" and the LLM is never in a position to trigger or claim an action.
  *

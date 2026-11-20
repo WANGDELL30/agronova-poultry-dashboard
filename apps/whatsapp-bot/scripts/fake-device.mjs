@@ -4,6 +4,9 @@
 // corepack pnpm --filter @agronova/whatsapp-bot device:fake
 // corepack pnpm --filter @agronova/whatsapp-bot device:fake --scenario sensor-disconnected
 // corepack pnpm --filter @agronova/whatsapp-bot device:fake --scenario hot --interval 5
+//
+// When the API has TELEMETRY_DEVICE_KEYS set, pass this device's key with --key or
+// AGRONOVA_DEVICE_KEY; it is sent as the X-Device-Key header, like a real ESP32 does.
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { parseArgs } from 'node:util';
@@ -47,6 +50,7 @@ const { values } = parseArgs({
     interval: { type: 'string', default: '10' },
     api: { type: 'string' },
     device: { type: 'string' },
+    key: { type: 'string' },
     once: { type: 'boolean', default: false },
   },
 });
@@ -70,6 +74,7 @@ const apiBase = (
 ).replace(/\/+$/, '');
 const deviceId =
   values.device ?? (process.env.AGRONOVA_DEVICE_ID || validTelemetryV1Example.device_id);
+const deviceKey = values.key ?? (process.env.AGRONOVA_DEVICE_KEY || null);
 const url = `${apiBase}/api/v1/telemetry`;
 const startedAt = Date.now();
 let sequence = 0;
@@ -102,7 +107,10 @@ async function send() {
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(deviceKey ? { 'X-Device-Key': deviceKey } : {}),
+      },
       body: JSON.stringify(reading),
     });
     const temperature = reading.readings.air_temperature_c?.filtered ?? 'null';
@@ -116,7 +124,7 @@ async function send() {
 }
 
 console.log(
-  `ESP32 tiruan "${deviceId}" -> ${url}, skenario "${values.scenario}", tiap ${intervalSeconds} dtk. Ctrl+C untuk berhenti.`,
+  `ESP32 tiruan "${deviceId}" -> ${url}, skenario "${values.scenario}", tiap ${intervalSeconds} dtk, ${deviceKey ? 'dengan' : 'tanpa'} X-Device-Key. Ctrl+C untuk berhenti.`,
 );
 await send();
 if (!values.once) setInterval(send, intervalSeconds * 1000);

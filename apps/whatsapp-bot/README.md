@@ -8,7 +8,7 @@ A separate process that lets farm staff use WhatsApp to:
 3. **request device control**, which is recognised and answered with "not available yet".
 
 It reads the existing API over HTTP `GET` only (`/api/v1/telemetry/latest`, `/api/v1/vision/results`).
-It never writes to the API and never talks to the inference service or MQTT. Nothing in `apps/api`,
+It never writes to the API and never talks to the inference service. Nothing in `apps/api`,
 `apps/web`, `apps/inference` or `packages/*` was changed for it.
 
 ```text
@@ -163,7 +163,7 @@ your server for the answer; with Colab they are processed on Google's machine.
 
 ## Device control: designed, not implemented
 
-The system has no actuators, no command endpoint and no MQTT command path, so
+The system has no actuators and no command endpoint, so
 `WA_CONTROL_ENABLED` accepts only `false` and the bot refuses to start otherwise. Control requests
 are detected by fixed rules in `src/chat/control.ts` before the LLM sees the message, so the LLM can
 neither trigger nor claim an action.
@@ -171,7 +171,7 @@ neither trigger nor claim an action.
 To enable control in a later, separately approved phase:
 
 1. Prerequisites outside this app: actuators on the ESP32, firmware that accepts commands, and a
-   command path (MQTT topic or API endpoint) with acknowledgements.
+   command path (an API endpoint the device polls, since telemetry is HTTP only) with acknowledgements.
 2. Add a `CommandDispatcher` interface (`dispatch(deviceId, target, action) → acknowledged | failed`)
    and call it from the router where the "not available" reply is sent today.
 3. Restrict control to a separate admin list (`WA_CONTROL_ADMINS`), not the whole allowlist.

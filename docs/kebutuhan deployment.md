@@ -197,8 +197,8 @@ juga perlu sinkronisasi waktu (NTP) supaya `captured_at` akurat.
 - **Alert belum otomatis.** API sudah menghitung `trigger_alert` (minimal 3 dari 5 vote stres),
   tetapi belum ada notifikasi (WA, email, push). Itu bagian modul alerts yang belum
   diimplementasikan.
-- **Kamera tidak lewat MQTT.** MQTT di repo ditujukan untuk telemetri sensor. Gambar dikirim lewat
-  HTTP POST langsung ke API.
+- **Kamera dan sensor sama-sama lewat HTTP.** Repo tidak memakai MQTT (keputusan 2026-11-20). Gambar
+  dikirim lewat HTTP POST langsung ke API, melalui Cloudflare Tunnel yang sama dengan telemetri.
 
 ## 7. Temporal gate (temporal voting)
 

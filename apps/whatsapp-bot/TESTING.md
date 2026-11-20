@@ -159,6 +159,9 @@ sekali per `WA_ALERT_COOLDOWN_MS` (default 15 menit) jika kondisinya bolak-balik
   `WA_LLM_API_KEY` tidak sama dengan output notebook.
 - **Perangkat langsung OFFLINE.** ESP32 tiruan tidak jalan, atau `AGRONOVA_DEVICE_ID` di `.env` bot
   berbeda dengan device yang dikirim.
+- **ESP32 tiruan mendapat HTTP 401 atau 403.** API memakai `TELEMETRY_DEVICE_KEYS`. Isi
+  `AGRONOVA_DEVICE_KEY` di `.env` bot (atau `--key`) dengan kunci milik `AGRONOVA_DEVICE_ID`: 401 berarti
+  kuncinya kosong atau salah, 403 berarti kuncinya milik device lain.
 
 ## 7. Selesai menguji
 

@@ -146,7 +146,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
   }
   const values = parsed.data;
 
-  // Device control has no command path yet (no actuators, no MQTT). Refuse to start rather than
+  // Device control has no command path yet (no actuators, no command endpoint). Refuse to start rather than
   // let anyone believe the switch does something.
   if (values.WA_CONTROL_ENABLED !== 'false') {
     fail('WA_CONTROL_ENABLED must be "false": device control is not implemented.');
