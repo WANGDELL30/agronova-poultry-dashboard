@@ -31,12 +31,16 @@ ingest only: it does not activate persistence or the rest of Phase 2.
 ### Authorized extension: HTTP telemetry through Cloudflare Tunnel (2026-11-20)
 
 Decided with the infrastructure owner on 2026-11-20: devices send telemetry over HTTP through a
-Cloudflare Tunnel, and MQTT is not used. The Mosquitto broker was removed from Docker Compose. To
-make the tunnel safe, `POST /api/v1/telemetry` accepts per-device keys (`TELEMETRY_DEVICE_KEYS`,
-header `X-Device-Key`), Compose binds PostgreSQL and inference to `127.0.0.1`, and the API can trust
+Cloudflare Tunnel, and MQTT is not used. The Mosquitto broker was removed. To make the tunnel
+safe, `POST /api/v1/telemetry` accepts per-device keys (`TELEMETRY_DEVICE_KEYS`, header
+`X-Device-Key`), PostgreSQL and inference listen on the local machine only, and the API can trust
 the local cloudflared proxy (`API_TRUST_PROXY`). Device keys authenticate ingest only; user
 authentication, roles, and persistence stay in later phases. `AGENTS.md` still names MQTT topics for
 the simulator and ESP32; changing that permanent rule awaits the repository owner.
+
+Also decided on 2026-11-20: Docker is not used. Demos run inference on Colab; the pilot clones the
+repository onto an always-on private GPU server and runs every service directly (uvicorn and Node
+under systemd). Docker Compose and the inference Dockerfile were removed.
 
 ### Authorized extension: operations modules (2026-10-28)
 
@@ -65,7 +69,7 @@ persistence; the bot keeps its state in memory. See
 - NestJS/Fastify API with PostgreSQL-aware health endpoint
 - Version 1 telemetry contract, validation, example, and tests
 - Idle simulator application
-- TimescaleDB local infrastructure (Mosquitto removed on 2026-11-20)
+- Optional local PostgreSQL for the health check (Docker and Mosquitto removed on 2026-11-20)
 - Architecture, workflow, and permanent engineering rules
 
 Apart from the authorized extensions above, no persistence schema, user authentication,
@@ -85,7 +89,7 @@ Delivered:
 - API vision module: upload, inference client with timeout and API key, temporal voter, image
   store, and results endpoints
 - Web `/vision` page with upload, per-indicator results, quality status, vote status, and mock mode
-- Docker Compose profiles and Colab notebook for running the real model
+- Colab notebook and uvicorn/systemd instructions for running the real model
 
 Next:
 

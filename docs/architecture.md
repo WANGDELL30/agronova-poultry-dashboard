@@ -119,8 +119,11 @@ difference at n = 17.
 | `real` | Actual classification                                         | GPU with about 8-9 GB VRAM |
 
 `GET /health` on the inference service returns 503 until the model is fully loaded, so readiness is
-reported honestly. Real mode can run in Docker (`inference-gpu` profile) or on a free Colab/Kaggle
-GPU behind a tunnel for demonstrations. A tunnel URL is public: protect it with `INFERENCE_API_KEY`.
+reported honestly. There is no container image (decision 2026-11-20): real mode runs with uvicorn
+on a free Colab/Kaggle GPU behind a tunnel for demonstrations, or on an always-on GPU server under
+systemd for the pilot. A tunnel URL is public: protect it with `INFERENCE_API_KEY`. A failed model
+load leaves the service up with `/health` reporting `error`; `INFERENCE_EXIT_ON_LOAD_ERROR=true`
+exits instead, for use only under a supervisor that restarts it.
 
 ### Current limitations
 
@@ -161,12 +164,13 @@ reachable from outside the machine. Reads (`GET /telemetry/latest`) stay open fo
 
 ## Infrastructure
 
-Docker Compose supplies a PostgreSQL 16-compatible TimescaleDB image. The inference service is
-available as opt-in Compose profiles (`inference` for mock, `gpu` for real) and is not started by
-`docker compose up -d`. All services have health checks, a project network, configurable host ports,
-restart policies, and explicitly named persistent volumes. Published ports are bound to `127.0.0.1`
-(AUDIT S4, S6): the API runs on the same host and is the only caller. The Mosquitto broker was
-removed with the decision to use HTTP only (2026-11-20, closes AUDIT S5).
+Docker is not used (decision 2026-11-20). The API and web app run with Node; the inference
+service runs with uvicorn, on Colab for demos or on an always-on GPU server for the pilot,
+where systemd starts each service at boot and restarts it after a crash. Inference listens on
+`127.0.0.1` and PostgreSQL, when installed, on `localhost` only (AUDIT S4, S6): the API on the same
+machine is the only caller. PostgreSQL is optional today because only the health check reads it;
+durable telemetry (Phase 2) will need a natively installed PostgreSQL/TimescaleDB or a managed one.
+The Mosquitto broker was removed with the decision to use HTTP only (2026-11-20, closes AUDIT S5).
 
 The API is exposed through a Cloudflare Tunnel (named tunnel on a fixed hostname), which provides
 TLS. Only the API port is routed; inference and PostgreSQL never are. With cloudflared on the same

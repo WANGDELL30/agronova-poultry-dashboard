@@ -9,13 +9,18 @@ INFERENCE_MODE=mock python -m uvicorn app.main:app --port 8000   # no GPU
 python -m pytest
 ```
 
+There is no Docker image (decision 2026-11-20): the service runs with uvicorn directly, on Colab for
+demos or on an always-on GPU server for the pilot (see below). Settings come from the environment;
+copy `.env.example` to `.env` and pass `--env-file .env` to uvicorn.
+
 Real mode (GPU, ~8-9 GB VRAM): `pip install -r requirements-real.txt`, set `INFERENCE_MODE=real`
 (`HF_TOKEN` is optional because the default adapter `Arga23/chickenstress-vlm-lora` is public; set it
-only for a private adapter repo, and never commit it), or use `docker compose --profile gpu up inference-gpu`.
+only for a private adapter repo, and never commit it).
 `GET /health` returns 503 until the model is loaded, with `loading_since` (UTC) while loading. A load
 that raises anything (including `SystemExit`) or exceeds `INFERENCE_LOAD_TIMEOUT_S` (default 1800 s)
-becomes `error`; in real mode the process then exits non-zero so the orchestrator restarts it
-(`INFERENCE_EXIT_ON_LOAD_ERROR`, default `true` in real mode, `false` in mock). While not ready,
+becomes `error`, and the service stays up reporting it. With `INFERENCE_EXIT_ON_LOAD_ERROR=true` the
+process exits non-zero instead, which is only useful under a supervisor that restarts it (systemd,
+below); the default is `false` in every mode. While not ready,
 `POST /v1/classify` answers 503 `{"error": "model_not_ready", "status": "loading" | "error"}`; a backend
 crash answers 503 `{"error": "gpu_oom"}` or 500 `{"error": "backend_error"}`. `POST /v1/classify`
 takes a multipart `file`. At most one request runs the model; `INFERENCE_MAX_QUEUE` (default 2) more may
@@ -28,8 +33,58 @@ p95 11.2 s per image, and identical raw output on 5 of 5 repeated images. Other 
 measurement.
 
 Using the service in-process (importing `app` in a Colab or Jupyter kernel instead of running
-uvicorn in a separate process) requires `INFERENCE_EXIT_ON_LOAD_ERROR=false`: the exit on a load
-error (AUDIT H11) would otherwise kill the kernel.
+uvicorn in a separate process) must keep `INFERENCE_EXIT_ON_LOAD_ERROR` at its default `false`: the
+exit on a load error (AUDIT H11) would otherwise kill the kernel.
+
+## Always-on GPU server (pilot)
+
+For the pilot the repository is cloned onto a private GPU server that stays on. Use Linux with an
+NVIDIA GPU of about 9 GB VRAM or more and a driver that supports the CUDA build of the pinned `torch`
+in `requirements-real.txt` (check with `nvidia-smi`). The parity run (2026-11-14) used exactly these
+pins on Linux, so this is the closest match to the verified setup.
+
+```bash
+cd apps/inference
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt -r requirements-real.txt
+cp .env.example .env    # INFERENCE_MODE=real, INFERENCE_API_KEY=<secret shared with the API>
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --env-file .env
+```
+
+Before the pilot relies on it, on that server:
+
+1. Run the parity check (section A below) with the same reference and images; expect `N/N identical`.
+   Another GPU or driver can change the output.
+2. Measure inference time and set `INFERENCE_TIMEOUT_MS` in the API from it; the 60 s default was
+   measured on a T4 only (PV9).
+3. Keep `--host 127.0.0.1` when the API runs on the same server. If the API runs elsewhere, expose
+   inference only through its own tunnel or a private network, always with `INFERENCE_API_KEY`.
+
+Run it under systemd so it starts at boot and restarts after a crash. Only with a supervisor like this
+is `INFERENCE_EXIT_ON_LOAD_ERROR=true` useful: a failed model load then exits and is retried.
+
+```ini
+# /etc/systemd/system/agronova-inference.service
+[Unit]
+Description=AgroNova inference (Qwen3-VL + LoRA)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=agronova
+WorkingDirectory=/opt/agronova-poultry-dashboard/apps/inference
+Environment=INFERENCE_EXIT_ON_LOAD_ERROR=true
+ExecStart=/opt/agronova-poultry-dashboard/apps/inference/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --env-file .env
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`sudo systemctl daemon-reload && sudo systemctl enable --now agronova-inference`, then follow the log
+with `journalctl -u agronova-inference -f`. Run it as an unprivileged user, never as root. The model
+cache lives in that user's `~/.cache/huggingface`.
 
 ## Real model without a local GPU (Kaggle / Colab)
 
