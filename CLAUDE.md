@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-AgroNova Poultry AI IoT: a pnpm TypeScript monorepo (Next.js web, NestJS/Fastify API, telemetry simulator placeholder, shared Zod schema packages) plus a separate Python FastAPI inference service for **chicken stress detection from images** (Qwen3-VL-4B-Instruct + LoRA adapter). The overview dashboard and the seven operations modules (live API telemetry via HTTP ingest, later-phase controls disabled), snapshot JSON/CSV export, and the vision pipeline are implemented; MQTT ingestion, persistence, and alert notifications are not. `AGENTS.md` holds the permanent project rules and `README.md` the full env var table and run modes. Read `AGENTS.md` before changing anything, especially the vision and sensor-semantics sections.
+AgroNova Poultry AI IoT: a pnpm TypeScript monorepo (Next.js web, NestJS/Fastify API, telemetry simulator placeholder, shared Zod schema packages) plus a separate Python FastAPI inference service for **chicken stress detection from images** (Qwen3-VL-4B-Instruct + LoRA adapter). The overview dashboard and the seven operations modules (live API telemetry via HTTP ingest, later-phase controls disabled), snapshot JSON/CSV export, and the vision pipeline are implemented; persistence and alert notifications are not. Devices send telemetry over HTTP (`POST /api/v1/telemetry`, per-device `X-Device-Key` when `TELEMETRY_DEVICE_KEYS` is set) through a Cloudflare Tunnel; MQTT is not used (decision 2026-11-20). `AGENTS.md` holds the permanent project rules and `README.md` the full env var table and run modes. Read `AGENTS.md` before changing anything, especially the vision and sensor-semantics sections.
 
 Note: the parent folder holds earlier notebook runs and docs, not code to maintain. This directory is the repo (its own `.git`). The root example env file is named `env.example` (no leading dot), while the app folders use `apps/*/.env.example`.
 
@@ -23,7 +23,7 @@ corepack pnpm inference:test   # pytest in apps/inference (needs requirements-de
 docker compose config
 
 corepack pnpm dev              # builds schemas, then runs api + web + simulator in parallel
-corepack pnpm infra:up         # TimescaleDB + Mosquitto
+corepack pnpm infra:up         # TimescaleDB (bound to 127.0.0.1)
 corepack pnpm inference:mock   # FastAPI on :8000, mock backend, no GPU
 ```
 

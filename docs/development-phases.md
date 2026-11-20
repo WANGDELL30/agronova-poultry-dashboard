@@ -26,7 +26,17 @@ See [mortality-model.md](mortality-model.md) for the contract, limits, and deplo
 `POST /api/v1/telemetry` accepts one schema-v1 reading, validates it, and keeps the latest reading per
 device in memory; `GET /api/v1/telemetry/latest` serves it (204 until a reading exists). The API keeps
 the device `captured_at` and its own `received_at`, and is idempotent per `message_id`. This is HTTP
-ingest only: it does not activate MQTT ingestion, persistence, or the rest of Phase 2.
+ingest only: it does not activate persistence or the rest of Phase 2.
+
+### Authorized extension: HTTP telemetry through Cloudflare Tunnel (2026-11-20)
+
+Decided with the infrastructure owner on 2026-11-20: devices send telemetry over HTTP through a
+Cloudflare Tunnel, and MQTT is not used. The Mosquitto broker was removed from Docker Compose. To
+make the tunnel safe, `POST /api/v1/telemetry` accepts per-device keys (`TELEMETRY_DEVICE_KEYS`,
+header `X-Device-Key`), Compose binds PostgreSQL and inference to `127.0.0.1`, and the API can trust
+the local cloudflared proxy (`API_TRUST_PROXY`). Device keys authenticate ingest only; user
+authentication, roles, and persistence stay in later phases. `AGENTS.md` still names MQTT topics for
+the simulator and ESP32; changing that permanent rule awaits the repository owner.
 
 ### Authorized extension: operations modules (2026-10-28)
 
@@ -44,15 +54,15 @@ dashboard already shows; there is no server-side export or history archive.
 - NestJS/Fastify API with PostgreSQL-aware health endpoint
 - Version 1 telemetry contract, validation, example, and tests
 - Idle simulator application
-- TimescaleDB and Mosquitto local infrastructure
+- TimescaleDB local infrastructure (Mosquitto removed on 2026-11-20)
 - Architecture, workflow, and permanent engineering rules
 
-Apart from the authorized extensions above, no MQTT ingestion, persistence schema, authentication,
+Apart from the authorized extensions above, no persistence schema, user authentication,
 alert lifecycle, or physical device integration is part of this phase.
 
 ## Vision track — chicken stress detection (in progress)
 
-A parallel track that does not depend on MQTT ingestion. It reuses the same rules for UTC
+A parallel track that does not depend on telemetry ingestion. It reuses the same rules for UTC
 timestamps, nullable values, and explicit status enums.
 
 Delivered:
@@ -77,18 +87,17 @@ Next:
 Out of scope until separately approved: automated actions based on vision output, and any claim of
 diagnostic accuracy beyond the evaluation reported with the model.
 
-## Phase 2 — Simulated telemetry ingestion
+## Phase 2 — Telemetry persistence
 
-- Finalize MQTT topic naming and delivery semantics
-- Publish schema-versioned data from the simulator
-- Subscribe and validate payloads in an API ingestion module
+- Keep HTTP as the only telemetry transport (decision 2026-11-20); there is no MQTT topic contract
+- Send schema-versioned data from the simulator to the same HTTP endpoint as the ESP32
 - Add migration tooling and an initial TimescaleDB telemetry schema
 - Preserve `captured_at` and backend-generated `received_at`
 - Track sequence gaps, validation failures, `last_seen_at`, and derived device availability
 - Add unit and integration coverage for ingestion and persistence
 
-Recommended entry point: agree on the MQTT topic contract and database migration tool, then design
-the ingestion transaction around the existing shared schema.
+Recommended entry point: agree on the database migration tool, then design the ingestion transaction
+around the existing shared schema and HTTP endpoint.
 
 ## Phase 3 — Live and historical monitoring
 
@@ -110,8 +119,8 @@ WhatsApp integration remains out of scope until a separately approved phase.
 
 ## Phase 5 — ESP32 integration and production hardening
 
-- Real hardware publishing through the same schema and MQTT topic contract as the simulator
-- Device provisioning, per-device credentials, MQTT TLS, and credential rotation
+- Real hardware sending through the same schema and HTTP endpoint as the simulator
+- Device provisioning, per-device key rotation, and TLS certificate handling on the ESP32
 - Calibration workflow and traceable calibration records
 - Store-and-forward behavior, reconnect testing, and clock-drift handling
 - Backups, recovery exercises, security review, deployment automation, and load testing

@@ -3,16 +3,16 @@
 Monitoring dashboard for laying-hen farms. The repository is a strict TypeScript monorepo with a
 responsive bilingual Next.js dashboard, a NestJS/Fastify API, a telemetry simulator placeholder,
 shared Zod schemas, a Python inference service for **chicken stress detection from images**, the
-notebooks used to train and evaluate the model, and local TimescaleDB plus MQTT infrastructure.
+notebooks used to train and evaluate the model, and local TimescaleDB infrastructure.
 
 ## Current scope
 
 | Area                        | Status                                                                                          |
 | --------------------------- | ----------------------------------------------------------------------------------------------- |
 | Overview dashboard          | Live API polling by default; waits without fabricating values until data arrives                |
-| HTTP telemetry ingestion    | `POST /api/v1/telemetry`, schema-v1 validated; latest reading kept in memory                    |
+| HTTP telemetry ingestion    | `POST /api/v1/telemetry`, schema-v1 validated, per-device keys; latest reading in memory        |
 | Vision (stress detection)   | Working end to end: upload frame → quality gate → VLM → SCS rule → temporal vote                |
-| MQTT ingestion, persistence | **Not implemented.** Simulator does not publish; no sensor data is stored                       |
+| Telemetry persistence, MQTT | **Not implemented / not used.** No sensor data is stored; devices post over HTTP only           |
 | Vision result persistence   | **In-memory only.** Results are lost when the API restarts                                      |
 | Real ESP32 devices, alerts  | HTTP contract ready; ESP32 firmware still needs to post telemetry                               |
 | Operations modules          | Seven modules render the same live telemetry as the overview; later-phase controls are disabled |
@@ -68,13 +68,11 @@ packages/
   mortality-model/          Shared server LSTM runtime, weights, and numerical verification
   vision-schema/            Vision result/vote contract (Zod) shared by API, web, and inference
 training/                   Notebooks: labeling tool, training/evaluation, HF inference reference
-infrastructure/
-  mosquitto/config/         Local MQTT broker configuration
 docs/
   architecture.md           Components, boundaries, and intended data flow
   development-phases.md     Phased delivery roadmap
   frontend-design.md        Frontend components, states, and responsive behavior
-docker-compose.yml          TimescaleDB, Mosquitto, and optional inference (profiles)
+docker-compose.yml          TimescaleDB and optional inference (profiles), bound to 127.0.0.1
 ```
 
 ## Prerequisites
@@ -140,7 +138,9 @@ corepack pnpm dev
 
 The web app polls `GET /api/v1/telemetry/latest` every three seconds. A device or gateway sends the
 shared schema-v1 JSON payload to `POST /api/v1/telemetry`. The API preserves device `captured_at`
-and backend `received_at` separately and derives online state from `last_seen_at`.
+and backend `received_at` separately and derives online state from `last_seen_at`. MQTT is not used
+(decision 2026-11-20). When `TELEMETRY_DEVICE_KEYS` is set, each device must send its key in the
+`X-Device-Key` header (see [Expose the API through a Cloudflare Tunnel](#expose-the-api-through-a-cloudflare-tunnel)).
 
 ### 3. Real model
 
@@ -175,7 +175,8 @@ reference inference notebook (`training/vlm-workflow/inference-vlm-lora-huggingf
 | Health     | `http://localhost:4000/api/v1/health` | API environment                                                                                 |
 | Inference  | `http://localhost:8000`               | `INFERENCE_PORT`, `INFERENCE_URL`                                                               |
 | PostgreSQL | `localhost:5432`                      | `POSTGRES_PORT`, `DATABASE_URL`                                                                 |
-| MQTT       | `mqtt://localhost:1883`               | `MQTT_PORT`, `MQTT_BROKER_URL`                                                                  |
+
+Docker Compose publishes PostgreSQL and inference on `127.0.0.1` only.
 
 Stop local infrastructure without deleting its named volumes:
 
@@ -185,18 +186,18 @@ corepack pnpm infra:down
 
 ## API endpoints (prefix `/api/v1`)
 
-| Method | Path                        | Purpose                                                                                                                                                                                                                           |
-| ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/health`                   | API and database status (`degraded` when PostgreSQL is unavailable)                                                                                                                                                               |
-| POST   | `/vision/frames`            | Multipart upload: one `image` (JPEG/PNG/WebP, up to 8 MB) + metadata                                                                                                                                                              |
-| GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)                                                                                                                                                                         |
-| GET    | `/vision/results/:id/image` | Stored frame for a result                                                                                                                                                                                                         |
-| GET    | `/vision/health`            | Vision pipeline status                                                                                                                                                                                                            |
-| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid). Idempotent per `message_id`: an identical retransmission returns the original receipt with 200; the same id with another payload is 409 `duplicate_message_id` |
-| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held                                                                                                                                                                 |
-| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure)                                                                                                                                                            |
-| POST   | `/mortality/predict`        | Always **409** `MODEL_INPUTS_UNAVAILABLE` while gas inputs are deferred                                                                                                                                                           |
-| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)                                                                                                                                                                           |
+| Method | Path                        | Purpose                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`                   | API and database status (`degraded` when PostgreSQL is unavailable)                                                                                                                                                                                                                                                                                                                           |
+| POST   | `/vision/frames`            | Multipart upload: one `image` (JPEG/PNG/WebP, up to 8 MB) + metadata                                                                                                                                                                                                                                                                                                                          |
+| GET    | `/vision/results`           | Recent results, newest first (`camera_id`, `limit` 1–100)                                                                                                                                                                                                                                                                                                                                     |
+| GET    | `/vision/results/:id/image` | Stored frame for a result                                                                                                                                                                                                                                                                                                                                                                     |
+| GET    | `/vision/health`            | Vision pipeline status                                                                                                                                                                                                                                                                                                                                                                        |
+| POST   | `/telemetry`                | Ingest one schema-v1 reading (400 `invalid_telemetry` if invalid). Idempotent per `message_id`: an identical retransmission returns the original receipt with 200; the same id with another payload is 409 `duplicate_message_id`. With `TELEMETRY_DEVICE_KEYS` set: 401 `invalid_device_key` without a valid `X-Device-Key`, 403 `device_id_mismatch` when the key belongs to another device |
+| GET    | `/telemetry/latest`         | Latest reading (`device_id` optional); **204** while none is held                                                                                                                                                                                                                                                                                                                             |
+| GET    | `/mortality/model`          | Loads and verifies the H5 weights (503 `MODEL_UNAVAILABLE` on failure)                                                                                                                                                                                                                                                                                                                        |
+| POST   | `/mortality/predict`        | Always **409** `MODEL_INPUTS_UNAVAILABLE` while gas inputs are deferred                                                                                                                                                                                                                                                                                                                       |
+| POST   | `/mortality/diagnostics`    | Always **409** `MODEL_INPUTS_UNAVAILABLE` (same reason)                                                                                                                                                                                                                                                                                                                                       |
 
 Inference service: `GET /health` and `POST /v1/classify` (multipart `file`, optional `X-API-Key`).
 
@@ -216,7 +217,7 @@ Inference service: `GET /health` and `POST /v1/classify` (multipart `file`, opti
 | `/settings`    | Read-only settings; saving disabled                          |
 
 Frontend mock scenarios (`NEXT_PUBLIC_MOCK_SCENARIO`): `normal`, `warning`, `sensor-not-installed`,
-`device-offline`. The frontend never connects directly to MQTT or to the inference service.
+`device-offline`. The frontend talks only to the API, never directly to the inference service.
 
 ## Training and evaluation
 
@@ -242,7 +243,7 @@ license. Details of the source export are in `docs/manifest/manifest_dataset.md`
 
 ### Deploy the frontend to Vercel
 
-Use the existing Vercel project for `apps/web`; NestJS, the simulator, PostgreSQL, and MQTT services
+Use the existing Vercel project for `apps/web`; NestJS, the simulator, PostgreSQL, and inference
 are not part of this deployment. The mortality server endpoints run as Next.js Route Handlers on
 Vercel. The web package builds the shared telemetry schema, vision schema, and mortality runtime before Next.js.
 
@@ -281,6 +282,22 @@ production deployment from the repository root with:
 corepack pnpm dlx vercel@latest deploy --prod
 ```
 
+### Expose the API through a Cloudflare Tunnel
+
+Devices and the Vercel dashboard reach the API through a Cloudflare Tunnel that terminates TLS. Use a
+named tunnel on a domain managed in Cloudflare, not a `trycloudflare.com` quick tunnel: its URL
+changes on every run, and both the Vercel build and the device firmware embed the API URL.
+
+- Route only the API: `api.<domain>` → `http://127.0.0.1:4000`. Never route inference (8000) or
+  PostgreSQL (5432).
+- In `apps/api/.env`: `API_HOST=127.0.0.1`, `API_TRUST_PROXY=127.0.0.1,::1`, `WEB_ORIGIN` set to the
+  dashboard origin, and `TELEMETRY_DEVICE_KEYS` with one key per device.
+- In Vercel: `NEXT_PUBLIC_API_BASE_URL=https://api.<domain>`, then redeploy.
+- Devices post to `https://api.<domain>/api/v1/telemetry` with the `X-Device-Key` header. Retry
+  network errors and 5xx with the same `message_id`; do not retry 400, 401, 403, or 409.
+- `POST /vision/frames` has no authentication yet (AUDIT S2): do not share the API URL beyond the
+  devices and the dashboard until it does.
+
 ## Checks and builds
 
 ```bash
@@ -313,7 +330,7 @@ corepack pnpm --filter @agronova/telemetry-schema test
 
 The simulator prints an idle startup message. With `start` (`node dist/index.js`) it then exits
 successfully; under `corepack pnpm dev` (`tsx watch`) the watcher keeps running idle. It deliberately
-does not connect to MQTT or publish telemetry.
+does not send telemetry.
 
 ## Environment variable reference
 
@@ -322,15 +339,16 @@ does not connect to MQTT or publish telemetry.
 | `POSTGRES_DB`                  | Compose database name                                                                                                                                  | `agronova`                                       |
 | `POSTGRES_USER`                | Compose database user                                                                                                                                  | `agronova`                                       |
 | `POSTGRES_PASSWORD`            | Compose database password                                                                                                                              | Required; local secret                           |
-| `POSTGRES_PORT`                | Host PostgreSQL port                                                                                                                                   | `5432`                                           |
-| `MQTT_PORT`                    | Host MQTT port                                                                                                                                         | `1883`                                           |
-| `INFERENCE_PORT`               | Host port of the inference container                                                                                                                   | `8000`                                           |
-| `API_HOST`                     | API bind address                                                                                                                                       | `0.0.0.0`                                        |
+| `POSTGRES_PORT`                | Host PostgreSQL port (Compose binds it to `127.0.0.1`)                                                                                                 | `5432`                                           |
+| `INFERENCE_PORT`               | Host port of the inference container (Compose binds it to `127.0.0.1`)                                                                                 | `8000`                                           |
+| `API_HOST`                     | API bind address; `127.0.0.1` when only a tunnel on the same machine reaches it                                                                        | `0.0.0.0`                                        |
 | `API_PORT`                     | API port                                                                                                                                               | `4000`                                           |
 | `APP_VERSION`                  | Version reported by health                                                                                                                             | `0.1.0`                                          |
 | `WEB_ORIGIN`                   | Allowed browser origins, comma-separated; no `*`                                                                                                       | `http://localhost:3000`                          |
+| `API_TRUST_PROXY`              | Proxy IPs/CIDRs whose `X-Forwarded-For` is trusted (`127.0.0.1,::1` for cloudflared on the same machine); no `true` or `*`                             | Empty = trust no proxy                           |
 | `DATABASE_URL`                 | PostgreSQL connection string used by API health                                                                                                        | Omit to report `not_configured`                  |
 | `DATABASE_CONNECT_TIMEOUT_MS`  | Health-query connection timeout                                                                                                                        | `3000`                                           |
+| `TELEMETRY_DEVICE_KEYS`        | `device_id=key` pairs, comma-separated; keys >= 16 characters and unique, sent as `X-Device-Key` on `POST /telemetry`                                  | Empty = open ingest; set it before any tunnel    |
 | `INFERENCE_URL`                | Inference service base URL used by the API                                                                                                             | `http://localhost:8000`                          |
 | `INFERENCE_API_KEY`            | Shared secret (`X-API-Key`) for the inference service                                                                                                  | Empty = no auth; set for tunnels                 |
 | `INFERENCE_TIMEOUT_MS`         | API timeout for one inference call. T4 (PV9): (1 + queue 2) × p95 11.55 s × 1.5 ≈ 52 s, rounded up. Re-measure on other GPUs                           | `60000`                                          |
@@ -357,8 +375,6 @@ does not connect to MQTT or publish telemetry.
 | `DEVICE_OFFLINE_AFTER_MS`      | API threshold derived from `last_seen_at`                                                                                                              | `30000`                                          |
 | `NEXT_PUBLIC_MOCK_SCENARIO`    | Deterministic frontend simulation scenario                                                                                                             | `normal`                                         |
 | `NEXT_PUBLIC_MOCK_INTERVAL_MS` | Mock snapshot interval in milliseconds                                                                                                                 | `5000`                                           |
-| `MQTT_BROKER_URL`              | Future simulator broker URL                                                                                                                            | `mqtt://localhost:1883`                          |
-| `MQTT_TELEMETRY_TOPIC`         | Future shared simulator/device topic template                                                                                                          | example file value                               |
 | `SIMULATOR_DEVICE_ID`          | Future simulator device identity                                                                                                                       | `AGRONOVA-SIM-01`                                |
 
 The web dashboard does not receive `DEVICE_OFFLINE_AFTER_MS` from the API. It assumes the API default

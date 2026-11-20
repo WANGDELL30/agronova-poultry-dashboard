@@ -3,8 +3,8 @@
 ## Frontend Phase F1
 
 F1 establishes a responsive, bilingual dashboard shell and a fully composed overview using
-deterministic simulated telemetry. It does not connect to MQTT, read operational telemetry from the
-backend, submit calibration, export files, control hardware, or perform prediction.
+deterministic simulated telemetry. It does not read operational telemetry from the backend, submit
+calibration, export files, control hardware, or perform prediction.
 
 ## Layout
 
@@ -108,7 +108,7 @@ Scenarios are selected with `NEXT_PUBLIC_MOCK_SCENARIO`:
 
 `ApiTelemetrySource` polls `GET /api/v1/telemetry/latest` and validates every receipt with the shared
 schema. HTTP 204/404 produces the explicit waiting state instead of mock values. The source keeps a
-bounded client-side trend from unique message IDs. No browser-side MQTT dependency exists.
+bounded client-side trend from unique message IDs.
 
 ## Vision page
 
@@ -147,7 +147,7 @@ page shows a banner whenever mock data is in use.
 
 1. **F1 — shell and simulated overview:** complete.
 2. **F2 — backend telemetry transport:** HTTP ingestion and live polling are implemented with a
-   volatile latest-reading store; persistence, MQTT ingestion, and history queries remain.
+   volatile latest-reading store; persistence and history queries remain. MQTT is not used.
 3. **F3 — live and historical modules:** complete routed pages, time-range queries, chart exploration,
    and explicit stale/missing-data behavior.
 4. **F4 — alert, device, calibration, and export workflows:** implement only after backend contracts,
