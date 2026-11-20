@@ -110,10 +110,16 @@ before relying on them (see below).
 
 ### Run Ollama on the GPU server
 
+The project does not use Docker (decision 2026-11-20). Install Ollama natively (the installer from
+ollama.com; on Linux it sets up a systemd service), then:
+
 ```bash
-docker run -d --gpus all -p 127.0.0.1:11434:11434 -v ollama:/root/.ollama \
-  -e OLLAMA_KEEP_ALIVE=-1 -e OLLAMA_NUM_PARALLEL=1 --name ollama ollama/ollama
-docker exec ollama ollama pull qwen3:4b
+# Linux: sudo systemctl edit ollama, and add under [Service]:
+#   Environment=OLLAMA_HOST=127.0.0.1:11434
+#   Environment=OLLAMA_KEEP_ALIVE=-1
+#   Environment=OLLAMA_NUM_PARALLEL=1
+sudo systemctl restart ollama
+ollama pull qwen3:4b
 ```
 
 ```env
@@ -123,7 +129,8 @@ WA_LLM_MODEL=qwen3:4b
 ```
 
 `OLLAMA_KEEP_ALIVE=-1` keeps the model loaded, so its memory is reserved once instead of being
-loaded and freed per message. The port is bound to localhost because Ollama has no authentication.
+loaded and freed per message. `OLLAMA_HOST` keeps the port on localhost because Ollama has no
+authentication.
 
 Before going live, check on the real GPU:
 

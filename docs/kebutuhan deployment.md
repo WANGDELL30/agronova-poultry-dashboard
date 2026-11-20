@@ -55,15 +55,11 @@ Vercel tetap dipakai untuk frontend. Tambahkan dua komponen di luar Vercel.
   `apps/inference/colab/run_inference_colab.ipynb`. Notebook ini membuat tunnel Cloudflare dan
   mencetak `INFERENCE_URL` + `INFERENCE_API_KEY`. URL berubah setiap kali dijalankan, dan sesi
   Colab bisa mati sewaktu-waktu.
-- **Pemakaian yang lebih stabil:** VM atau server GPU (RunPod, Vast.ai, Lambda, GCP/AWS dengan
-  T4/L4, atau server milik institusi). Jalankan:
-
-  ```bash
-  docker compose --profile gpu up -d --build inference-gpu
-  ```
-
-  Isi `.env` dengan `INFERENCE_API_KEY=<rahasia>`, dan `HF_TOKEN` jika repo adapter-nya private.
-  `INFERENCE_MODE=real` sudah diatur oleh service `inference-gpu`.
+- **Pilot (server GPU pribadi yang selalu menyala):** repo di-clone ke server, lalu inference
+  dijalankan langsung dengan uvicorn di bawah systemd, **tanpa Docker** (keputusan 2026-11-20).
+  Langkah lengkap ada di `apps/inference/README.md` bagian _Always-on GPU server (pilot)_. Isi
+  `apps/inference/.env` dengan `INFERENCE_MODE=real` dan `INFERENCE_API_KEY=<rahasia>`, serta
+  `HF_TOKEN` jika repo adapter-nya private.
 
 ### B. API NestJS di server yang selalu hidup
 
@@ -107,32 +103,31 @@ Konsekuensinya, riwayat hasil deteksi hilang setiap kali API restart.
 
 ## 5. Apakah kode di repo cukup untuk deploy server inferensi real di institusi?
 
-Untuk kode server inferensinya, **sudah cukup**:
+Untuk kode server inferensinya, **sudah cukup** (tanpa Docker, keputusan 2026-11-20):
 
-- `apps/inference/Dockerfile` dengan build arg `INSTALL_REAL=1`.
-- Service `inference-gpu` di `docker-compose.yml`, sudah meminta GPU NVIDIA dan menyimpan cache
-  model di volume `agronova-poultry-hf-cache`.
+- `apps/inference/requirements-real.txt` dengan versi yang sudah dikunci (lolos parity di T4), dan
+  `apps/inference/.env.example` untuk konfigurasinya.
+- Contoh unit systemd di `apps/inference/README.md`. Cache model ada di `~/.cache/huggingface`
+  milik user yang menjalankan service.
 - Bobot model tidak disimpan di repo. Bobot **diunduh otomatis dari Hugging Face** saat pertama
   kali jalan: base `Qwen/Qwen3-VL-4B-Instruct` dan adapter `Arga23/chickenstress-vlm-lora`.
 
 Yang tetap harus disiapkan institusi:
 
-1. **Mesin GPU NVIDIA** dengan driver NVIDIA dan **NVIDIA Container Toolkit** terpasang. Tanpa
-   toolkit ini, Docker tidak bisa memakai GPU.
+1. **Mesin GPU NVIDIA (Linux)** dengan driver yang mendukung versi CUDA dari `torch` yang dikunci
+   di `requirements-real.txt`, dan Python 3.11+. Jalankan parity check dan ukur ulang waktu inferensi
+   di mesin itu sebelum dipakai.
 2. **Akses internet ke Hugging Face** saat pertama kali jalan, untuk mengunduh model berukuran
    sekitar 8–9 GB, plus ruang disk yang cukup. Jika repo adapter private, perlu `HF_TOKEN`.
    Disarankan menyalin adapter ke akun HF milik institusi, atau memakai folder lokal
    (`HF_ADAPTER_REPO` boleh berisi path folder).
-3. **API NestJS belum punya Dockerfile** dan tidak ada di `docker-compose.yml`. API harus
-   dijalankan manual dengan Node ≥ 22 (`corepack pnpm install`, `build`, lalu jalankan
-   `apps/api`), atau dibuatkan Dockerfile terlebih dahulu.
+3. **API NestJS** dijalankan dengan Node ≥ 22 (`corepack pnpm install`, `build`, lalu jalankan
+   `apps/api`), sebaiknya juga sebagai service systemd agar ikut menyala saat boot.
 4. **HTTPS dan domain** untuk API, lalu atur `WEB_ORIGIN` di API dan `NEXT_PUBLIC_API_BASE_URL`
    di Vercel.
 
-Risiko: `apps/inference/requirements-real.txt` tidak mengunci versi (`torch`,
-`transformers>=4.57`, `peft`, `accelerate`, `huggingface_hub`). Build ulang di kemudian hari bisa
-memasang versi yang tidak kompatibel. Sebaiknya kunci ke versi yang sudah terbukti jalan, lalu
-verifikasi dengan `apps/inference/scripts/parity_check.py`.
+Versi di `apps/inference/requirements-real.txt` sudah dikunci ke versi yang lolos parity di T4
+(audit S10). Di GPU atau driver lain, tetap verifikasi dengan `apps/inference/scripts/parity_check.py`.
 
 ## 6. Integrasi kamera IoT
 
@@ -295,19 +290,19 @@ Kamera/gateway → API NestJS ──► server inferensi (hasil 1 foto: label + 
 - **Script gateway kamera belum ada.** Perlu dibuat agar feed dari kamera/CCTV ke API berjalan
   otomatis (lihat bagian 6).
 - **Endpoint upload belum diberi autentikasi** (API key per perangkat).
-- **Dockerfile API NestJS belum ada.**
-- **Versi dependensi inferensi belum dikunci** (`requirements-real.txt`).
+- **Unit systemd untuk API dan cloudflared** di server pilot belum ada di repo (contoh untuk
+  inference ada di `apps/inference/README.md`).
 
 ## 9. Ringkasan kebutuhan
 
 | Kebutuhan                                         | Status di repo                         |
 | ------------------------------------------------- | -------------------------------------- |
 | Frontend di Vercel                                | Sudah ada                              |
-| Server inferensi GPU (Docker)                     | Sudah ada, tinggal deploy di mesin GPU |
-| API NestJS                                        | Kode ada, Dockerfile belum ada         |
+| Server inferensi GPU (uvicorn + systemd)          | Sudah ada, tinggal deploy di mesin GPU |
+| API NestJS                                        | Kode ada, dijalankan dengan Node       |
 | HTTPS/domain untuk API                            | Disiapkan saat deployment              |
 | Feeder/gateway kamera (feed otomatis)             | Belum ada, perlu dibuat                |
 | Autentikasi endpoint upload                       | Belum ada                              |
 | Penyimpanan hasil permanen (Postgres)             | Belum ada (sengaja ditunda)            |
 | Notifikasi alert                                  | Belum ada                              |
-| Penguncian versi dependensi inferensi             | Belum ada                              |
+| Penguncian versi dependensi inferensi             | Sudah ada (lolos parity di T4)         |
