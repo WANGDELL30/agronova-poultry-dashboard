@@ -24,8 +24,9 @@ class Settings:
     api_key: str | None = None
     max_image_pixels: int = DEFAULT_MAX_IMAGE_PIXELS
     max_image_side: int = DEFAULT_MAX_IMAGE_SIDE
-    # Model load limits (AUDIT H11). Tests build Settings directly, so the safe defaults live here;
-    # load_settings() turns exit-on-error on by default in real mode.
+    # Model load limits (AUDIT H11). Exit-on-error is off by default in every mode: there is no
+    # container orchestrator (decision 2026-11-20, no Docker). Turn it on only under a supervisor that
+    # restarts the process, e.g. systemd with Restart=on-failure.
     load_timeout_s: int = 1800
     # Requests allowed to wait for the model while one runs; more get 503 queue_full (AUDIT R1).
     max_queue: int = 2
@@ -70,7 +71,7 @@ def load_settings() -> Settings:
         max_image_side=_positive_int("INFERENCE_MAX_IMAGE_SIDE", DEFAULT_MAX_IMAGE_SIDE),
         load_timeout_s=_positive_int("INFERENCE_LOAD_TIMEOUT_S", 1800),
         max_queue=_non_negative_int("INFERENCE_MAX_QUEUE", 2),
-        exit_on_load_error=_bool("INFERENCE_EXIT_ON_LOAD_ERROR", default=mode == "real"),
+        exit_on_load_error=_bool("INFERENCE_EXIT_ON_LOAD_ERROR", default=False),
         base_revision=_revision("INFERENCE_BASE_REVISION", DEFAULT_BASE_REVISION),
         adapter_revision=_revision("INFERENCE_ADAPTER_REVISION", DEFAULT_ADAPTER_REVISION),
     )
