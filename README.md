@@ -72,15 +72,17 @@ docs/
   architecture.md           Components, boundaries, and intended data flow
   development-phases.md     Phased delivery roadmap
   frontend-design.md        Frontend components, states, and responsive behavior
-docker-compose.yml          TimescaleDB and optional inference (profiles), bound to 127.0.0.1
 ```
 
 ## Prerequisites
 
 - Node.js 22 or later and Corepack (included with Node.js)
-- Docker Desktop or Docker Engine with Compose v2 for local infrastructure
-- Python 3.11+ for `apps/inference`
+- Python 3.11+ for running `apps/inference` on this machine (not needed when it runs on Colab)
 - Real model only: an NVIDIA GPU with about 8–9 GB VRAM, or a free Colab/Kaggle GPU (see below)
+
+Docker is not used (decision 2026-11-20). Every service runs directly: the API and web app with
+Node, the inference service with uvicorn. PostgreSQL is optional today (only the
+health check reads it) and, when wanted, is installed natively.
 
 The repository pins pnpm through the `packageManager` field and lockfile:
 
@@ -93,24 +95,23 @@ corepack pnpm install --frozen-lockfile
 PowerShell:
 
 ```powershell
-Copy-Item env.example .env
 Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
 Copy-Item apps/simulator/.env.example apps/simulator/.env
+Copy-Item apps/inference/.env.example apps/inference/.env   # only when inference runs on this machine
 ```
 
 Bash:
 
 ```bash
-cp env.example .env
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 cp apps/simulator/.env.example apps/simulator/.env
+cp apps/inference/.env.example apps/inference/.env   # only when inference runs on this machine
 ```
 
-Replace the example database password with the same local-only value in the root `.env` and in
-`DATABASE_URL` of `apps/api/.env`. No environment file containing credentials, API keys, or tokens
-should be committed.
+`DATABASE_URL` in `apps/api/.env` is commented out; set it only if a PostgreSQL server is installed.
+No environment file containing credentials, API keys, or tokens should be committed.
 
 ## Run locally
 
@@ -131,7 +132,6 @@ use live API mode.
 ### 2. Full stack with the mock inference service (no GPU)
 
 ```bash
-corepack pnpm infra:up
 corepack pnpm inference:mock          # separate terminal; needs: pip install -r apps/inference/requirements-dev.txt
 corepack pnpm dev
 ```
@@ -146,12 +146,11 @@ and backend `received_at` separately and derives online state from `last_seen_at
 
 Real inference on a CPU takes tens of minutes per image. Use one of:
 
-- **Local NVIDIA GPU (Docker):**
-
-  ```bash
-  # set INFERENCE_API_KEY in .env (HF_TOKEN is optional: the default adapter repo is public)
-  docker compose --profile gpu up -d --build inference-gpu
-  ```
+- **NVIDIA GPU on this machine or an always-on GPU server (pilot):** install
+  `apps/inference/requirements-real.txt` in a venv, set `INFERENCE_MODE=real` and `INFERENCE_API_KEY`
+  in `apps/inference/.env`, and run uvicorn with `--env-file .env` (under systemd on a server). Run
+  the parity check and measure the timeout on that GPU first. Steps:
+  [`apps/inference/README.md`](apps/inference/README.md#always-on-gpu-server-pilot).
 
   `GET /health` returns `503` until the model is fully loaded (several minutes on first run).
 
@@ -173,16 +172,11 @@ reference inference notebook (`training/vlm-workflow/inference-vlm-lora-huggingf
 | Web        | `http://localhost:3000`               | `PORT=… corepack pnpm --filter @agronova/web dev` or `next dev -p` (not read from `.env.local`) |
 | API        | `http://localhost:4000`               | `API_HOST`, `API_PORT`                                                                          |
 | Health     | `http://localhost:4000/api/v1/health` | API environment                                                                                 |
-| Inference  | `http://localhost:8000`               | `INFERENCE_PORT`, `INFERENCE_URL`                                                               |
-| PostgreSQL | `localhost:5432`                      | `POSTGRES_PORT`, `DATABASE_URL`                                                                 |
+| Inference  | `http://localhost:8000`               | uvicorn `--port`, `INFERENCE_URL`                                                               |
+| PostgreSQL | `localhost:5432` (optional)           | `DATABASE_URL`                                                                                  |
 
-Docker Compose publishes PostgreSQL and inference on `127.0.0.1` only.
-
-Stop local infrastructure without deleting its named volumes:
-
-```bash
-corepack pnpm infra:down
-```
+Run inference with `--host 127.0.0.1` (uvicorn's default) and, if PostgreSQL is installed, keep its
+`listen_addresses` on `localhost`: only the API on the same machine calls them (AUDIT S4, S6).
 
 ## API endpoints (prefix `/api/v1`)
 
@@ -297,6 +291,9 @@ changes on every run, and both the Vercel build and the device firmware embed th
   network errors and 5xx with the same `message_id`; do not retry 400, 401, 403, or 409.
 - `POST /vision/frames` has no authentication yet (AUDIT S2): do not share the API URL beyond the
   devices and the dashboard until it does.
+- On an always-on server, run the API (`corepack pnpm --filter @agronova/api start` after a build),
+  cloudflared, and inference as services that start at boot (systemd on Linux), each with its working
+  directory set so `.env` files and `VISION_IMAGE_DIR` resolve to the intended paths.
 
 ## Checks and builds
 
@@ -307,7 +304,6 @@ corepack pnpm format:check
 corepack pnpm test
 corepack pnpm build
 corepack pnpm inference:test        # Python tests (pytest), needs requirements-dev.txt
-docker compose config
 ```
 
 `inference:mock` and `inference:test` run the `python` found on `PATH`. Activate the inference venv
@@ -336,11 +332,6 @@ does not send telemetry.
 
 | Variable                       | Purpose                                                                                                                                                | Default / requirement                            |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `POSTGRES_DB`                  | Compose database name                                                                                                                                  | `agronova`                                       |
-| `POSTGRES_USER`                | Compose database user                                                                                                                                  | `agronova`                                       |
-| `POSTGRES_PASSWORD`            | Compose database password                                                                                                                              | Required; local secret                           |
-| `POSTGRES_PORT`                | Host PostgreSQL port (Compose binds it to `127.0.0.1`)                                                                                                 | `5432`                                           |
-| `INFERENCE_PORT`               | Host port of the inference container (Compose binds it to `127.0.0.1`)                                                                                 | `8000`                                           |
 | `API_HOST`                     | API bind address; `127.0.0.1` when only a tunnel on the same machine reaches it                                                                        | `0.0.0.0`                                        |
 | `API_PORT`                     | API port                                                                                                                                               | `4000`                                           |
 | `APP_VERSION`                  | Version reported by health                                                                                                                             | `0.1.0`                                          |
@@ -354,13 +345,13 @@ does not send telemetry.
 | `INFERENCE_TIMEOUT_MS`         | API timeout for one inference call. T4 (PV9): (1 + queue 2) × p95 11.55 s × 1.5 ≈ 52 s, rounded up. Re-measure on other GPUs                           | `60000`                                          |
 | `INFERENCE_HEALTH_TIMEOUT_MS`  | API timeout for the inference health check                                                                                                             | `5000`                                           |
 | `VISION_IMAGE_DIR`             | Where uploaded frames are stored                                                                                                                       | `./data/vision-images`                           |
-| `VISION_MAX_IMAGE_BYTES`       | Maximum image size; read by **both** the API and the inference service (compose passes it to both inference containers). Keep the values equal         | `8388608`                                        |
+| `VISION_MAX_IMAGE_BYTES`       | Maximum image size; read by **both** the API and the inference service. Set the same value in `apps/api/.env` and `apps/inference/.env`                | `8388608`                                        |
 | `INFERENCE_MAX_IMAGE_PIXELS`   | Inference only: images with more pixels (read from the header) are rejected with 413 `image_too_large` before decoding                                 | `40000000`                                       |
 | `INFERENCE_MAX_IMAGE_SIDE`     | Inference only: a longer side above this is downscaled (`INTER_AREA`) before the quality gate; 640 px dataset frames are unchanged                     | `1280`                                           |
 | `INFERENCE_MODE`               | Inference backend: `mock` or `real`                                                                                                                    | `mock`                                           |
 | `INFERENCE_LOAD_BLOCKING`      | `1` loads the real model synchronously at startup instead of in a background thread                                                                    | unset (background load, `/health` 503 meanwhile) |
 | `INFERENCE_LOAD_TIMEOUT_S`     | Seconds the background model load may take before `/health` reports `error`                                                                            | `1800`                                           |
-| `INFERENCE_EXIT_ON_LOAD_ERROR` | On a load `error`, exit the process (non-zero) so the orchestrator restarts it                                                                         | `true` in real mode, `false` in mock             |
+| `INFERENCE_EXIT_ON_LOAD_ERROR` | On a load `error`, exit the process (non-zero). Only useful under a supervisor that restarts it (systemd `Restart=on-failure`)                         | `false`                                          |
 | `INFERENCE_MAX_QUEUE`          | Inference only: requests that may wait for the model while one runs; more get 503 `queue_full` + `Retry-After` (API: `inference_busy`, nothing stored) | `2`                                              |
 | `HF_ADAPTER_REPO`              | LoRA adapter repository (real mode)                                                                                                                    | `Arga23/chickenstress-vlm-lora`                  |
 | `HF_BASE_MODEL`                | Base VLM (real mode)                                                                                                                                   | `Qwen/Qwen3-VL-4B-Instruct`                      |

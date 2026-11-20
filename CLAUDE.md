@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AgroNova Poultry AI IoT: a pnpm TypeScript monorepo (Next.js web, NestJS/Fastify API, telemetry simulator placeholder, shared Zod schema packages) plus a separate Python FastAPI inference service for **chicken stress detection from images** (Qwen3-VL-4B-Instruct + LoRA adapter). The overview dashboard and the seven operations modules (live API telemetry via HTTP ingest, later-phase controls disabled), snapshot JSON/CSV export, and the vision pipeline are implemented; persistence and alert notifications are not. Devices send telemetry over HTTP (`POST /api/v1/telemetry`, per-device `X-Device-Key` when `TELEMETRY_DEVICE_KEYS` is set) through a Cloudflare Tunnel; MQTT is not used (decision 2026-11-20). `AGENTS.md` holds the permanent project rules and `README.md` the full env var table and run modes. Read `AGENTS.md` before changing anything, especially the vision and sensor-semantics sections.
 
-Note: the parent folder holds earlier notebook runs and docs, not code to maintain. This directory is the repo (its own `.git`). The root example env file is named `env.example` (no leading dot), while the app folders use `apps/*/.env.example`.
+Note: the parent folder holds earlier notebook runs and docs, not code to maintain. This directory is the repo (its own `.git`). Example env files live in the app folders (`apps/*/.env.example`, including `apps/inference/.env.example`); there is no root env file. Docker is not used (decision 2026-11-20): every service runs directly.
 
 ## Commands
 
@@ -20,10 +20,8 @@ corepack pnpm format:check     # prettier (use `format` to write)
 corepack pnpm test             # vitest in every workspace
 corepack pnpm build
 corepack pnpm inference:test   # pytest in apps/inference (needs requirements-dev.txt)
-docker compose config
 
 corepack pnpm dev              # builds schemas, then runs api + web + simulator in parallel
-corepack pnpm infra:up         # TimescaleDB (bound to 127.0.0.1)
 corepack pnpm inference:mock   # FastAPI on :8000, mock backend, no GPU
 ```
 
@@ -48,7 +46,7 @@ Vision flow: `web /vision` → multipart `POST /api/v1/vision/frames` on the API
 - `apps/simulator`: telemetry placeholder that deliberately exits without publishing (`src/index.ts` only). There is no vision frame feeder; post frames with `curl` or the `/vision` page.
 - `training/`: notebooks (labeling tool, Kaggle training/eval, HF reference inference). `apps/inference` is a port of the reference inference notebook; `apps/inference/scripts/parity_check.py` and `tests/test_parity.py` verify they match. Datasets and weights are not stored here.
 
-Real inference needs an NVIDIA GPU (~8-9 GB) via `docker compose --profile gpu up inference-gpu`, or Colab (`apps/inference/colab/run_inference_colab.ipynb`). `--profile inference` runs the CPU mock container (`inference` service).
+Real inference needs an NVIDIA GPU (~8-9 GB): uvicorn with `requirements-real.txt` and `--env-file .env` (systemd on the always-on pilot server, see `apps/inference/README.md`), or Colab (`apps/inference/colab/run_inference_colab.ipynb`) for demos. `INFERENCE_EXIT_ON_LOAD_ERROR` defaults to `false` because nothing restarts the process unless a supervisor is set up. PostgreSQL is optional (health check only); leave `DATABASE_URL` unset without it.
 
 ## Constraints that need cross-file edits
 
