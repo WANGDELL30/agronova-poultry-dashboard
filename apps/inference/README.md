@@ -25,7 +25,9 @@ becomes `error`, and the service stays up reporting it. With `INFERENCE_EXIT_ON_
 process exits non-zero instead, which is only useful under a supervisor that restarts it (systemd,
 below); the default is `false` in every mode. While not ready,
 `POST /v1/classify` answers 503 `{"error": "model_not_ready", "status": "loading" | "error"}`; a backend
-crash answers 503 `{"error": "gpu_oom"}` or 500 `{"error": "backend_error"}`. `POST /v1/classify`
+crash answers 503 `{"error": "gpu_oom"}` or 500 `{"error": "backend_error"}` (after an OOM the service
+calls `torch.cuda.empty_cache()`; `colab/pv7_oom_recovery_colab.ipynb` checks on a real GPU that the
+next frame is classified normally with the same model text, AUDIT PV7/R12). `POST /v1/classify`
 takes a multipart `file`. At most one request runs the model; `INFERENCE_MAX_QUEUE` (default 2) more may
 wait, and any further request gets 503 `{"error": "queue_full"}` with `Retry-After` at once (AUDIT R1). A
 request whose client has already disconnected is dropped right before the model runs.
