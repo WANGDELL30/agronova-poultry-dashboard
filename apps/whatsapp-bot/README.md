@@ -149,8 +149,10 @@ like the VLM notebook does:
 
 1. Upload the notebook to Colab (File → Upload notebook), set the runtime to **T4 GPU**, choose
    `MODEL` and `JALANKAN_VLM` in the first cell, and **Run all**.
-2. Copy the printed `WA_LLM_BASE_URL`, `WA_LLM_MODEL`, `WA_LLM_API_KEY` and `WA_LLM_TIMEOUT_MS` into
-   `apps/whatsapp-bot/.env` and restart the bot. The bot and the API keep running on your laptop.
+2. Copy the printed `WA_LLM_BASE_URL`, `WA_LLM_MODEL` and `WA_LLM_TIMEOUT_MS`, and `WA_LLM_API_KEY` from
+   the last cell, into `apps/whatsapp-bot/.env` and restart the bot. The bot and the API keep running
+   on your laptop.
+3. Clear the last cell's output (cell menu → Clear output): it holds the full keys (AUDIT S19).
 
 What the notebook does differently from a private server:
 
@@ -158,8 +160,9 @@ What the notebook does differently from a private server:
   and the tunnel points at a small proxy that requires `WA_LLM_API_KEY` and forwards nothing but
   `POST /v1/chat/completions` (model management such as `/api/pull` is unreachable).
 - Free Colab usually gives one GPU session at a time. `JALANKAN_VLM = True` runs the VLM notebook
-  (`apps/inference/colab/run_inference_colab.ipynb`, fetched from `main`) first in the same session, so
-  both share one T4; it also prints the `INFERENCE_*` lines for `apps/api/.env`.
+  (`apps/inference/colab/run_inference_colab.ipynb`, fetched from `fix/web-batch-1` until it is merged)
+  first in the same session, so both share one T4; it also prints the `INFERENCE_*` lines for
+  `apps/api/.env`, with the full `INFERENCE_API_KEY` in this notebook's last cell.
 - It ends by checking `ollama ps` (warns unless the model is 100 % on the GPU) and by calling the
   model through the tunnel without a key (must be 401) and with it.
 
