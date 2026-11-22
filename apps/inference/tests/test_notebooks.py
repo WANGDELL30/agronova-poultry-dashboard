@@ -34,3 +34,23 @@ def test_inference_notebook_prints_the_full_key_only_in_its_own_last_cell():
     full = 'print("INFERENCE_API_KEY=" + os.environ["INFERENCE_API_KEY"])'
     assert [i for i, source in enumerate(code) if full in source] == [len(code) - 1]
     assert "Clear output" in code[-1]
+    # feat/inference-local is an old branch without the required key (AUDIT S4).
+    assert "feat/inference-local" not in code[0]
+
+
+CHATBOT_NOTEBOOK = REPO / "apps/whatsapp-bot/colab/run_llm_colab.ipynb"
+
+
+@pytest.mark.skipif(not CHATBOT_NOTEBOOK.exists(), reason="chatbot notebook lives on feat/whatsapp-bot only")
+def test_chatbot_notebook_prints_full_keys_only_in_its_last_code_cell():
+    notebook = json.loads(CHATBOT_NOTEBOOK.read_text("utf-8"))
+    code = ["".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "code"]
+    for full in (
+        'print("WA_LLM_API_KEY=" + os.environ["WA_LLM_API_KEY"])',
+        'print("INFERENCE_API_KEY=" + os.environ["INFERENCE_API_KEY"])',
+    ):
+        printed = [i for i, s in enumerate(code) if any(line.strip() == full for line in s.splitlines())]
+        assert printed == [len(code) - 1], full
+    assert "Clear output" in code[-1]
+    # The embedded VLM notebook runs without its own key cell, so that key is printed once, here.
+    assert "VLM_KEY_LINE in" in code[1]
