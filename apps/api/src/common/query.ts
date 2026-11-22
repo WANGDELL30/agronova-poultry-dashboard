@@ -1,12 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { z, type ZodTypeAny } from 'zod';
+import { z } from 'zod';
 
 /**
  * Optional id from the query string. A repeated parameter arrives as an array and is rejected;
  * a blank value means "not given" (AUDIT H10).
  */
 export const optionalIdQuery = z
-  .string({ invalid_type_error: 'must be given once' })
+  .string({ error: 'must be given once' })
   .trim()
   .optional()
   .transform((value) => value || undefined);
@@ -15,7 +15,7 @@ export const optionalIdQuery = z
 export function limitQuery(fallback: number, max: number) {
   const message = `limit must be an integer between 1 and ${max}`;
   return z
-    .string({ invalid_type_error: message })
+    .string({ error: message })
     .regex(/^\d+$/, message)
     .optional()
     .transform((value) => (value === undefined ? fallback : Number(value)))
@@ -23,7 +23,7 @@ export function limitQuery(fallback: number, max: number) {
 }
 
 /** Parses `@Query()` with a Zod schema; any problem is a 400. */
-export function parseQuery<T extends ZodTypeAny>(schema: T, query: unknown): z.output<T> {
+export function parseQuery<T extends z.ZodType>(schema: T, query: unknown): z.output<T> {
   const parsed = schema.safeParse(query ?? {});
   if (!parsed.success) {
     const issue = parsed.error.issues[0];

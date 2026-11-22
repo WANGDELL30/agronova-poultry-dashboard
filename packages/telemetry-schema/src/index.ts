@@ -24,13 +24,27 @@ export enum CalibrationStatus {
 export const SENSOR_QUALITY_VALUES = Object.freeze(Object.values(SensorQuality));
 export const CALIBRATION_STATUS_VALUES = Object.freeze(Object.values(CalibrationStatus));
 
-export const sensorQualitySchema = z.nativeEnum(SensorQuality);
-export const calibrationStatusSchema = z.nativeEnum(CalibrationStatus);
+export const sensorQualitySchema = z.enum(SensorQuality);
+export const calibrationStatusSchema = z.enum(CalibrationStatus);
 
+/**
+ * UTC ISO 8601 with a `Z` suffix and seconds (`2026-01-01T00:00:00Z`, fractions allowed); an offset or
+ * a time without seconds is rejected (zod 4; zod 3 still accepted `T00:00Z`, AUDIT S23).
+ */
+const utcTimestamp = z.iso.datetime({ offset: false });
+
+/**
+ * Any 8-4-4-4-12 hex id, as zod 3 accepted (AUDIT S23). `z.uuid()` in zod 4 also checks the RFC 9562
+ * version and variant bits; firmware that fills message_id with random hex would then be rejected.
+ */
+const messageId = z.guid();
+
+// Numbers in zod 4 reject Infinity and NaN by default (`.finite()` is a no-op there). `.int()` also
+// requires a safe integer (at most 2^53 - 1).
 const rawAndFilteredReadingSchema = z
   .object({
-    raw: z.number().finite(),
-    filtered: z.number().finite(),
+    raw: z.number(),
+    filtered: z.number(),
   })
   .strict();
 
@@ -38,18 +52,18 @@ const mq5ReadingSchema = z
   .object({
     raw_adc: z.number().int().min(0).max(4095),
     filtered_adc: z.number().int().min(0).max(4095),
-    adc_voltage_v: z.number().finite().nonnegative(),
-    relative_level_pct: z.number().finite().min(0).max(100),
+    adc_voltage_v: z.number().nonnegative(),
+    relative_level_pct: z.number().min(0).max(100),
   })
   .strict();
 
 export const telemetryV1Schema = z
   .object({
     schema_version: z.literal(TELEMETRY_SCHEMA_VERSION),
-    message_id: z.string().uuid(),
+    message_id: messageId,
     device_id: z.string().trim().min(1).max(128),
     sequence_no: z.number().int().nonnegative(),
-    captured_at: z.string().datetime({ offset: false }),
+    captured_at: utcTimestamp,
     device: z
       .object({
         firmware_version: z.string().trim().min(1),
@@ -64,9 +78,9 @@ export const telemetryV1Schema = z
         water_temperature_c: rawAndFilteredReadingSchema.nullable(),
         mq5: mq5ReadingSchema.nullable(),
         ammonia_adc: z.number().int().nonnegative().nullable(),
-        water_flow_l_min: z.number().finite().nonnegative().nullable(),
-        water_total_l: z.number().finite().nonnegative().nullable(),
-        feed_weight_kg: z.number().finite().nonnegative().nullable(),
+        water_flow_l_min: z.number().nonnegative().nullable(),
+        water_total_l: z.number().nonnegative().nullable(),
+        feed_weight_kg: z.number().nonnegative().nullable(),
       })
       .strict(),
     quality: z
@@ -94,8 +108,8 @@ export const telemetryV1Schema = z
 export const telemetryReceiptV1Schema = z
   .object({
     telemetry: telemetryV1Schema,
-    received_at: z.string().datetime({ offset: false }),
-    last_seen_at: z.string().datetime({ offset: false }),
+    received_at: utcTimestamp,
+    last_seen_at: utcTimestamp,
     device_online: z.boolean(),
   })
   .strict();

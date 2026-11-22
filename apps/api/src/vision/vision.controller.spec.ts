@@ -378,6 +378,8 @@ describe('VisionController (HTTP)', () => {
     expect(await rejected({ ...valid, camera_id: 'cam\u0000<b>' })).toBe('camera_id');
     expect(await rejected({ ...valid, kandang_id: 'kandang/1' })).toBe('kandang_id');
     expect(await rejected({ ...valid, captured_at: '1970-01-01T00:00:00Z' })).toBe('captured_at');
+    // zod 4 requires seconds; zod 3 still accepted this (AUDIT S23).
+    expect(await rejected({ ...valid, captured_at: '2026-09-30T01:00Z' })).toBe('captured_at');
     const future = new Date(Date.now() + 10 * 60_000).toISOString();
     expect(await rejected({ ...valid, captured_at: future })).toBe('captured_at');
 

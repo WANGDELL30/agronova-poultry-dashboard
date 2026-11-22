@@ -2,11 +2,12 @@ import { z } from 'zod';
 
 // Values must already be preprocessed by the original training pipeline.
 // Never coerce missing data, strings, or sensor-quality states into numeric inputs.
+// zod 4 numbers reject Infinity and NaN by default, so no `.finite()` is needed.
 export const diagnosticInputSchema = z
   .object({
     purpose: z.literal('technical_diagnostic'),
     preprocessed: z.literal(true),
-    sequence: z.array(z.array(z.number().finite().min(-1e6).max(1e6)).length(9)).length(24),
+    sequence: z.array(z.array(z.number().min(-1e6).max(1e6)).length(9)).length(24),
   })
   .strict();
 

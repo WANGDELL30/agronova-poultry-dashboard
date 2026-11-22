@@ -37,6 +37,44 @@ describe('TelemetryController (HTTP)', () => {
   it('rejects a repeated device_id with 400 instead of 500 (H10)', async () => {
     const res = await latest('?device_id=a&device_id=b');
     expect(res.statusCode).toBe(400);
+    expect(res.json().message).toBe('Invalid query parameter device_id: must be given once.');
+  });
+
+  // The 400 body carries the zod 4 issues (AUDIT S23): code, path and message per field, and never
+  // the rejected input itself.
+  it('answers an invalid body with 400 invalid_telemetry and zod issues without the input', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/telemetry',
+      payload: { ...validTelemetryV1Example, message_id: 'not-a-guid', extra: 'secret-ish' },
+    });
+    expect(res.statusCode).toBe(400);
+    const body = res.json();
+    expect(body.error).toBe('invalid_telemetry');
+    expect(body.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'invalid_format', path: ['message_id'] }),
+        expect.objectContaining({ code: 'unrecognized_keys', keys: ['extra'], path: [] }),
+      ]),
+    );
+    for (const issue of body.issues) {
+      expect(typeof issue.message).toBe('string');
+      expect(issue).not.toHaveProperty('input');
+    }
+    expect(res.body).not.toContain('secret-ish');
+  });
+
+  it('accepts a message_id without RFC version and variant bits (z.guid(), S23)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/telemetry',
+      payload: {
+        ...validTelemetryV1Example,
+        device_id: 'GUID-DEVICE',
+        message_id: '12345678-1234-0234-c234-123456789abc',
+      },
+    });
+    expect(res.statusCode).toBe(201);
   });
 });
 
