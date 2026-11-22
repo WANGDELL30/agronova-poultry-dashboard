@@ -153,6 +153,12 @@ message; the exception itself is only in the service log (AUDIT S12). A failed m
 load leaves the service up with `/health` reporting `error`; `INFERENCE_EXIT_ON_LOAD_ERROR=true`
 exits instead, for use only under a supervisor that restarts it.
 
+An optional detector (`INFERENCE_DETECTOR=crop`, off by default; AUDIT P2) crops the largest detected
+animal with the training rule before the quality gate, and the response and record then carry
+`detection` (crop or full frame, box, confidence). On the dataset the full frame was more accurate
+than any crop (decision 2026-11-22), so it stays off until it is evaluated on pilot frames. It needs
+the optional `requirements-detector.txt` (Ultralytics, AGPL-3.0). See `apps/inference/README.md`.
+
 ### Current limitations
 
 - Vision results are stored in an in-memory repository and are lost when the API restarts. A

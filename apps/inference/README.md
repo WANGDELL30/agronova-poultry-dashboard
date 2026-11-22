@@ -121,6 +121,36 @@ different image sets, so this paired result replaces it. The dataset frames are 
 largest chicken covers about 37% of the frame), while a barn camera may show many small chickens.
 Rerun this notebook on about 50 labelled pilot frames before deciding on P2 again.
 
+**Detector in the service, off by default (`INFERENCE_DETECTOR`, decision 2026-11-22).** With
+`INFERENCE_DETECTOR=crop` the service runs the detector on every frame, crops the largest detection with
+the training rule (`app/detector.py`, shared with `scripts/p2_eval.py`), and sends that crop through the
+quality gate and the VLM. With nothing found, or a box under 32 px, the full frame is used; the detector
+never marks a frame as "no chicken". The response, the stored record and the `/vision` card then carry
+`detection` (`input` crop or full_frame, `box` as x, y, width, height, `conf`); with the detector off the
+field is absent and nothing changes. Settings, tuned without retraining:
+
+| Setting                | Value                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| Model                  | `INFERENCE_DETECTOR_WEIGHTS`, default `yolo11s.pt` (COCO); a local path avoids the download |
+| Classes                | COCO 14-23 (all animals); a chicken is often detected as another animal than `bird`         |
+| NMS                    | class-agnostic, IoU 0.5                                                                     |
+| Test-time augmentation | on                                                                                          |
+| Confidence             | `INFERENCE_DETECTOR_CONF`, default 0.25                                                     |
+| Image size             | 640 (960 was worse)                                                                         |
+
+On the 22 frames the old detector never saw, the largest box landed on a chicken in 20 (16 with the
+default settings, 18 with only the class and NMS change), with a detection in every frame and 0.23
+false boxes per frame; on all 51 frames 46. TTA makes the detector about 2.6 times slower (about
+420 ms per frame on a laptop CPU, far less on a GPU), small next to the VLM. Each setting was measured
+with a fresh model object: Ultralytics keeps the arguments of earlier `predict` calls on a reused model.
+`tests/test_detector.py` reproduces the 51/46 result when `INFERENCE_DETECTOR_TEST_WEIGHTS` points at a
+local `yolo11s.pt`.
+
+To try it on the pilot server: `pip install -r requirements-real.txt -r requirements-detector.txt`,
+rerun the parity check (the file adds `opencv-python` at the pinned version), set
+`INFERENCE_DETECTOR=crop` and restart. Ultralytics and its weights are AGPL-3.0; install them only where
+that licence is acceptable. The service imports Ultralytics only when the detector is on.
+
 ## Real model without a local GPU (Kaggle / Colab)
 
 Real mode on a laptop CPU is very slow (tens of minutes per image). The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.
