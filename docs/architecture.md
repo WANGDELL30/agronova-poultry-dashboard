@@ -139,7 +139,9 @@ signature of its declared type (JPEG, PNG, WebP), else 415. Stored images are se
 `GET /health` on the inference service returns 503 until the model is fully loaded, so readiness is
 reported honestly. There is no container image (decision 2026-11-20): real mode runs with uvicorn
 on a free Colab/Kaggle GPU behind a tunnel for demonstrations, or on an always-on GPU server under
-systemd for the pilot. A tunnel URL is public: protect it with `INFERENCE_API_KEY`. A failed model
+systemd for the pilot. Real mode refuses to start without `INFERENCE_API_KEY` (AUDIT S4), so a
+public tunnel URL alone never reaches the model. `/health` reports a failed load with a generic
+message; the exception itself is only in the service log (AUDIT S12). A failed model
 load leaves the service up with `/health` reporting `error`; `INFERENCE_EXIT_ON_LOAD_ERROR=true`
 exits instead, for use only under a supervisor that restarts it.
 
