@@ -50,6 +50,16 @@ export class ImageStore {
     }
   }
 
+  /** Deletes a stored frame (record cap reached, AUDIT S2). Missing files are not an error. */
+  async remove(messageId: string): Promise<void> {
+    if (!UUID.test(messageId)) return;
+    await Promise.all(
+      Object.keys(EXT_TO_TYPE).map((ext) =>
+        rm(join(this.dir, `${messageId}.${ext}`), { force: true }),
+      ),
+    );
+  }
+
   async read(messageId: string): Promise<{ data: Buffer; mimeType: string } | null> {
     if (!UUID.test(messageId)) return null;
     for (const [ext, mimeType] of Object.entries(EXT_TO_TYPE)) {

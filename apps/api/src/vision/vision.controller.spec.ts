@@ -9,6 +9,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { IMAGE_SIGNATURES } from './image-signature.js';
 import { ImageStore, StorageUnavailableError } from './image-store.js';
 import { InferenceClient, InferenceError } from './inference-client.js';
 import type { VisionConfig } from './vision-config.js';
@@ -80,7 +81,8 @@ describe('VisionController (HTTP)', () => {
   async function upload(fields: Record<string, string>, file?: { data: string; type: string }) {
     const form = new FormData();
     for (const [k, v] of Object.entries(fields)) form.append(k, v);
-    if (file) form.append('image', new Blob([file.data], { type: file.type }), 'f');
+    if (file)
+      form.append('image', new Blob([imageBytes(file.type, file.data)], { type: file.type }), 'f');
     const res = new Response(form);
     return app.inject({
       method: 'POST',
@@ -90,6 +92,20 @@ describe('VisionController (HTTP)', () => {
     });
   }
   const valid = { camera_id: 'cam-01', captured_at: '2026-10-01T01:00:00.000Z' };
+
+  /** A real signature for accepted types (S11), so the payload passes the magic-byte check. */
+  function imageBytes(type: string, body: string): Uint8Array {
+    const parts = (
+      IMAGE_SIGNATURES as Record<string, ReadonlyArray<readonly [number, readonly number[]]>>
+    )[type];
+    if (!parts || body === '') return new TextEncoder().encode(body);
+    const header: number[] = [];
+    for (const [offset, bytes] of parts) {
+      while (header.length < offset) header.push(0);
+      header.push(...bytes);
+    }
+    return new Uint8Array([...header, ...new TextEncoder().encode(body)]);
+  }
 
   it('accepts a frame, returns the record and serves the stored image back', async () => {
     classify.mockResolvedValueOnce(okResponse);
@@ -107,7 +123,9 @@ describe('VisionController (HTTP)', () => {
     });
     expect(img.statusCode).toBe(200);
     expect(img.headers['content-type']).toBe('image/jpeg');
-    expect(img.body).toBe('abc');
+    expect(img.headers['x-content-type-options']).toBe('nosniff');
+    expect(img.rawPayload.equals(Buffer.from(imageBytes('image/jpeg', 'abc')))).toBe(true);
+    expect(record.source).toBe('camera');
   });
 
   it('alerts after 5 uploads of stress frames with 3-4 YA; skipped and undefined frames do not vote (K1, K2)', async () => {

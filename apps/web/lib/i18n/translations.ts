@@ -281,6 +281,10 @@ export const id = {
   'vision.vote.ignored_no_result': 'Tidak ikut voting (tanpa hasil)',
   'vision.vote.ignored_undefined': 'Tidak ikut voting (tidak dapat ditentukan)',
   'vision.vote.ignored_low_confidence': 'Tidak ikut voting (keyakinan rendah)',
+  'vision.vote.ignored_manual': 'Tidak ikut voting (uji coba manual)',
+  'vision.source.manual': 'Uji coba manual',
+  'vision.source.manualHint':
+    'Foto diunggah manual: hasilnya hanya prediksi, tidak ikut voting kamera dan tidak memicu peringatan.',
   'vision.vote.waiting_window': 'Menunggu {{filled}}/{{size}} frame',
   'vision.vote.no_alert': 'Tidak ada peringatan',
   'vision.vote.alert': 'Peringatan stres',
@@ -316,6 +320,10 @@ export const id = {
     'Layanan inferensi gagal memproses foto (galat server). Coba lagi nanti.',
   'vision.error.storage_unavailable':
     'Server tidak dapat menyimpan foto (penyimpanan penuh atau tidak bisa ditulis). Hubungi pengelola server.',
+  'vision.error.upload_rate_limited':
+    'Terlalu banyak unggahan dalam waktu singkat. Foto tidak diproses; coba lagi nanti.',
+  'vision.error.invalid_camera_key': 'Kunci kamera tidak valid.',
+  'vision.error.camera_id_mismatch': 'ID kamera tidak sesuai dengan kunci kamera.',
   'vision.error.inference_busy':
     'Layanan model sedang sibuk memproses foto lain. Foto tidak disimpan; coba lagi sekitar 15 detik lagi.',
   'vision.error.inference_unavailable':
@@ -621,6 +629,10 @@ export const en: Record<TranslationKey, string> = {
   'vision.vote.ignored_no_result': 'Not voted (no result)',
   'vision.vote.ignored_undefined': 'Not voted (undetermined)',
   'vision.vote.ignored_low_confidence': 'Not voted (low confidence)',
+  'vision.vote.ignored_manual': 'Not voted (manual test upload)',
+  'vision.source.manual': 'Manual test',
+  'vision.source.manualHint':
+    'Uploaded by hand: the result is a prediction only; it does not join the camera vote or raise an alert.',
   'vision.vote.waiting_window': 'Waiting for {{filled}}/{{size}} frames',
   'vision.vote.no_alert': 'No alert',
   'vision.vote.alert': 'Stress alert',
@@ -657,6 +669,10 @@ export const en: Record<TranslationKey, string> = {
     'The inference service failed to process the photo (server error). Try again later.',
   'vision.error.storage_unavailable':
     'The server could not store the photo (storage full or not writable). Contact the server operator.',
+  'vision.error.upload_rate_limited':
+    'Too many uploads in a short time. The photo was not processed; try again later.',
+  'vision.error.invalid_camera_key': 'The camera key is not valid.',
+  'vision.error.camera_id_mismatch': 'The camera ID does not match the camera key.',
   'vision.error.inference_busy':
     'The model service is busy with other photos. The photo was not saved; try again in about 15 seconds.',
   'vision.error.inference_unavailable':

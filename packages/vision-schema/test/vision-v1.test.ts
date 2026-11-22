@@ -14,6 +14,7 @@ const base = {
   message_id: '6f9619ff-8b86-4d11-b42d-00c04fc964ff',
   camera_id: 'cam-01',
   kandang_id: null,
+  source: 'camera',
   captured_at: '2026-09-30T01:00:00.000Z',
   received_at: '2026-09-30T01:00:01.000Z',
   inference_mode: 'mock',
@@ -66,6 +67,18 @@ describe('visionResultV1Schema', () => {
         error_message: null,
       }).success,
     ).toBe(false);
+  });
+
+  it('ties ignored_manual to source manual in both directions (S2)', () => {
+    const manualVote = { ...base.vote, status: 'ignored_manual' };
+    expect(
+      visionResultV1Schema.safeParse({ ...base, source: 'manual', vote: manualVote }).success,
+    ).toBe(true);
+    expect(visionResultV1Schema.safeParse({ ...base, source: 'manual' }).success).toBe(false);
+    expect(visionResultV1Schema.safeParse({ ...base, vote: manualVote }).success).toBe(false);
+    expect(visionResultV1Schema.safeParse({ ...base, source: 'other' }).success).toBe(false);
+    const { source: _omitted, ...withoutSource } = base;
+    expect(visionResultV1Schema.safeParse(withoutSource).success).toBe(false);
   });
 
   it('rejects timestamps with a non-UTC offset', () => {

@@ -106,6 +106,8 @@ export class MockVisionClient implements VisionClient {
       message_id: messageId,
       camera_id: cameraId,
       kandang_id: kandangId ?? null,
+      // The mock behaves like an API without camera keys: every upload is a camera frame (S2).
+      source: 'camera',
       captured_at: capturedAt,
       received_at: new Date().toISOString(),
       inference_mode: 'mock',

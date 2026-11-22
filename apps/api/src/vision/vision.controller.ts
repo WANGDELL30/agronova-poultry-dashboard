@@ -7,6 +7,7 @@ import {
   Inject,
   Logger,
   NotFoundException,
+  Optional,
   Param,
   Post,
   Query,
@@ -23,6 +24,14 @@ import { z } from 'zod';
 
 import { limitQuery, optionalIdQuery, parseQuery } from '../common/query.js';
 
+import { matchesImageSignature } from './image-signature.js';
+import {
+  CAMERA_KEY_HEADER,
+  UNLIMITED_UPLOAD_POLICY,
+  UploadLimiter,
+  authenticateUpload,
+  type UploadPolicy,
+} from './upload-policy.js';
 import { ALLOWED_IMAGE_TYPES, type VisionConfig } from './vision-config.js';
 
 const logger = new Logger('VisionController');
@@ -34,19 +43,39 @@ export const NOT_READY_RETRY_AFTER_SECONDS = 30;
 /** Matches the inference queue_full Retry-After: about one inference on a T4 (R1). */
 export const BUSY_RETRY_AFTER_SECONDS = 15;
 
+/**
+ * The form carries exactly camera_id, kandang_id and captured_at plus one image (AUDIT S7). Without
+ * these limits busboy accepts up to 1000 parts of 1 MB text each, all held in memory before
+ * validation. A camera_id or kandang_id is at most 64 characters and captured_at about 24.
+ */
+export const MULTIPART_FIELD_LIMITS = {
+  fields: 3,
+  fieldSize: 256,
+  fieldNameSize: 32,
+  parts: 4,
+} as const;
+
 function apiError(code: VisionApiErrorCode, message: string, status: HttpStatus): HttpException {
   return new HttpException({ error: code, message }, status);
 }
 import { StorageUnavailableError } from './image-store.js';
-import { VISION_CONFIG } from './vision.tokens.js';
+import { VISION_CONFIG, VISION_UPLOAD_POLICY } from './vision.tokens.js';
 import { VisionInferenceFailure, VisionService } from './vision.service.js';
 
 @Controller('vision')
 export class VisionController {
+  private readonly policy: UploadPolicy;
+  private readonly limiter: UploadLimiter;
+
   constructor(
     @Inject(VisionService) private readonly service: VisionService,
     @Inject(VISION_CONFIG) private readonly config: VisionConfig,
-  ) {}
+    // VisionModule always provides it; modules built only for tests may omit it (no limits).
+    @Optional() @Inject(VISION_UPLOAD_POLICY) policy?: UploadPolicy,
+  ) {
+    this.policy = policy ?? UNLIMITED_UPLOAD_POLICY;
+    this.limiter = new UploadLimiter(this.policy);
+  }
 
   @Post('frames')
   async upload(
@@ -54,6 +83,19 @@ export class VisionController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<VisionResultV1> {
     if (!request.isMultipart()) throw new BadRequestException('Expected multipart/form-data.');
+
+    // Decided from the header alone, before the body is read (AUDIT S2).
+    const header = request.headers[CAMERA_KEY_HEADER];
+    const auth = authenticateUpload(this.policy, Array.isArray(header) ? header[0] : header);
+    if (auth.kind === 'invalid_key') {
+      // The body was not read: close the connection instead of leaving it half-consumed (R3).
+      reply.header('Connection', 'close');
+      throw apiError(
+        'invalid_camera_key',
+        'The X-Camera-Key header is not a valid camera key.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
 
     const fields: Record<string, string> = {};
     let image: { data: Buffer; mimeType: string } | null = null;
@@ -64,7 +106,7 @@ export class VisionController {
     let rejection: HttpException | null = null;
     try {
       for await (const part of request.parts({
-        limits: { fileSize: this.config.maxImageBytes, files: 1 },
+        limits: { ...MULTIPART_FIELD_LIMITS, fileSize: this.config.maxImageBytes, files: 1 },
       })) {
         if (part.type === 'file') {
           if (!rejection && (part.fieldname !== 'image' || image)) rejection = exactlyOneImage();
@@ -94,6 +136,14 @@ export class VisionController {
           }
           image = { data, mimeType: part.mimetype };
         } else if (typeof part.value === 'string') {
+          // busboy cuts an oversized field silently; a cut value must never reach validation (S7).
+          if (!rejection && (part.valueTruncated || part.fieldnameTruncated)) {
+            rejection = apiError(
+              'invalid_metadata',
+              'A form field is longer than allowed.',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
           fields[part.fieldname] = part.value;
         }
       }
@@ -102,7 +152,15 @@ export class VisionController {
       // close the connection after the error response instead of leaving it hanging (AUDIT R3).
       reply.header('Connection', 'close');
       // @fastify/multipart reports a second file as 413 "reach files limit"; it is a bad request.
-      if ((error as { code?: string }).code === 'FST_FILES_LIMIT') throw exactlyOneImage();
+      const code = (error as { code?: string }).code;
+      if (code === 'FST_FILES_LIMIT') throw exactlyOneImage();
+      if (code === 'FST_FIELDS_LIMIT' || code === 'FST_PARTS_LIMIT') {
+        throw apiError(
+          'invalid_metadata',
+          'Only camera_id, kandang_id, captured_at and one image are accepted.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw error;
     }
     if (rejection) throw rejection;
@@ -111,6 +169,14 @@ export class VisionController {
     if (image.data.length === 0) {
       throw apiError('image_empty', 'The image file is empty.', HttpStatus.BAD_REQUEST);
     }
+    // The mimetype is the client's claim; the file must start with that type's signature (S11).
+    if (!matchesImageSignature(image.data, image.mimeType)) {
+      throw apiError(
+        'unsupported_image_type',
+        'The file content is not a JPEG, PNG, or WebP image of the declared type.',
+        HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+      );
+    }
 
     const meta = visionFrameMetadataSchema.safeParse(fields);
     if (!meta.success) {
@@ -118,8 +184,27 @@ export class VisionController {
       throw new BadRequestException({ error, issues: meta.error.issues });
     }
 
+    const now = Date.now();
+    let source: 'camera' | 'manual';
+    if (auth.kind === 'camera') {
+      if (meta.data.camera_id !== auth.cameraId) {
+        throw apiError(
+          'camera_id_mismatch',
+          'The camera_id does not belong to this camera key.',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      this.admitOrThrow(reply, this.limiter.admitCamera(auth.cameraId, now));
+      source = 'camera';
+    } else {
+      // request.ip is the real client behind cloudflared when API_TRUST_PROXY is set (D17).
+      this.admitOrThrow(reply, this.limiter.admitKeyless(request.ip, now));
+      // Without configured keys there is no way to tell cameras apart: keep today's behaviour.
+      source = this.policy.cameraKeys === null ? 'camera' : 'manual';
+    }
+
     try {
-      return await this.service.processFrame(meta.data, image.data, image.mimeType);
+      return await this.service.processFrame(meta.data, image.data, image.mimeType, source);
     } catch (error) {
       if (error instanceof StorageUnavailableError) {
         // Generic message to the client; the cause goes to the log only.
@@ -165,6 +250,19 @@ export class VisionController {
     }
   }
 
+  private admitOrThrow(
+    reply: FastifyReply,
+    decision: { ok: true } | { ok: false; retryAfterSeconds: number },
+  ): void {
+    if (decision.ok) return;
+    reply.header('Retry-After', String(decision.retryAfterSeconds));
+    throw apiError(
+      'upload_rate_limited',
+      'Too many uploads. Try again later.',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+
   @Get('results')
   list(@Query() query: unknown): Promise<VisionResultV1[]> {
     const { camera_id: cameraId, limit } = parseQuery(resultsQuerySchema, query);
@@ -177,6 +275,9 @@ export class VisionController {
     if (!image) throw new NotFoundException('Image not found.');
     await reply
       .header('Content-Type', image.mimeType)
+      // Never let a browser sniff the stored bytes into another type (S11).
+      .header('X-Content-Type-Options', 'nosniff')
+      .header('Content-Disposition', 'inline')
       .header('Cache-Control', 'private, max-age=3600')
       .send(image.data);
   }

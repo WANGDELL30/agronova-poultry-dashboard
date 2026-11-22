@@ -2,6 +2,7 @@ import {
   VOTE_MIN_VOTES_FOR_ALERT,
   VOTE_WINDOW_SIZE,
   type ClassificationResult,
+  type FrameSource,
   type Vote,
 } from './index.js';
 
@@ -13,6 +14,8 @@ export interface VoteInput {
   result: Pick<ClassificationResult, 'label'> | null;
   /** Labels of previously accepted frames for the same camera, oldest first. */
   window: readonly VotedLabel[];
+  /** Default `camera`. A `manual` frame never votes, whatever its label (AUDIT S2). */
+  source?: FrameSource;
 }
 
 /**
@@ -24,7 +27,10 @@ export interface VoteInput {
  * became votes. `undefined` is `ignored_undefined`; frames without a classification are
  * `ignored_no_result` instead of the notebook's parse_error -> `undefined` conflation.
  */
-export function evaluateVote({ result, window }: VoteInput): { vote: Vote; accepted: boolean } {
+export function evaluateVote({ result, window, source = 'camera' }: VoteInput): {
+  vote: Vote;
+  accepted: boolean;
+} {
   const empty = (status: Vote['status'], filled: number): Vote => ({
     status,
     trigger_alert: false,
@@ -35,6 +41,8 @@ export function evaluateVote({ result, window }: VoteInput): { vote: Vote; accep
   });
   const prior = window.slice(-VOTE_WINDOW_SIZE);
 
+  // A keyless upload must not be able to raise a stress alert for a real camera.
+  if (source === 'manual') return { vote: empty('ignored_manual', prior.length), accepted: false };
   if (result === null) return { vote: empty('ignored_no_result', prior.length), accepted: false };
   if (result.label === 'undefined') {
     return { vote: empty('ignored_undefined', prior.length), accepted: false };
