@@ -167,13 +167,24 @@ Diatur di `packages/vision-schema` (`visionFrameMetadataSchema`) dan
 | `kandang_id`  | Tidak | ID kandang                                                                            |
 | `captured_at` | Ya    | Waktu UTC format ISO, misalnya `2026-10-28T03:15:00Z` (harus `Z`, bukan `+07:00`)     |
 
-Field selain ini ditolak karena schema-nya `.strict()`. Contoh:
+Field selain ini ditolak (`.strict()`, dan sejak 2026-11-22 form dibatasi ke tiga field pendek dan satu
+file). Isi file harus benar-benar JPEG/PNG/WebP sesuai tipenya (dicek dari byte awal file).
+
+Kamera atau gateway mengirim header **`X-Camera-Key`** dengan kunci dari `VISION_CAMERA_KEYS` di API
+(`camera_id=kunci`). Hanya frame dengan kunci yang ikut voting. Upload tanpa kunci (coba foto dari
+dashboard) menjadi `manual`: tetap diprediksi, tetapi tidak ikut voting dan tidak memicu peringatan.
+Selama `VISION_CAMERA_KEYS` kosong, semua upload dianggap kamera. Contoh:
 
 ```bash
 curl -X POST https://<api>/api/v1/vision/frames \
+  -H "X-Camera-Key: <kunci CAM-01>" \
   -F image=@foto.jpg -F camera_id=CAM-01 -F kandang_id=K1 \
   -F captured_at=2026-10-28T03:15:00Z
 ```
+
+Respons yang perlu ditangani gateway: 401 `invalid_camera_key`, 403 `camera_id_mismatch` (kunci milik
+kamera lain), dan 429 `upload_rate_limited` dengan `Retry-After` (default minimal 10 detik antar frame
+per kamera, `VISION_CAMERA_INTERVAL_MS`).
 
 `camera_id` harus tetap dan unik per kamera, karena voting 5 frame dihitung per kamera. Perangkat
 juga perlu sinkronisasi waktu (NTP) supaya `captured_at` akurat.
@@ -289,7 +300,8 @@ Kamera/gateway → API NestJS ──► server inferensi (hasil 1 foto: label + 
   ada. Perlu diperbaiki rujukannya, atau feeder-nya dibuat.
 - **Script gateway kamera belum ada.** Perlu dibuat agar feed dari kamera/CCTV ke API berjalan
   otomatis (lihat bagian 6).
-- **Endpoint upload belum diberi autentikasi** (API key per perangkat).
+- **Script gateway kamera** perlu mengirim `X-Camera-Key` dan menghormati `Retry-After` (autentikasi
+  upload sudah ada sejak 2026-11-22).
 - **Unit systemd untuk API dan cloudflared** di server pilot belum ada di repo (contoh untuk
   inference ada di `apps/inference/README.md`).
 
@@ -302,7 +314,7 @@ Kamera/gateway → API NestJS ──► server inferensi (hasil 1 foto: label + 
 | API NestJS                                        | Kode ada, dijalankan dengan Node       |
 | HTTPS/domain untuk API                            | Disiapkan saat deployment              |
 | Feeder/gateway kamera (feed otomatis)             | Belum ada, perlu dibuat                |
-| Autentikasi endpoint upload                       | Belum ada                              |
+| Autentikasi endpoint upload                       | Sudah ada (kunci kamera + rate limit)  |
 | Penyimpanan hasil permanen (Postgres)             | Belum ada (sengaja ditunda)            |
 | Notifikasi alert                                  | Belum ada                              |
 | Penguncian versi dependensi inferensi             | Sudah ada (lolos parity di T4)         |

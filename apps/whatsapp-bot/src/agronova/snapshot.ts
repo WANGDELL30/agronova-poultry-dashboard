@@ -135,12 +135,16 @@ function telemetryLines(receipt: TelemetryReceiptV1, timeZone: string): string[]
   return lines;
 }
 
-/** Newest result per camera, in the order the cameras first appear (newest first). */
+/**
+ * Newest camera result per camera, in the order the cameras first appear (newest first). Manual test
+ * uploads from the dashboard are skipped: they say nothing about the house and never vote (S2), so
+ * they must neither be reported as the camera's state nor hide the camera's real latest frame.
+ */
 export function latestPerCamera(results: readonly VisionResultV1[]): VisionResultV1[] {
   const seen = new Set<string>();
   const latest: VisionResultV1[] = [];
   for (const result of results) {
-    if (seen.has(result.camera_id)) continue;
+    if (result.source === 'manual' || seen.has(result.camera_id)) continue;
     seen.add(result.camera_id);
     latest.push(result);
   }

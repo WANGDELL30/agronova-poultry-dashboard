@@ -67,6 +67,7 @@ export function visionResult(
     message_id: `00000000-0000-4000-8000-${String(visionCounter).padStart(12, '0')}`,
     camera_id: 'CAM-01',
     kandang_id: 'K1',
+    source: 'camera',
     captured_at: '2026-11-17T02:58:00.000Z',
     received_at: '2026-11-17T02:58:05.000Z',
     inference_mode: kind === 'inference_error' ? null : 'real',

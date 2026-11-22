@@ -80,6 +80,19 @@ describe('describeSnapshot: vision semantics', () => {
     expect(text).toContain('mode mock');
   });
 
+  it('skips manual test uploads, so they never stand for a camera (S2)', () => {
+    const manual = visionResult('stress', {
+      camera_id: 'A',
+      source: 'manual',
+      vote: { ...visionResult('stress').vote, status: 'ignored_manual' },
+    });
+    const results = [manual, visionResult('not_stress', { camera_id: 'A' })];
+    expect(latestPerCamera(results).map((r) => [r.camera_id, r.source, r.result?.label])).toEqual([
+      ['A', 'camera', 'not_stress'],
+    ]);
+    expect(latestPerCamera([manual])).toEqual([]);
+  });
+
   it('keeps only the newest result per camera', () => {
     const results = [
       visionResult('stress', { camera_id: 'A' }),

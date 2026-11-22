@@ -63,6 +63,8 @@ window the bot sends the template; without a template the warning is logged and 
 - MQ-5 is reported as relative level, ADC and voltage only, never as ppm.
 - A missing value is reported as missing with its sensor status, never as zero.
 - Values from an offline device are labelled as old.
+- Manual test uploads from the dashboard (`source: manual`) are skipped: they are neither reported as a
+  camera's state nor turned into warnings (`latestPerCamera` in `src/agronova/snapshot.ts`).
 - Vision output is worded as decision support. `skipped_quality`, `parse_error`, `inference_error`
   and label `undefined` are never worded as "not stressed".
 - Timestamps stay in UTC and are converted for display only (`WA_DISPLAY_TIMEZONE`).
