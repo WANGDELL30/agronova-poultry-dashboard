@@ -36,7 +36,9 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
   app.setGlobalPrefix('api/v1');
 
-  const host = process.env.API_HOST ?? '0.0.0.0';
+  // Localhost by default (AUDIT S14): behind cloudflared nothing else needs to reach the API.
+  // Set API_HOST=0.0.0.0 deliberately, e.g. for an ESP32 posting directly on a trusted LAN.
+  const host = process.env.API_HOST || '127.0.0.1';
   const port = parsePort(process.env.API_PORT);
 
   await app.listen(port, host);
