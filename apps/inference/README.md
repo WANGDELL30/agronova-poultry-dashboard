@@ -101,6 +101,26 @@ needs the raw Roboflow export (`Raw Data Chicken Stress.zip`, not in git) and a 
 chickens are from the training split, so compare the inputs with each other rather than reading the
 accuracy as performance on new data. Ultralytics is AGPL-3.0.
 
+**Result (T4, 2026-11-22; `results/vlm/p2_2026-11-22/`): the service keeps the full frame, and P2 is
+postponed (AUDIT decision 2026-11-22).** On the same 51 frames, scored on the 42 chickens labelled
+`stress` or `not_stress`:
+
+| Input                      | Correct                        | Stress missed | False stress |
+| -------------------------- | ------------------------------ | ------------- | ------------ |
+| Full frame (current)       | 36/42                          | 6             | 0            |
+| Annotated crop (best case) | 31/42                          | 11            | 0            |
+| Detector crop              | 25/38, plus 5 frames not found | 12            | 0            |
+
+Paired per frame, the full frame was right where the crop was wrong 7 times, and the reverse 2 times.
+The 12 multi-chicken frames showed no gain either (6/9 full, 5/9 crop). The crops that failed were
+small (median about 56k pixels, against about 152k where both inputs were right; every frame is
+640x640). The best detector was YOLO11s COCO `bird` at confidence 0.1: its largest box hit a chicken in
+78% of frames, it found nothing in 10%, and it took 13 ms per frame. YOLO11n reached 49%, and the
+custom detector was not tested. The earlier PV3 figure (crop 16/17 against full frame 33/47) compared
+different image sets, so this paired result replaces it. The dataset frames are mostly close-ups (the
+largest chicken covers about 37% of the frame), while a barn camera may show many small chickens.
+Rerun this notebook on about 50 labelled pilot frames before deciding on P2 again.
+
 ## Real model without a local GPU (Kaggle / Colab)
 
 Real mode on a laptop CPU is very slow (tens of minutes per image). The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.

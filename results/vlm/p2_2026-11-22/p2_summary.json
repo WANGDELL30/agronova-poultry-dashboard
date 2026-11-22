@@ -1,0 +1,232 @@
+{
+ "best_detector": [
+  "coco_yolo11s_bird",
+  0.1
+ ],
+ "versions": {
+  "ultralytics": "8.4.216",
+  "torch": "2.14.1+cu130",
+  "transformers": "5.21.0",
+  "peft": "0.21.2",
+  "gpu": "Tesla T4"
+ },
+ "detector_metrics": [
+  {
+   "detector": "coco_yolo11s_bird",
+   "ms_per_frame": 13.0,
+   "conf": 0.1,
+   "frames": 51,
+   "frames_with_detection": 46,
+   "no_chicken_rate": 0.098,
+   "largest_hits_a_chicken": 0.7843,
+   "largest_hits_largest_chicken": 0.7843,
+   "chicken_recall": 0.7971,
+   "false_boxes_per_frame": 0.667,
+   "mean_iou_largest": 0.8371
+  },
+  {
+   "detector": "coco_yolo11s_bird",
+   "ms_per_frame": 13.0,
+   "conf": 0.05,
+   "frames": 51,
+   "frames_with_detection": 46,
+   "no_chicken_rate": 0.098,
+   "largest_hits_a_chicken": 0.7647,
+   "largest_hits_largest_chicken": 0.7647,
+   "chicken_recall": 0.7971,
+   "false_boxes_per_frame": 0.922,
+   "mean_iou_largest": 0.8259
+  },
+  {
+   "detector": "coco_yolo11s_bird",
+   "ms_per_frame": 13.0,
+   "conf": 0.25,
+   "frames": 51,
+   "frames_with_detection": 44,
+   "no_chicken_rate": 0.1373,
+   "largest_hits_a_chicken": 0.7451,
+   "largest_hits_largest_chicken": 0.7451,
+   "chicken_recall": 0.7536,
+   "false_boxes_per_frame": 0.451,
+   "mean_iou_largest": 0.8391
+  },
+  {
+   "detector": "coco_yolo11s_bird",
+   "ms_per_frame": 13.0,
+   "conf": 0.5,
+   "frames": 51,
+   "frames_with_detection": 36,
+   "no_chicken_rate": 0.2941,
+   "largest_hits_a_chicken": 0.6863,
+   "largest_hits_largest_chicken": 0.6863,
+   "chicken_recall": 0.6377,
+   "false_boxes_per_frame": 0.216,
+   "mean_iou_largest": 0.9045
+  },
+  {
+   "detector": "coco_yolo11n_bird",
+   "ms_per_frame": 12.9,
+   "conf": 0.05,
+   "frames": 51,
+   "frames_with_detection": 31,
+   "no_chicken_rate": 0.3922,
+   "largest_hits_a_chicken": 0.4902,
+   "largest_hits_largest_chicken": 0.4902,
+   "chicken_recall": 0.4783,
+   "false_boxes_per_frame": 0.549,
+   "mean_iou_largest": 0.7608
+  },
+  {
+   "detector": "coco_yolo11n_bird",
+   "ms_per_frame": 12.9,
+   "conf": 0.1,
+   "frames": 51,
+   "frames_with_detection": 26,
+   "no_chicken_rate": 0.4902,
+   "largest_hits_a_chicken": 0.4314,
+   "largest_hits_largest_chicken": 0.4314,
+   "chicken_recall": 0.4203,
+   "false_boxes_per_frame": 0.353,
+   "mean_iou_largest": 0.8003
+  },
+  {
+   "detector": "coco_yolo11n_bird",
+   "ms_per_frame": 12.9,
+   "conf": 0.25,
+   "frames": 51,
+   "frames_with_detection": 19,
+   "no_chicken_rate": 0.6275,
+   "largest_hits_a_chicken": 0.3333,
+   "largest_hits_largest_chicken": 0.3333,
+   "chicken_recall": 0.3043,
+   "false_boxes_per_frame": 0.176,
+   "mean_iou_largest": 0.8576
+  },
+  {
+   "detector": "coco_yolo11n_bird",
+   "ms_per_frame": 12.9,
+   "conf": 0.5,
+   "frames": 51,
+   "frames_with_detection": 15,
+   "no_chicken_rate": 0.7059,
+   "largest_hits_a_chicken": 0.2745,
+   "largest_hits_largest_chicken": 0.2745,
+   "chicken_recall": 0.2464,
+   "false_boxes_per_frame": 0.059,
+   "mean_iou_largest": 0.8639
+  }
+ ],
+ "vlm": {
+  "det_crop": {
+   "frames": 51,
+   "scored": 38,
+   "correct": 25,
+   "accuracy": 0.6579,
+   "stress_false_alarms": 0,
+   "stress_missed": 12,
+   "statuses": {
+    "classified": 46,
+    "no_chicken": 5
+   },
+   "pred_labels": {
+    "undefined": 3,
+    "not_stress": 20,
+    "stress": 23,
+    "None": 5
+   },
+   "no_chicken": 5,
+   "unmatched_crop": 6
+  },
+  "full": {
+   "frames": 51,
+   "scored": 42,
+   "correct": 36,
+   "accuracy": 0.8571,
+   "stress_false_alarms": 0,
+   "stress_missed": 6,
+   "statuses": {
+    "classified": 51
+   },
+   "pred_labels": {
+    "undefined": 3,
+    "stress": 31,
+    "not_stress": 17
+   },
+   "no_chicken": 0,
+   "unmatched_crop": 0
+  },
+  "gt_crop": {
+   "frames": 51,
+   "scored": 42,
+   "correct": 31,
+   "accuracy": 0.7381,
+   "stress_false_alarms": 0,
+   "stress_missed": 11,
+   "statuses": {
+    "classified": 51
+   },
+   "pred_labels": {
+    "undefined": 4,
+    "stress": 26,
+    "not_stress": 21
+   },
+   "no_chicken": 0,
+   "unmatched_crop": 0
+  }
+ },
+ "vlm_multi_chicken_frames": {
+  "det_crop": {
+   "frames": 12,
+   "scored": 6,
+   "correct": 3,
+   "accuracy": 0.5,
+   "stress_false_alarms": 0,
+   "stress_missed": 3,
+   "statuses": {
+    "classified": 11,
+    "no_chicken": 1
+   },
+   "pred_labels": {
+    "not_stress": 11,
+    "None": 1
+   },
+   "no_chicken": 1,
+   "unmatched_crop": 4
+  },
+  "full": {
+   "frames": 12,
+   "scored": 9,
+   "correct": 6,
+   "accuracy": 0.6667,
+   "stress_false_alarms": 0,
+   "stress_missed": 3,
+   "statuses": {
+    "classified": 12
+   },
+   "pred_labels": {
+    "not_stress": 11,
+    "stress": 1
+   },
+   "no_chicken": 0,
+   "unmatched_crop": 0
+  },
+  "gt_crop": {
+   "frames": 12,
+   "scored": 9,
+   "correct": 5,
+   "accuracy": 0.5556,
+   "stress_false_alarms": 0,
+   "stress_missed": 4,
+   "statuses": {
+    "classified": 12
+   },
+   "pred_labels": {
+    "not_stress": 11,
+    "stress": 1
+   },
+   "no_chicken": 0,
+   "unmatched_crop": 0
+  }
+ },
+ "note": "65/69 ekor dari split train: bandingkan antar-input, jangan baca akurasi absolut."
+}
