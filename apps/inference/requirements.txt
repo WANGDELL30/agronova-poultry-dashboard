@@ -1,6 +1,7 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-python-multipart==0.0.20
+fastapi==0.162.0
+starlette==1.10.0   # pinned directly: fastapi allows older, vulnerable releases (AUDIT S9)
+uvicorn[standard]==0.54.0
+python-multipart==0.0.33
 opencv-python-headless==4.10.0.84
 numpy>=1.26,<3
 pillow>=10
