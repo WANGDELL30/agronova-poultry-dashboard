@@ -64,6 +64,27 @@ def test_parse_error_is_distinct_status(client, monkeypatch):
 
     body = pipeline.classify_bytes(png(sharp_image()), Bad())
     assert body["status"] == "parse_error" and body["result"] is None and body["raw_response"] == "tidak ada json"
+    # Stable text for the client; the parser's exception text is only logged (AUDIT S12).
+    assert body["error_message"] == pipeline.PARSE_ERROR_MESSAGE
+
+
+def test_real_mode_refuses_to_start_without_an_api_key(monkeypatch):
+    """Fail closed (AUDIT S4): a real model must never serve /v1/classify without a key."""
+    from app.config import load_settings
+
+    monkeypatch.setenv("INFERENCE_MODE", "real")
+    for value in (None, "", "   "):
+        if value is None:
+            monkeypatch.delenv("INFERENCE_API_KEY", raising=False)
+        else:
+            monkeypatch.setenv("INFERENCE_API_KEY", value)
+        with pytest.raises(ValueError, match="INFERENCE_API_KEY is required in real mode"):
+            load_settings()
+    monkeypatch.setenv("INFERENCE_API_KEY", " k ")
+    assert load_settings().api_key == "k"
+    monkeypatch.setenv("INFERENCE_MODE", "mock")
+    monkeypatch.delenv("INFERENCE_API_KEY", raising=False)
+    assert load_settings().api_key is None  # mock mode stays usable without a key
 
 
 def test_rejects_empty_and_oversized(client):
@@ -180,7 +201,9 @@ def test_system_exit_during_load_is_error_not_loading_forever(monkeypatch):
     monkeypatch.setattr(main, "RealBackend", boom)
     with TestClient(create_app(real_settings())) as c:
         body = wait_for_status(c, "error")
-    assert "SystemExit" in body["detail"]
+    # The exception type and text are logged, never returned (AUDIT S12).
+    assert body["detail"] == main.LOAD_FAILED_DETAIL
+    assert "SystemExit" not in body["detail"]
 
 
 def test_health_reports_loading_since_in_utc(monkeypatch):
@@ -244,6 +267,7 @@ def test_exit_on_load_error_defaults(monkeypatch):
     # up, so the default is to stay up and report the error in every mode.
     monkeypatch.delenv("INFERENCE_EXIT_ON_LOAD_ERROR", raising=False)
     monkeypatch.setenv("INFERENCE_MODE", "real")
+    monkeypatch.setenv("INFERENCE_API_KEY", "test-key")
     assert load_settings().exit_on_load_error is False
     assert load_settings().load_timeout_s == 1800
     monkeypatch.setenv("INFERENCE_MODE", "mock")

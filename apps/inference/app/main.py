@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Seconds a caller should wait after 503 queue_full (AUDIT R1): about one inference on a T4.
 QUEUE_RETRY_AFTER_S = 15
+# What /health says about a failed load; the exception itself is only in the service log (AUDIT S12).
+LOAD_FAILED_DETAIL = "model load failed; see the inference service log"
 
 
 def _utc_now() -> str:
@@ -63,7 +65,8 @@ class State:
         try:
             backend = MockBackend() if self.settings.mode == "mock" else RealBackend(self.settings)
         except BaseException as exc:  # noqa: BLE001 - SystemExit/KeyboardInterrupt must not leave `loading`
-            self._fail(f"{type(exc).__name__}: {exc}")
+            # The exception text can hold local paths, repo names or GPU details: log only (AUDIT S12).
+            self._fail(f"{type(exc).__name__}: {exc}", public_detail=LOAD_FAILED_DETAIL)
             return
         with self._guard:
             if self.status != "loading":  # timed out meanwhile: stay `error`
@@ -79,11 +82,12 @@ class State:
         if self.status == "loading":
             self._fail(f"model load timed out after {self.settings.load_timeout_s} s")
 
-    def _fail(self, detail: str) -> None:
+    def _fail(self, detail: str, public_detail: str | None = None) -> None:
+        """`detail` goes to the log; `/health` shows `public_detail` (default: `detail`)."""
         with self._guard:
             if self.status != "loading":
                 return
-            self.status, self.detail = "error", detail
+            self.status, self.detail = "error", public_detail or detail
         logger.error("model load failed: %s", detail)
         if self.settings.exit_on_load_error:
             logger.error("exiting so the supervisor restarts the service (INFERENCE_EXIT_ON_LOAD_ERROR)")
