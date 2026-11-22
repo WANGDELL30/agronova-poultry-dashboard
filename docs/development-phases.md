@@ -56,6 +56,16 @@ image content must match its declared type. Without camera keys every upload sta
 so demos without a gateway keep working. This is upload authentication only: user accounts and
 roles stay in Phase 4, and the camera gateway itself is not part of this extension.
 
+### Authorized extension: optional detector crop in inference (2026-11-22)
+
+Requested by the user on 2026-11-22 (AUDIT P2); confirmation by the repository owner is still pending.
+`INFERENCE_DETECTOR=crop` runs a COCO YOLO11s detector with tuned settings before the quality gate and
+sends the largest detected chicken, cropped with the training rule, to the VLM; the response and record
+carry `detection`. It is off by default because the full frame was more accurate on the dataset, and
+it is meant to be evaluated on pilot frames. Ultralytics (AGPL-3.0) is an optional dependency. This
+adds no status: a frame without a detection is classified on the full frame, never marked as having
+no chicken.
+
 ### Authorized extension: operations modules (2026-10-28)
 
 The seven operations pages (`live`, `history`, `alerts`, `devices`, `calibration`, `exports`,
