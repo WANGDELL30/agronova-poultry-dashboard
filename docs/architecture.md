@@ -111,6 +111,24 @@ difference at n = 17.
   `parse_error`), alongside the parsed result (decision 2026-11-13, AUDIT K4).
 - Output is decision support for farm staff, not a diagnosis.
 
+### Upload sources and limits (AUDIT S2, S7, S11)
+
+Every record has a `source`. A frame sent with a valid `X-Camera-Key` (`VISION_CAMERA_KEYS`,
+`camera_id=key` pairs) is a `camera` frame; the key must belong to the frame's `camera_id` (else 403
+`camera_id_mismatch`), and an unknown key is 401 `invalid_camera_key` before the body is read. A
+keyless upload is `manual` while camera keys are set: it is classified and shown, but its vote is
+`ignored_manual`, it never enters a window and never raises an alert, so a dashboard visitor cannot
+fake a stress alert for a real camera. Without camera keys every upload is a `camera` frame, which
+keeps demos without a camera gateway working.
+
+Keyless uploads are limited per client IP and in total per sliding hour (default 10 and 60), an
+authenticated camera by a minimum interval between frames (default 10 s); both answer 429
+`upload_rate_limited` with `Retry-After`. Records and their images are capped per source (default
+2000 camera, 200 manual); the oldest are deleted first. The form accepts only `camera_id`,
+`kandang_id`, `captured_at`, and one image, with short fields, and the file must start with the
+signature of its declared type (JPEG, PNG, WebP), else 415. Stored images are served with
+`X-Content-Type-Options: nosniff`.
+
 ### Inference modes and deployment
 
 | Mode   | Use                                                           | Requirement                |
@@ -129,10 +147,12 @@ exits instead, for use only under a supervisor that restarts it.
 
 - Vision results are stored in an in-memory repository and are lost when the API restarts. A
   PostgreSQL repository behind the same interface and a migration are the next step.
-- Frames are uploaded manually from the web app. There is no camera capture or edge device path yet.
+- The API accepts camera frames with `X-Camera-Key`, but the camera gateway (capture, retries,
+  on-device quality scoring) does not exist yet; frames are uploaded from the web app or `curl`.
 - Vote alerts are shown in the vision view only; they are not connected to the alert lifecycle
   planned for Phase 4.
-- There is no authentication on the vision endpoints.
+- Upload authentication is per camera only; reading results (`GET /vision/results`) is open, and
+  there are no user accounts (Phase 4).
 
 ## Health behavior
 

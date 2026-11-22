@@ -16,7 +16,8 @@ These rules apply permanently to every change in this repository.
 ## Telemetry contracts
 
 - All telemetry payloads must have `schema_version`, `message_id`, `device_id`, `sequence_no`, and `captured_at`.
-- Simulator and ESP32 must eventually use the same MQTT topics and telemetry schema.
+- Simulator and ESP32 must use the same HTTP endpoint (`POST /api/v1/telemetry`) and telemetry
+  schema. MQTT is not used (decision 2026-11-20; repository owner confirmation pending).
 
 ## Vision (chicken stress detection)
 
@@ -30,6 +31,8 @@ These rules apply permanently to every change in this repository.
   only; since K1 (decision 2026-11-13) it deliberately deviates from it by dropping the confidence
   > = 0.6 filter. Do not change these constants without re-evaluating the model and updating
   > `packages/vision-schema` and `apps/inference/app/scs.py` together.
+- Manual uploads (keyless, while `VISION_CAMERA_KEYS` is set) are classified but never vote and never
+  raise an alert; only authenticated camera frames vote.
 - `packages/vision-schema` is the single contract between the API, the inference service, and the
   web app. Keep the Python response and the Zod schema in sync.
 - Store `captured_at` (camera) and `received_at` (backend) in UTC for every frame.

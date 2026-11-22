@@ -35,12 +35,26 @@ Cloudflare Tunnel, and MQTT is not used. The Mosquitto broker was removed. To ma
 safe, `POST /api/v1/telemetry` accepts per-device keys (`TELEMETRY_DEVICE_KEYS`, header
 `X-Device-Key`), PostgreSQL and inference listen on the local machine only, and the API can trust
 the local cloudflared proxy (`API_TRUST_PROXY`). Device keys authenticate ingest only; user
-authentication, roles, and persistence stay in later phases. `AGENTS.md` still names MQTT topics for
-the simulator and ESP32; changing that permanent rule awaits the repository owner.
+authentication, roles, and persistence stay in later phases. On 2026-11-22, at the user's request,
+`AGENTS.md` was changed from "the same MQTT topics" to "the same HTTP endpoint"; confirmation of that
+permanent-rule change by the repository owner is still pending.
 
 Also decided on 2026-11-20: Docker is not used. Demos run inference on Colab; the pilot clones the
 repository onto an always-on private GPU server and runs every service directly (uvicorn and Node
 under systemd). Docker Compose and the inference Dockerfile were removed.
+
+### Authorized extension: vision upload protection (2026-11-22)
+
+Requested by the user on 2026-11-22 (AUDIT S2, S7, S11); confirmation by the repository owner is still
+pending. Camera frames arrive automatically from a camera or gateway; users can still upload a photo
+from the dashboard to try a prediction. `POST /api/v1/vision/frames` therefore distinguishes two
+sources: a frame with a valid `X-Camera-Key` (`VISION_CAMERA_KEYS`) is a `camera` frame and votes; a
+keyless upload, while camera keys are set, is `manual`: classified and shown, but never voting or
+raising an alert. Keyless uploads are rate limited per IP and in total, cameras by a minimum
+interval, and stored records and images are capped per source. Form fields are limited and the
+image content must match its declared type. Without camera keys every upload stays a camera frame,
+so demos without a gateway keep working. This is upload authentication only: user accounts and
+roles stay in Phase 4, and the camera gateway itself is not part of this extension.
 
 ### Authorized extension: operations modules (2026-10-28)
 
