@@ -110,6 +110,21 @@ export function VisionResultCard({
                 : '—'}
             </dd>
           </div>
+          {record.detection && (
+            // Only while the inference detector is on (P2): which image the model judged.
+            <div>
+              <dt>{t('vision.field.input')}</dt>
+              <dd>
+                {record.detection.input === 'crop'
+                  ? `${t('vision.detection.crop')} · conf ${formatNumber(record.detection.conf ?? 0, locale, 2)}`
+                  : t(
+                      record.detection.box
+                        ? 'vision.detection.fullFrameSmall'
+                        : 'vision.detection.fullFrameNone',
+                    )}
+              </dd>
+            </div>
+          )}
           <div>
             <dt>{t('vision.field.vote')}</dt>
             <dd>

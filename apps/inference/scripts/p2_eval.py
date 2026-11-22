@@ -11,12 +11,13 @@ SCS label from the manual indicator annotation, which is what the adapter learne
 from __future__ import annotations
 
 import csv
-import io
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from PIL import Image
+
+from app.detector import crop_like_training as _service_crop
 
 IOU_MATCH = 0.5
 BINARY_LABELS = ("stress", "not_stress")
@@ -79,14 +80,9 @@ def load_ground_truth(pipeline_csv: Path, manifest_csv: Path) -> dict[str, Frame
 
 
 def crop_like_training(image: Image.Image | Path | str, box: Box) -> bytes:
-    """Same crop as the training notebook (chickenstress-kaggle.ipynb cell 31): RGB, int() of x, y,
-    w, h, PIL crop of exactly that box (no padding), saved as JPEG with PIL defaults like `crop.save`."""
+    """The training crop, from the service itself (app.detector), so evaluation and service agree."""
     img = image if isinstance(image, Image.Image) else Image.open(image)
-    img = img.convert("RGB")
-    x, y, w, h = int(box.x), int(box.y), int(box.w), int(box.h)
-    out = io.BytesIO()
-    img.crop((x, y, x + w, y + h)).save(out, format="JPEG")
-    return out.getvalue()
+    return _service_crop(img, (box.x, box.y, box.w, box.h))
 
 
 def iou(a: Box, b: Box) -> float:

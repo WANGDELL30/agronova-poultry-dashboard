@@ -191,6 +191,27 @@ describe('VisionController (HTTP)', () => {
     expect(votes.at(-1)).toMatchObject({ trigger_alert: true, majority_count: 5 });
   });
 
+  it('stores the detector crop from the inference response, and nothing while it is off (P2)', async () => {
+    const detection = {
+      input: 'crop' as const,
+      box: [10, 20, 100, 80] as [number, number, number, number],
+      conf: 0.75,
+    };
+    classify.mockResolvedValueOnce({ ...okResponse, detection });
+    const cropped = await upload(valid, { data: 'a', type: 'image/jpeg' });
+    expect(cropped.statusCode).toBe(201);
+    expect(cropped.json().detection).toEqual(detection);
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/api/v1/vision/results?camera_id=cam-01&limit=1',
+    });
+    expect(listed.json()[0].detection).toEqual(detection);
+
+    classify.mockResolvedValueOnce(okResponse);
+    const plain = await upload(valid, { data: 'a', type: 'image/jpeg' });
+    expect('detection' in plain.json()).toBe(false);
+  });
+
   it('rejects missing metadata (400), wrong type (415), oversize (413), missing image (400)', async () => {
     expect((await upload({ camera_id: 'c' }, { data: 'a', type: 'image/png' })).statusCode).toBe(
       400,

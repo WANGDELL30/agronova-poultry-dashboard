@@ -4,7 +4,8 @@ import time
 
 from .backends import Backend
 from .config import DEFAULT_MAX_IMAGE_SIDE
-from .quality import run_quality_gate
+from .detector import Detector, model_input
+from .quality import is_truncated, run_quality_gate
 from .scs import SCS_INDICATORS, apply_scs_rule, parse_vlm_json
 
 SCHEMA_VERSION = 1
@@ -64,8 +65,30 @@ def confidence_from_result(label: str, score_stress: float) -> float | None:
     return None
 
 
-def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT_MAX_IMAGE_SIDE) -> dict:
+def _backend_failure(exc: Exception, what: str) -> BackendFailure:
+    """A crash of the model or the detector becomes a coded error; details go to the log (R12)."""
+    logger.exception("%s failed", what)
+    if _is_out_of_memory(exc):
+        _release_gpu_memory()
+        return BackendFailure("gpu_oom", 503)
+    return BackendFailure("backend_error", 500)
+
+
+def classify_bytes(
+    image_bytes: bytes,
+    backend: Backend,
+    max_side: int = DEFAULT_MAX_IMAGE_SIDE,
+    detector: Detector | None = None,
+) -> dict:
     started = time.perf_counter()
+    detection = None
+    # Optional detector crop before the quality gate (AUDIT P2, INFERENCE_DETECTOR=crop). A truncated
+    # file is left to the quality gate, which skips it with `gambar_rusak` (R9).
+    if detector is not None and not is_truncated(image_bytes):
+        try:
+            image_bytes, detection = model_input(image_bytes, detector)
+        except Exception as exc:  # noqa: BLE001 - same handling as a model crash
+            raise _backend_failure(exc, "detector") from exc
     img, quality_status, issues = run_quality_gate(image_bytes, max_side=max_side)
     response = {
         "schema_version": SCHEMA_VERSION,
@@ -76,6 +99,9 @@ def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT
         "raw_response": None,
         "error_message": None,
     }
+    if detector is not None:
+        # Present only while the detector is on, so the contract is unchanged when it is off.
+        response["detection"] = detection or {"input": "full_frame", "box": None, "conf": None}
     if img is None:
         response["status"] = "skipped_quality"
     else:
@@ -85,11 +111,7 @@ def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT
             raise
         except Exception as exc:  # noqa: BLE001 - any backend crash becomes a coded error (R12)
             # The backend's own `with lock:` has already released the lock at this point.
-            logger.exception("backend.generate failed")
-            if _is_out_of_memory(exc):
-                _release_gpu_memory()
-                raise BackendFailure("gpu_oom", 503) from exc
-            raise BackendFailure("backend_error", 500) from exc
+            raise _backend_failure(exc, "backend.generate") from exc
         try:
             parsed = parse_vlm_json(raw_text)
             normalized, total_ya, visible_count, label, score = apply_scs_rule(parsed.get("indicators", {}))

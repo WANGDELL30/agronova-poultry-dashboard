@@ -89,6 +89,8 @@ export class VisionService {
       error_message: response?.error_message ?? failure?.message ?? null,
       vote,
       image_available: true,
+      // Only while the inference detector is on (P2); absent otherwise, as in older records.
+      ...(response?.detection ? { detection: response.detection } : {}),
     };
     const evicted = await this.repository.insert(record);
     // Keep disk use bounded with the record cap; a failed delete only leaves an orphaned file.
