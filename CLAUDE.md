@@ -53,4 +53,5 @@ Real inference needs an NVIDIA GPU (~8-9 GB): uvicorn with `requirements-real.tx
 
 - SCS constants (stress at >= 3 `YA`, `undefined` if fewer than 5 of 7 visible) mirror the training notebook and inference notebook 04. Voting constants (window 5, alert at >= 3 stress votes) come from the voter in inference notebook 04 only, and since K1 (decision 2026-11-13) the voter deliberately deviates from it: no confidence filter (`VOTE_CONFIDENCE_THRESHOLD` is deprecated). Change them only together in `packages/vision-schema` and `apps/inference/app/scs.py`, after re-evaluating the model.
 - `skipped_quality`, `parse_error`, `inference_error`, and `undefined` are never `not_stress`; frames with no classification have `result: null`.
+- Every vision record has `source`: `camera` (valid `X-Camera-Key`, or any upload while `VISION_CAMERA_KEYS` is unset) or `manual` (keyless while keys are set). Manual frames get vote `ignored_manual`, never enter a window, and never alert; keep this in the schema (`packages/vision-schema`), the API, and the web badge.
 - Telemetry: UTC timestamps, keep both `captured_at` and `received_at`, null is not zero, and MQ-5 is never shown as ppm.
