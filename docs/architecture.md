@@ -180,7 +180,9 @@ operators and the Phase 1 UI can inspect component status even when a dependency
 ## Telemetry contract decisions
 
 Schema version 1 uses a UUID message identity, device identity, monotonic sequence number, and a UTC
-capture time. Raw and filtered readings remain separate. Nullable readings preserve the difference
+capture time. `message_id` may be any 8-4-4-4-12 hex id (`z.guid()`): the RFC 9562 version and variant
+bits are not checked, so firmware that fills it with random hex is accepted. `captured_at` is ISO 8601
+in UTC with a `Z` suffix and seconds (`2026-01-01T00:00:00Z`, fractions allowed). Raw and filtered readings remain separate. Nullable readings preserve the difference
 between absent data and a numeric zero. Quality and calibration use explicit enums.
 
 MQ-5 data is deliberately limited to raw ADC, filtered ADC, ADC voltage, relative percentage, and

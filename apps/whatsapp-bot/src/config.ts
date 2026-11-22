@@ -60,7 +60,8 @@ const wholeNumber = (min: number, max: number, fallback: number) =>
       .regex(/^\d+$/, 'must be a whole number (digits only)')
       .transform(Number)
       .pipe(z.number().min(min).max(max))
-      .default(String(fallback)),
+      // zod 4: the default is the parsed value and skips the checks above (AUDIT S23).
+      .default(fallback),
   );
 
 const optionalDecimal = z.preprocess(
@@ -88,10 +89,7 @@ const numberList = z.preprocess(
 const envSchema = z.object({
   WA_BOT_HOST: optionalText,
   WA_BOT_PORT: wholeNumber(1, 65535, 4100),
-  AGRONOVA_API_BASE_URL: z.preprocess(
-    blankToUndefined,
-    z.string().url().default('http://localhost:4000'),
-  ),
+  AGRONOVA_API_BASE_URL: z.preprocess(blankToUndefined, z.url().default('http://localhost:4000')),
   AGRONOVA_API_TIMEOUT_MS: wholeNumber(100, 120_000, 5_000),
   AGRONOVA_DEVICE_ID: optionalText,
   WA_PROVIDER: z.preprocess(blankToUndefined, z.enum(['console', 'meta']).default('console')),
@@ -116,11 +114,10 @@ const envSchema = z.object({
   WA_TEMP_MIN_C: optionalDecimal,
   WA_HUMIDITY_MAX_PCT: optionalDecimal,
   WA_HUMIDITY_MIN_PCT: optionalDecimal,
-  // `z.string().url()` alone accepts "localhost:11434" (scheme "localhost:"), which fetch rejects.
+  // `z.url()` alone accepts "localhost:11434" (scheme "localhost:"), which fetch rejects.
   WA_LLM_BASE_URL: z.preprocess(
     blankToUndefined,
     z
-      .string()
       .url()
       .regex(/^https?:\/\//, 'must start with http:// or https://')
       .optional(),

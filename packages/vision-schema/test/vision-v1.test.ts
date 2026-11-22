@@ -88,6 +88,15 @@ describe('visionResultV1Schema', () => {
       visionResultV1Schema.safeParse({ ...base, captured_at: '2026-09-30T08:00:00+07:00' }).success,
     ).toBe(false);
   });
+
+  it('accepts any hex GUID as message_id, as zod 3 did (S23)', () => {
+    const parse = (message_id: string) =>
+      visionResultV1Schema.safeParse({ ...base, message_id }).success;
+    // No RFC 9562 version/variant bits: z.uuid() in zod 4 would reject it, z.guid() keeps it.
+    expect(parse('12345678-1234-0234-c234-123456789abc')).toBe(true);
+    expect(parse('12345678123412341234123456789abc')).toBe(false);
+    expect(parse('not-a-uuid')).toBe(false);
+  });
 });
 
 describe('visionFrameMetadataSchema', () => {
@@ -99,6 +108,13 @@ describe('visionFrameMetadataSchema', () => {
     expect(
       visionFrameMetadataSchema.safeParse({ captured_at: '2026-09-30T01:00:00Z' }).success,
     ).toBe(false);
+  });
+
+  it('requires seconds in captured_at; zod 3 still accepted a time without them (S23)', () => {
+    const parse = (captured_at: string) =>
+      visionFrameMetadataSchema.safeParse({ camera_id: 'c', captured_at }).success;
+    expect(parse('2026-09-30T01:00:00.123Z')).toBe(true);
+    expect(parse('2026-09-30T01:00Z')).toBe(false);
   });
 
   it('trims ids, allows only letters, digits, ".", "_" and "-", and rejects pre-2020 times (R8)', () => {

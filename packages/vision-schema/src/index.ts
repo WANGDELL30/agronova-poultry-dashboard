@@ -115,13 +115,13 @@ export const detectionSchema = z
   .superRefine((value, ctx) => {
     if ((value.box === null) !== (value.conf === null)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['conf'],
         message: 'box and conf come together',
       });
     }
     if (value.input === 'crop' && value.box === null) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['box'], message: 'a crop needs its box' });
+      ctx.addIssue({ code: 'custom', path: ['box'], message: 'a crop needs its box' });
     }
   });
 
@@ -144,7 +144,7 @@ export const inferenceResponseV1Schema = z
     // Cross-field invariants (AUDIT K2): a response that breaks them is rejected as a whole, so a
     // contradictory result can never reach the voter or the stored history.
     const fail = (path: (string | number)[], message: string) =>
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path, message });
+      ctx.addIssue({ code: 'custom', path, message });
     const { result } = value;
     if ((value.status === 'classified') !== (result !== null)) {
       fail(['result'], 'result must be present if and only if status is "classified"');
@@ -190,13 +190,23 @@ export const voteSchema = z
   })
   .strict();
 
-const utcTimestamp = z.string().datetime({ offset: false });
+/**
+ * UTC ISO 8601 with a `Z` suffix and seconds (`2026-01-01T00:00:00Z`, fractions allowed); an offset or
+ * a time without seconds is rejected (zod 4; zod 3 still accepted `T00:00Z`, AUDIT S23).
+ */
+const utcTimestamp = z.iso.datetime({ offset: false });
+
+/**
+ * Any 8-4-4-4-12 hex id, as zod 3 accepted (AUDIT S23). `z.uuid()` in zod 4 also checks the RFC 9562
+ * version and variant bits; this does not, so ids from older clients and devices keep working.
+ */
+const messageId = z.guid();
 
 /** Stored/served record: one processed frame. */
 export const visionResultV1Schema = z
   .object({
     schema_version: z.literal(VISION_SCHEMA_VERSION),
-    message_id: z.string().uuid(),
+    message_id: messageId,
     camera_id: z.string().min(1).max(64),
     kandang_id: z.string().min(1).max(64).nullable(),
     source: frameSourceSchema,
@@ -220,21 +230,21 @@ export const visionResultV1Schema = z
   .superRefine((value, ctx) => {
     if ((value.status === 'classified') !== (value.result !== null)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['result'],
         message: 'result must be present if and only if status is "classified"',
       });
     }
     if ((value.source === 'manual') !== (value.vote.status === 'ignored_manual')) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['vote', 'status'],
         message: 'vote.status must be "ignored_manual" if and only if source is "manual"',
       });
     }
     if (value.inference_mode === null && value.status !== 'inference_error') {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['inference_mode'],
         message: 'inference_mode may be null only when status is "inference_error"',
       });
