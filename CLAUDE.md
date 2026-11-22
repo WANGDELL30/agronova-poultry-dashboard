@@ -54,3 +54,13 @@ Real inference needs an NVIDIA GPU (~8-9 GB): uvicorn with `requirements-real.tx
 - `skipped_quality`, `parse_error`, `inference_error`, and `undefined` are never `not_stress`; frames with no classification have `result: null`.
 - Every vision record has `source`: `camera` (valid `X-Camera-Key`, or any upload while `VISION_CAMERA_KEYS` is unset) or `manual` (keyless while keys are set). Manual frames get vote `ignored_manual`, never enter a window, and never alert; keep this in the schema (`packages/vision-schema`), the API, and the web badge.
 - Telemetry: UTC timestamps, keep both `captured_at` and `received_at`, null is not zero, and MQ-5 is never shown as ppm.
+
+## Detector crop (P2): why it is off and when to turn it on
+
+The adapter was trained on single-chicken crops, while the service receives whole camera frames that may show many chickens. P2 is the planned fix, but it is not a full one:
+
+- **Detector off (default):** the VLM judges the whole frame and gives one answer for all chickens in it, so the indicators of several chickens can mix.
+- **Detector on (`INFERENCE_DETECTOR=crop`):** YOLO finds the animals, only the **largest** chicken is cropped (training rule, no padding), and the VLM judges that one chicken. The others are not judged at all. No detection, or a box under 32 px, falls back to the full frame; there is no "no chicken" status.
+- **Evidence so far (decision 2026-11-22, `results/vlm/p2_2026-11-22/`):** on the dataset the full frame beat every crop (36/42 vs 31/42 for perfect annotated crops), including the few multi-chicken frames (6/9 vs 5/9; only 9 scorable). The dataset frames are mostly close-ups (the largest chicken covers about a third of the frame), so this does not show what happens with a wide barn camera and many small chickens. That case is untested.
+- **Turning it on needs no code change:** `pip install -r requirements-real.txt -r requirements-detector.txt` once on the server (Ultralytics, AGPL-3.0), rerun the parity check, set `INFERENCE_DETECTOR=crop`, restart. Settings and measurements: `apps/inference/README.md`.
+- **What decides it is the pilot camera:** close-ups with one or two chickens per frame → keep it off. A wide view with many chickens → label about 50 pilot frames and run `apps/inference/colab/p2_detector_eval_colab.ipynb` (it includes the service setting); switch it on only if the crop wins there. If one chicken per frame does not represent the house, the real fix is judging every chicken separately (one VLM call per chicken, about 9 s each on a T4, with per-chicken results and voting), which is a larger design that has not been decided.
