@@ -1,3 +1,5 @@
+import { FRAME_ID_MAX_LENGTH, FRAME_ID_PATTERN } from '@agronova/vision-schema';
+
 import { ownerOfKey, parseKeyList } from '../common/keys.js';
 
 /** Header a camera or gateway sends its key in (lower case, as Node delivers it). */
@@ -53,10 +55,7 @@ function wholeNumber(
 
 export function loadUploadPolicy(env: NodeJS.ProcessEnv = process.env): UploadPolicy {
   return {
-    cameraKeys: parseKeyList(
-      { envName: 'VISION_CAMERA_KEYS', idLabel: 'camera_id', maxIdLength: 64 },
-      env.VISION_CAMERA_KEYS,
-    ),
+    cameraKeys: parseCameraKeys(env.VISION_CAMERA_KEYS),
     keylessPerIpPerHour: wholeNumber(
       'VISION_MANUAL_UPLOADS_PER_IP_PER_HOUR',
       env.VISION_MANUAL_UPLOADS_PER_IP_PER_HOUR,
@@ -88,6 +87,25 @@ export function loadUploadPolicy(env: NodeJS.ProcessEnv = process.env): UploadPo
       1,
     ),
   };
+}
+
+/**
+ * Like the other key lists, but every camera_id must also pass the upload form's rule (AUDIT R8):
+ * otherwise that camera's key would be accepted and every one of its frames rejected.
+ */
+function parseCameraKeys(value: string | undefined): ReadonlyMap<string, string> | null {
+  const keys = parseKeyList(
+    { envName: 'VISION_CAMERA_KEYS', idLabel: 'camera_id', maxIdLength: FRAME_ID_MAX_LENGTH },
+    value,
+  );
+  for (const id of keys?.keys() ?? []) {
+    if (!FRAME_ID_PATTERN.test(id)) {
+      throw new Error(
+        `VISION_CAMERA_KEYS is invalid: camera_id "${id}" may only use letters, digits, ".", "_" and "-".`,
+      );
+    }
+  }
+  return keys;
 }
 
 export type UploadAuth =

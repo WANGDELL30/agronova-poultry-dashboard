@@ -61,6 +61,10 @@ describe('loadUploadPolicy (S2)', () => {
     expect(() => loadUploadPolicy({ VISION_CAMERA_KEYS: `${'c'.repeat(65)}=${KEY_A}` })).toThrow(
       /camera_id of 1 to 64/,
     );
+    // The id must also pass the upload form's camera_id rule (R8).
+    expect(() => loadUploadPolicy({ VISION_CAMERA_KEYS: `cam a=${KEY_A}` })).toThrow(
+      /camera_id "cam a" may only use letters/,
+    );
     for (const [name, value] of [
       ['VISION_MANUAL_UPLOADS_PER_IP_PER_HOUR', '0'],
       ['VISION_MANUAL_UPLOADS_PER_HOUR', '1e3'],

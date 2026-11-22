@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CAPTURED_AT_EARLIEST,
   SCS_INDICATOR_KEYS,
   inferenceResponseV1Schema,
+  isCapturedInFuture,
   visionResultV1Schema,
   visionFrameMetadataSchema,
 } from '../src/index.js';
@@ -97,6 +99,30 @@ describe('visionFrameMetadataSchema', () => {
     expect(
       visionFrameMetadataSchema.safeParse({ captured_at: '2026-09-30T01:00:00Z' }).success,
     ).toBe(false);
+  });
+
+  it('trims ids, allows only letters, digits, ".", "_" and "-", and rejects pre-2020 times (R8)', () => {
+    const parse = (fields: Record<string, string>) =>
+      visionFrameMetadataSchema.safeParse({ captured_at: '2026-09-30T01:00:00Z', ...fields });
+    const trimmed = parse({ camera_id: ' cam-A ', kandang_id: 'K_1.b ' });
+    expect(trimmed.success && trimmed.data).toMatchObject({
+      camera_id: 'cam-A',
+      kandang_id: 'K_1.b',
+    });
+    for (const camera_id of ['   ', 'cam A', 'cam\u0000\r\n<script>', 'kamera/1', 'é'.repeat(3)]) {
+      expect(parse({ camera_id }).success, camera_id).toBe(false);
+    }
+    expect(parse({ camera_id: 'c'.repeat(64) }).success).toBe(true);
+    expect(parse({ camera_id: 'c'.repeat(65) }).success).toBe(false);
+    expect(parse({ camera_id: 'c', captured_at: '1970-01-01T00:00:00Z' }).success).toBe(false);
+    expect(parse({ camera_id: 'c', captured_at: CAPTURED_AT_EARLIEST }).success).toBe(true);
+  });
+
+  it('flags captured_at beyond the tolerated clock difference as future (R8)', () => {
+    const now = Date.parse('2026-11-22T12:00:00Z');
+    expect(isCapturedInFuture('2026-11-22T12:05:00Z', now)).toBe(false);
+    expect(isCapturedInFuture('2026-11-22T12:05:01Z', now)).toBe(true);
+    expect(isCapturedInFuture('2026-11-01T00:00:00Z', now)).toBe(false);
   });
 });
 

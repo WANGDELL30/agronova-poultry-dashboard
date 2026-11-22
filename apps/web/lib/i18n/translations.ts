@@ -248,6 +248,7 @@ export const id = {
     'Mode simulasi: hasil di bawah berasal dari skenario contoh, bukan dari model asli.',
   'vision.form.camera': 'ID kamera',
   'vision.form.kandang': 'ID kandang (opsional)',
+  'vision.form.idHint': 'Huruf, angka, titik, garis bawah, atau tanda hubung, tanpa spasi.',
   'vision.form.image': 'Foto ayam (JPEG, PNG, atau WebP)',
   'vision.form.submit': 'Analisis foto',
   'vision.form.submitting': 'Menganalisis…',
@@ -337,7 +338,8 @@ export const id = {
   'vision.error.unsupported_image_type':
     'Format foto tidak didukung. Gunakan JPEG, PNG, atau WebP.',
   'vision.error.inference_bad_response': 'Layanan inferensi mengirim respons yang tidak valid.',
-  'vision.error.invalid_metadata': 'Data formulir tidak valid.',
+  'vision.error.invalid_metadata':
+    'Data formulir tidak valid. ID kamera dan kandang hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung; waktu foto tidak boleh di masa depan.',
   'vision.error.noFile': 'Pilih foto terlebih dahulu.',
   'vision.error.api_not_configured':
     'API belum dikonfigurasi (NEXT_PUBLIC_API_BASE_URL kosong saat build).',
@@ -596,6 +598,7 @@ export const en: Record<TranslationKey, string> = {
     'Simulation mode: results below come from sample scenarios, not the real model.',
   'vision.form.camera': 'Camera ID',
   'vision.form.kandang': 'House ID (optional)',
+  'vision.form.idHint': 'Letters, digits, dots, underscores or hyphens, no spaces.',
   'vision.form.image': 'Chicken photo (JPEG, PNG, or WebP)',
   'vision.form.submit': 'Analyse photo',
   'vision.form.submitting': 'Analysing…',
@@ -685,7 +688,8 @@ export const en: Record<TranslationKey, string> = {
     'The photo is too large for the server (8 MB or 40 megapixels by default). Resize or compress it and try again.',
   'vision.error.unsupported_image_type': 'Unsupported photo format. Use JPEG, PNG, or WebP.',
   'vision.error.inference_bad_response': 'The inference service returned an invalid response.',
-  'vision.error.invalid_metadata': 'Invalid form data.',
+  'vision.error.invalid_metadata':
+    'Invalid form data. Camera and house IDs may only use letters, digits, dots, underscores or hyphens; the photo time may not be in the future.',
   'vision.error.noFile': 'Choose a photo first.',
   'vision.error.api_not_configured':
     'API not configured (NEXT_PUBLIC_API_BASE_URL was empty at build time).',

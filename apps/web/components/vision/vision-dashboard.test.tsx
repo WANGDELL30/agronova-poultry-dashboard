@@ -1,4 +1,4 @@
-import type { VisionResultV1 } from '@agronova/vision-schema';
+import { FRAME_ID_PATTERN, type VisionResultV1 } from '@agronova/vision-schema';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -83,6 +83,32 @@ describe('VisionDashboard', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toMatch(/terlalu lama menjawab/),
     );
+  });
+
+  it('limits the id inputs to the contract characters and sends a trimmed camera id (R8)', async () => {
+    const submit = vi.fn().mockResolvedValue(skipped);
+    setup(fakeClient({ submit }));
+    const camera = screen.getByLabelText('ID kamera') as HTMLInputElement;
+    // The browser applies the pattern to the whole value with the v flag.
+    const browser = new RegExp(`^(?:${camera.pattern})$`, 'v');
+    for (const id of ['cam-01', ' cam-01 ', 'K_1.b', 'cam 01', 'kamera/1', 'cam<b>']) {
+      expect(browser.test(id), id).toBe(FRAME_ID_PATTERN.test(id.trim()));
+    }
+    expect((screen.getByLabelText('ID kandang (opsional)') as HTMLInputElement).pattern).toBe(
+      camera.pattern,
+    );
+    await userEvent.clear(camera);
+    await userEvent.type(camera, ' cam-02 ');
+    await userEvent.upload(
+      screen.getByLabelText(/Foto ayam/),
+      new File(['x'], 'a.jpg', { type: 'image/jpeg', lastModified: 0 }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Analisis foto' }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    const sent = submit.mock.calls[0]?.[0];
+    expect(sent.cameraId).toBe('cam-02');
+    // A 1970 file date is replaced by the upload time, which the API accepts.
+    expect(Date.parse(sent.capturedAt)).toBeGreaterThan(Date.parse('2020-01-01T00:00:00Z'));
   });
 
   it('labels mock mode so simulated output is not mistaken for the real model', async () => {

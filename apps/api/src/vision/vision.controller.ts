@@ -15,6 +15,8 @@ import {
   Res,
 } from '@nestjs/common';
 import {
+  CAPTURED_AT_MAX_FUTURE_MS,
+  isCapturedInFuture,
   visionFrameMetadataSchema,
   type VisionApiErrorCode,
   type VisionResultV1,
@@ -185,6 +187,19 @@ export class VisionController {
     }
 
     const now = Date.now();
+    // A future captured_at would sort after every real frame in the voting window (AUDIT R8).
+    if (isCapturedInFuture(meta.data.captured_at, now)) {
+      const error: VisionApiErrorCode = 'invalid_metadata';
+      throw new BadRequestException({
+        error,
+        issues: [
+          {
+            path: ['captured_at'],
+            message: `must not be more than ${CAPTURED_AT_MAX_FUTURE_MS / 60_000} minutes in the future`,
+          },
+        ],
+      });
+    }
     let source: 'camera' | 'manual';
     if (auth.kind === 'camera') {
       if (meta.data.camera_id !== auth.cameraId) {

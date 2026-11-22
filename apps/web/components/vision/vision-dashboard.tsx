@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent 
 import { formatDateTime } from '../../lib/formatting/formatters';
 import { useLanguage } from '../../lib/i18n/language-provider';
 import type { TranslationKey } from '../../lib/i18n/translations';
+import { capturedAtForFile } from '../../lib/vision/captured-at';
 import { createVisionClient } from '../../lib/vision/create-vision-client';
 import { VisionClientError, type VisionClient } from '../../lib/vision/vision-client';
 import { SectionHeader } from '../ui/section-header';
@@ -14,6 +15,9 @@ import { VisionResultCard, VisionStatusBadge, VoteText } from './vision-result-c
 
 // API codes come from the shared contract; the last two are raised by the web client itself.
 const KNOWN_ERRORS = new Set<string>([...VISION_API_ERROR_CODES, 'network', 'api_not_configured']);
+// Same characters as FRAME_ID_PATTERN in the contract (AUDIT R8); `-` is escaped for the v flag that
+// browsers use for the pattern attribute. Spaces around the value are trimmed before sending.
+const ID_PATTERN = String.raw`\s*[A-Za-z0-9._\-]+\s*`;
 
 export function VisionDashboard({ client: injected }: Readonly<{ client?: VisionClient }>) {
   const { t, locale } = useLanguage();
@@ -76,16 +80,12 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
     }
     setSubmitting(true);
     setErrorKey(null);
-    const modified = file.lastModified;
-    const capturedAt = new Date(
-      Math.min(Number.isFinite(modified) ? modified : Date.now(), Date.now()),
-    );
     try {
       const record = await client.submit({
         file,
         cameraId: cameraId.trim(),
         kandangId: kandangId.trim() || undefined,
-        capturedAt: capturedAt.toISOString(),
+        capturedAt: capturedAtForFile(file.lastModified),
       });
       setSelectedId(record.message_id);
       if (fileRef.current) fileRef.current.value = '';
@@ -117,6 +117,8 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
             required
             disabled={notConfigured}
             maxLength={64}
+            pattern={ID_PATTERN}
+            title={t('vision.form.idHint')}
             value={cameraId}
             onChange={(e) => setCameraId(e.target.value)}
           />
@@ -126,6 +128,8 @@ export function VisionDashboard({ client: injected }: Readonly<{ client?: Vision
           <input
             disabled={notConfigured}
             maxLength={64}
+            pattern={ID_PATTERN}
+            title={t('vision.form.idHint')}
             value={kandangId}
             onChange={(e) => setKandangId(e.target.value)}
           />

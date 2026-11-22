@@ -243,13 +243,45 @@ export type VisionApiErrorCode = (typeof VISION_API_ERROR_CODES)[number];
 /** The subset raised when the API talks to the inference service. */
 export type InferenceErrorCode = Extract<VisionApiErrorCode, `inference_${string}`>;
 
+/**
+ * Characters allowed in camera_id and kandang_id (AUDIT R8). Surrounding spaces are trimmed first, so
+ * `"cam-A "` and `"cam-A"` are the same camera and share one voting window.
+ */
+export const FRAME_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+export const FRAME_ID_MAX_LENGTH = 64;
+/**
+ * captured_at may not be earlier than this. A camera without a set clock sends 1970; a manual upload
+ * may still carry an old photo's file date, so there is no maximum age (AUDIT R8).
+ */
+export const CAPTURED_AT_EARLIEST = '2020-01-01T00:00:00Z';
+/** Clock difference tolerated between a camera and the API before captured_at counts as future. */
+export const CAPTURED_AT_MAX_FUTURE_MS = 5 * 60_000;
+
+const frameId = z
+  .string()
+  .trim()
+  .min(1)
+  .max(FRAME_ID_MAX_LENGTH)
+  .regex(FRAME_ID_PATTERN, 'use only letters, digits, ".", "_" and "-"');
+
 export const visionFrameMetadataSchema = z
   .object({
-    camera_id: z.string().min(1).max(64),
-    kandang_id: z.string().min(1).max(64).optional(),
-    captured_at: utcTimestamp,
+    camera_id: frameId,
+    kandang_id: frameId.optional(),
+    captured_at: utcTimestamp.refine(
+      (value) => Date.parse(value) >= Date.parse(CAPTURED_AT_EARLIEST),
+      `must not be earlier than ${CAPTURED_AT_EARLIEST}`,
+    ),
   })
   .strict();
+
+/**
+ * True when captured_at lies further in the future than the tolerated clock difference. Kept out of
+ * the schema because it depends on the time the API received the frame.
+ */
+export function isCapturedInFuture(capturedAt: string, receivedAtMs: number): boolean {
+  return Date.parse(capturedAt) > receivedAtMs + CAPTURED_AT_MAX_FUTURE_MS;
+}
 
 export type IndicatorAnswer = z.infer<typeof indicatorAnswerSchema>;
 export type StressLabel = z.infer<typeof stressLabelSchema>;

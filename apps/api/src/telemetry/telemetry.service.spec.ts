@@ -1,7 +1,11 @@
 import { validTelemetryV1Example } from '@agronova/telemetry-schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { MESSAGE_IDS_REMEMBERED_PER_DEVICE, TelemetryService } from './telemetry.service.js';
+import {
+  MAX_DEVICES_TRACKED,
+  MESSAGE_IDS_REMEMBERED_PER_DEVICE,
+  TelemetryService,
+} from './telemetry.service.js';
 
 describe('TelemetryService', () => {
   const previousThreshold = process.env.DEVICE_OFFLINE_AFTER_MS;
@@ -51,5 +55,28 @@ describe('TelemetryService', () => {
     for (let n = 0; n <= MESSAGE_IDS_REMEMBERED_PER_DEVICE; n++) expect(send(n)).toBe(false);
     expect(send(MESSAGE_IDS_REMEMBERED_PER_DEVICE)).toBe(true); // still remembered
     expect(send(0)).toBe(false); // the oldest id was evicted
+  });
+
+  it('keeps at most MAX_DEVICES_TRACKED devices and forgets the one that reported least recently (S15)', () => {
+    const service = new TelemetryService();
+    const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const at = (n: number) => new Date(Date.parse('2026-11-22T00:00:00Z') + n * 1000);
+    const send = (device: string, n: number) =>
+      service.ingest({ ...validTelemetryV1Example, device_id: device, message_id: id(n) }, at(n));
+    send('real-device', 0);
+    for (let n = 1; n < MAX_DEVICES_TRACKED; n++) send(`fake-${n}`, n);
+    send('real-device', MAX_DEVICES_TRACKED); // reports again: now the most recent
+    send('fake-new', MAX_DEVICES_TRACKED + 1); // one over the cap evicts fake-1, not real-device
+    expect(service.latest('real-device')?.telemetry.device_id).toBe('real-device');
+    expect(service.latest('fake-1')).toBeNull();
+    expect(service.latest('fake-2')).not.toBeNull();
+    expect(service.latest()?.telemetry.device_id).toBe('fake-new');
+    // The evicted device's message_ids are forgotten with it.
+    expect(
+      service.ingestOrReplay(
+        { ...validTelemetryV1Example, device_id: 'fake-1', message_id: id(1) },
+        at(MAX_DEVICES_TRACKED + 2),
+      ).replayed,
+    ).toBe(false);
   });
 });
