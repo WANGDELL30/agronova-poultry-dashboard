@@ -15,7 +15,10 @@ copy `.env.example` to `.env` and pass `--env-file .env` to uvicorn.
 
 Real mode (GPU, ~8-9 GB VRAM): `pip install -r requirements-real.txt`, set `INFERENCE_MODE=real`
 (`HF_TOKEN` is optional because the default adapter `Arga23/chickenstress-vlm-lora` is public; set it
-only for a private adapter repo, and never commit it).
+only for a private adapter repo, and never commit it). Real mode also requires `INFERENCE_API_KEY`
+(the service refuses to start without it, AUDIT S4); use the same value as in `apps/api/.env`. A
+failed load is reported on `/health` as a generic message, and a `parse_error` frame carries a fixed
+`error_message`; the underlying exception text is written to the service log only (AUDIT S12).
 `GET /health` returns 503 until the model is loaded, with `loading_since` (UTC) while loading. A load
 that raises anything (including `SystemExit`) or exceeds `INFERENCE_LOAD_TIMEOUT_S` (default 1800 s)
 becomes `error`, and the service stays up reporting it. With `INFERENCE_EXIT_ON_LOAD_ERROR=true` the

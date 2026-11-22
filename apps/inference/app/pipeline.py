@@ -8,6 +8,8 @@ from .quality import run_quality_gate
 from .scs import SCS_INDICATORS, apply_scs_rule, parse_vlm_json
 
 SCHEMA_VERSION = 1
+# error_message of a parse_error frame (AUDIT S12): stable text, details in the service log.
+PARSE_ERROR_MESSAGE = "model output is not the expected JSON with 7 indicators"
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +94,13 @@ def classify_bytes(image_bytes: bytes, backend: Backend, max_side: int = DEFAULT
             parsed = parse_vlm_json(raw_text)
             normalized, total_ya, visible_count, label, score = apply_scs_rule(parsed.get("indicators", {}))
         except Exception as exc:  # noqa: BLE001 - notebook catches everything here too
-            # Notebook mapped this to label "undefined"; here it is a distinct status.
+            # Notebook mapped this to label "undefined"; here it is a distinct status. The message is
+            # stable for the client; the parser's own text goes to the log (AUDIT S12). The model
+            # output itself stays available in raw_response.
+            logger.info("model output could not be parsed: %s", exc)
             response["status"] = "parse_error"
             response["raw_response"] = raw_text
-            response["error_message"] = str(exc)
+            response["error_message"] = PARSE_ERROR_MESSAGE
         else:
             response["status"] = "classified"
             # Kept for every frame with model output, as the notebook does (AUDIT K4, decision 2026-11-13).

@@ -60,13 +60,19 @@ def load_settings() -> Settings:
     mode = os.environ.get("INFERENCE_MODE", "mock").strip().lower()
     if mode not in ("mock", "real"):
         raise ValueError('INFERENCE_MODE must be "mock" or "real".')
+    api_key = (os.environ.get("INFERENCE_API_KEY") or "").strip() or None
+    if mode == "real" and api_key is None:
+        # Fail closed (AUDIT S4): without a key /v1/classify would serve anyone who reaches the GPU.
+        raise ValueError(
+            "INFERENCE_API_KEY is required in real mode; set the same value in apps/api/.env."
+        )
     return Settings(
         mode=mode,
         hf_adapter_repo=os.environ.get("HF_ADAPTER_REPO", "Arga23/chickenstress-vlm-lora"),
         base_model=os.environ.get("HF_BASE_MODEL", "Qwen/Qwen3-VL-4B-Instruct"),
         hf_token=os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or None,
         max_image_bytes=_positive_int("VISION_MAX_IMAGE_BYTES", 8 * 1024 * 1024),
-        api_key=os.environ.get("INFERENCE_API_KEY") or None,
+        api_key=api_key,
         max_image_pixels=max_image_pixels_from_env(),
         max_image_side=_positive_int("INFERENCE_MAX_IMAGE_SIDE", DEFAULT_MAX_IMAGE_SIDE),
         load_timeout_s=_positive_int("INFERENCE_LOAD_TIMEOUT_S", 1800),
