@@ -11,6 +11,7 @@ const failed: VisionResultV1 = {
   message_id: '6f9619ff-8b86-4d11-b42d-00c04fc964ff',
   camera_id: 'cam-01',
   kandang_id: null,
+  source: 'camera',
   captured_at: '2026-10-01T01:00:00.000Z',
   received_at: '2026-10-01T01:00:01.000Z',
   inference_mode: null,
@@ -75,6 +76,21 @@ describe('VisionResultCard', () => {
     },
     vote: { ...failed.vote, status: 'ignored_undefined' },
   };
+
+  it('marks a manual upload and says it did not vote (S2)', () => {
+    renderCard({
+      ...failed,
+      source: 'manual',
+      vote: { ...failed.vote, status: 'ignored_manual' },
+    });
+    expect(screen.getByText('Uji coba manual')).toBeTruthy();
+    expect(screen.getByText(/Tidak ikut voting \(uji coba manual\)/)).toBeTruthy();
+  });
+
+  it('shows no manual badge for a camera frame', () => {
+    renderCard(failed);
+    expect(screen.queryByText('Uji coba manual')).toBeNull();
+  });
 
   it('uses the help icon, not a check mark, for an undefined label (K7)', () => {
     const { container } = renderCard(undetermined);

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import {
   VISION_SCHEMA_VERSION,
+  type FrameSource,
   type InferenceResponseV1,
   type VisionFrameMetadata,
   type VisionResultV1,
@@ -35,6 +36,8 @@ export class VisionService {
     meta: VisionFrameMetadata,
     image: Buffer,
     mimeType: string,
+    /** `manual` frames are classified but never vote (AUDIT S2). */
+    source: FrameSource = 'camera',
   ): Promise<VisionResultV1> {
     const messageId = randomUUID();
     const receivedAt = this.now().toISOString();
@@ -65,13 +68,14 @@ export class VisionService {
       received_at: receivedAt,
       message_id: messageId,
     });
-    const { vote } = evaluateVote({ result, window });
+    const { vote } = evaluateVote({ result, window, source });
 
     const record: VisionResultV1 = {
       schema_version: VISION_SCHEMA_VERSION,
       message_id: messageId,
       camera_id: meta.camera_id,
       kandang_id: meta.kandang_id ?? null,
+      source,
       captured_at: meta.captured_at,
       received_at: receivedAt,
       // Unknown when inference failed: never guess 'real' (K5).
@@ -86,7 +90,9 @@ export class VisionService {
       vote,
       image_available: true,
     };
-    await this.repository.insert(record);
+    const evicted = await this.repository.insert(record);
+    // Keep disk use bounded with the record cap; a failed delete only leaves an orphaned file.
+    await Promise.all(evicted.map((id) => this.images.remove(id).catch(() => undefined)));
 
     if (failure) throw new VisionInferenceFailure(failure.code, failure.message, record);
     return record;

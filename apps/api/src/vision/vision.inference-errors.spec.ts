@@ -66,7 +66,9 @@ describe('inference failures over HTTP (R12, H11)', () => {
     const form = new FormData();
     form.append('camera_id', 'cam-err');
     form.append('captured_at', '2026-10-01T01:00:00.000Z');
-    form.append('image', new Blob(['a'], { type: 'image/png' }), 'f');
+    // PNG signature + one byte: passes the magic-byte check (S11).
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x61]);
+    form.append('image', new Blob([png], { type: 'image/png' }), 'f');
     const res = new Response(form);
     return app.inject({
       method: 'POST',

@@ -12,6 +12,24 @@ describe('evaluateVote (label-based voting, K1/V1)', () => {
     expect(evaluateVote({ result: null, window: [] }).vote.status).toBe('ignored_no_result');
   });
 
+  it('never lets a manual upload vote, even a stress result on a full stress window (S2)', () => {
+    const window: VotedLabel[] = ['stress', 'stress', 'stress', 'stress'];
+    expect(evaluateVote({ result: r('stress', 5 / 7), window, source: 'manual' })).toEqual({
+      accepted: false,
+      vote: {
+        status: 'ignored_manual',
+        trigger_alert: false,
+        window_size: 5,
+        window_filled: 4,
+        majority_label: null,
+        majority_count: null,
+      },
+    });
+    expect(
+      evaluateVote({ result: r('stress', 5 / 7), window, source: 'camera' }).vote,
+    ).toMatchObject({ status: 'alert', trigger_alert: true });
+  });
+
   it('ignores undefined labels without touching the window', () => {
     expect(evaluateVote({ result: r('undefined', null), window: [] })).toMatchObject({
       accepted: false,

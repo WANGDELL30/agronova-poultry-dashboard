@@ -8,6 +8,7 @@ const record = {
   message_id: '6f9619ff-8b86-4d11-b42d-00c04fc964ff',
   camera_id: 'cam-01',
   kandang_id: null,
+  source: 'camera',
   captured_at: '2026-10-01T01:00:00.000Z',
   received_at: '2026-10-01T01:00:01.000Z',
   inference_mode: 'real',

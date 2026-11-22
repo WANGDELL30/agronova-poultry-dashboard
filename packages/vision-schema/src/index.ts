@@ -28,6 +28,12 @@ export const SCS_INDICATOR_KEYS = [
 export const indicatorAnswerSchema = z.enum(['YA', 'TIDAK', 'TIDAK_TERLIHAT']);
 export const stressLabelSchema = z.enum(['not_stress', 'stress', 'undefined']);
 export const inferenceModeSchema = z.enum(['mock', 'real']);
+/**
+ * Where a frame came from (AUDIT S2, decision 2026-11-22). `camera`: an authenticated camera or
+ * gateway (X-Camera-Key), or any upload while VISION_CAMERA_KEYS is unset. `manual`: a keyless upload
+ * from the dashboard while camera keys are set; it is classified but never votes or raises an alert.
+ */
+export const frameSourceSchema = z.enum(['camera', 'manual']);
 
 /** Non-classified statuses are never equivalent to `not_stress`; their `result` is null. */
 export const visionStatusSchema = z.enum([
@@ -136,6 +142,8 @@ export const voteStatusSchema = z.enum([
   'ignored_undefined',
   /** @deprecated: tidak lagi dihasilkan sejak K1. Kept so older records and clients still parse. */
   'ignored_low_confidence',
+  /** A manual test upload: classified for the user, but kept out of the window and alerts (S2). */
+  'ignored_manual',
   'waiting_window',
   'no_alert',
   'alert',
@@ -161,6 +169,7 @@ export const visionResultV1Schema = z
     message_id: z.string().uuid(),
     camera_id: z.string().min(1).max(64),
     kandang_id: z.string().min(1).max(64).nullable(),
+    source: frameSourceSchema,
     captured_at: utcTimestamp,
     received_at: utcTimestamp,
     /** Null only for `inference_error`: the API cannot tell which backend failed (AUDIT K5). */
@@ -182,6 +191,13 @@ export const visionResultV1Schema = z
         code: z.ZodIssueCode.custom,
         path: ['result'],
         message: 'result must be present if and only if status is "classified"',
+      });
+    }
+    if ((value.source === 'manual') !== (value.vote.status === 'ignored_manual')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['vote', 'status'],
+        message: 'vote.status must be "ignored_manual" if and only if source is "manual"',
       });
     }
     if (value.inference_mode === null && value.status !== 'inference_error') {
@@ -216,6 +232,12 @@ export const VISION_API_ERROR_CODES = [
   'unsupported_image_type',
   /** The API could not write the frame to VISION_IMAGE_DIR (disk full, read-only); 503 (H9). */
   'storage_unavailable',
+  /** Too many uploads (per IP for manual uploads, per camera interval); 429 + Retry-After (S2). */
+  'upload_rate_limited',
+  /** X-Camera-Key was sent but is not a configured camera key; 401 (S2). */
+  'invalid_camera_key',
+  /** The camera key belongs to another camera_id than the one in the metadata; 403 (S2). */
+  'camera_id_mismatch',
 ] as const;
 export type VisionApiErrorCode = (typeof VISION_API_ERROR_CODES)[number];
 /** The subset raised when the API talks to the inference service. */
@@ -233,6 +255,7 @@ export type IndicatorAnswer = z.infer<typeof indicatorAnswerSchema>;
 export type StressLabel = z.infer<typeof stressLabelSchema>;
 export type VisionStatus = z.infer<typeof visionStatusSchema>;
 export type VoteStatus = z.infer<typeof voteStatusSchema>;
+export type FrameSource = z.infer<typeof frameSourceSchema>;
 export type Vote = z.infer<typeof voteSchema>;
 export type Quality = z.infer<typeof qualitySchema>;
 export type ClassificationResult = z.infer<typeof classificationResultSchema>;

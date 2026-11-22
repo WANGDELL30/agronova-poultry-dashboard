@@ -5,6 +5,7 @@ import {
   CircleAlert,
   CircleCheck,
   CircleHelp,
+  FlaskConical,
   ImageOff,
   ServerCrash,
   ShieldAlert,
@@ -75,6 +76,12 @@ export function VisionResultCard({
       <div className="vision-result-body">
         <div className="vision-result-head">
           <VisionStatusBadge record={record} />
+          {record.source === 'manual' && (
+            <span className="vision-badge vision-neutral" title={t('vision.source.manualHint')}>
+              <FlaskConical size={14} aria-hidden="true" />
+              {t('vision.source.manual')}
+            </span>
+          )}
           {record.vote.trigger_alert && (
             <span className="vision-badge vision-danger">
               <ShieldAlert size={14} aria-hidden="true" />
