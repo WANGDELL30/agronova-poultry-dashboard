@@ -172,10 +172,12 @@ n = 17 the difference is not meaningful, so the service prompt stays. Both sampl
 
 **B. Demo with the dashboard (free GPU on Colab):**
 
-1. Open `colab/run_inference_colab.ipynb` in Google Colab and set the runtime to **T4 GPU**.
+1. Upload `colab/run_inference_colab.ipynb` to Google Colab (File → Upload notebook) and set the
+   runtime to **T4 GPU**. It clones `fix/web-batch-1` until that branch is merged into `main`.
 2. **Run all.** The first run takes ~5-10 minutes (model download).
-3. Copy the printed `INFERENCE_URL` and `INFERENCE_API_KEY` into `apps/api/.env`
-   (plus `INFERENCE_TIMEOUT_MS=60000`, the default measured on a T4) and restart the API.
+3. Copy the printed `INFERENCE_URL`, and `INFERENCE_API_KEY` from the last cell, into `apps/api/.env`
+   (plus `INFERENCE_TIMEOUT_MS=60000`, the default measured on a T4) and restart the API. Then clear
+   the last cell's output (cell menu → Clear output).
 
 The tunnel URL changes every run and free Colab sessions end when idle, so this is for demos,
 not production.
