@@ -89,6 +89,18 @@ WantedBy=multi-user.target
 with `journalctl -u agronova-inference -f`. Run it as an unprivileged user, never as root. The model
 cache lives in that user's `~/.cache/huggingface`.
 
+## Detector evaluation for P2 (crop before the VLM)
+
+`colab/p2_detector_eval_colab.ipynb` is step 1 of AUDIT P2: before any service code, it compares
+detectors (YOLO11 COCO `bird`, and the custom ChickenStress detector if its `best.pt` is uploaded) on
+the 51 labelled frames (69 chickens), then runs the service VLM on the full frame, on the annotated
+crop, and on the best detector's crop. Crops follow the training rule exactly: `int()` of the box and a
+plain PIL crop with no padding (`scripts/p2_eval.py`; `tests/test_p2_eval.py` shows it reproduces the
+committed training crops pixel for pixel, except frames the training notebook sharpened first). It
+needs the raw Roboflow export (`Raw Data Chicken Stress.zip`, not in git) and a T4. 65 of the 69
+chickens are from the training split, so compare the inputs with each other rather than reading the
+accuracy as performance on new data. Ultralytics is AGPL-3.0.
+
 ## Real model without a local GPU (Kaggle / Colab)
 
 Real mode on a laptop CPU is very slow (tens of minutes per image). The real model needs a GPU (~8-9 GB VRAM), e.g. a Kaggle T4/P100.
