@@ -206,3 +206,46 @@ describe('inferenceResponseV1Schema invariants (AUDIT K2)', () => {
     expect(ok({ ...response, result: result('stress', 3, 4, 3 / 7) })).toBe(false);
   });
 });
+
+describe('detection (optional detector crop, AUDIT P2)', () => {
+  const response = {
+    schema_version: 1,
+    inference_mode: 'mock',
+    model: { base_model: 'b', adapter: 'a', adapter_revision: null },
+    inference_ms: 3,
+    quality: { status: 'skipped', issues: ['blur'] },
+    status: 'skipped_quality',
+    result: null,
+    raw_response: null,
+    error_message: null,
+  };
+  const parse = (detection: unknown) =>
+    inferenceResponseV1Schema.safeParse({ ...response, detection }).success;
+
+  it('is optional, so responses without a detector still parse', () => {
+    expect(inferenceResponseV1Schema.safeParse(response).success).toBe(true);
+    expect(visionResultV1Schema.safeParse(base).success).toBe(true);
+  });
+
+  it('accepts a crop and a full-frame fallback with or without a box', () => {
+    expect(parse({ input: 'crop', box: [10, 20, 100, 80], conf: 0.75 })).toBe(true);
+    expect(parse({ input: 'full_frame', box: null, conf: null })).toBe(true);
+    expect(parse({ input: 'full_frame', box: [1, 2, 20, 20], conf: 0.4 })).toBe(true);
+    expect(
+      visionResultV1Schema.safeParse({
+        ...base,
+        detection: { input: 'crop', box: [10, 20, 100, 80], conf: 0.75 },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a crop without a box, a box without conf, and non-pixel values', () => {
+    expect(parse({ input: 'crop', box: null, conf: null })).toBe(false);
+    expect(parse({ input: 'full_frame', box: [1, 2, 3, 4], conf: null })).toBe(false);
+    expect(parse({ input: 'crop', box: [1.5, 2, 3, 4], conf: 0.5 })).toBe(false);
+    expect(parse({ input: 'crop', box: [-1, 2, 3, 4], conf: 0.5 })).toBe(false);
+    expect(parse({ input: 'crop', box: [1, 2, 3], conf: 0.5 })).toBe(false);
+    expect(parse({ input: 'crop', box: [1, 2, 3, 4], conf: 1.2 })).toBe(false);
+    expect(parse({ input: 'crop', box: [1, 2, 3, 4], conf: 0.5, extra: 1 })).toBe(false);
+  });
+});

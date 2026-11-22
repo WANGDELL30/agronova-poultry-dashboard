@@ -85,6 +85,9 @@ export const classificationResultSchema = z
   })
   .strict();
 
+/** A pixel coordinate or size of the uploaded frame. */
+const pixel = z.number().int().nonnegative();
+
 export const modelInfoSchema = z
   .object({
     base_model: z.string().min(1),
@@ -95,6 +98,32 @@ export const modelInfoSchema = z
     base_revision: z.string().nullable().optional(),
   })
   .strict();
+
+/**
+ * What the optional detector did before the VLM (AUDIT P2, INFERENCE_DETECTOR=crop; off by default).
+ * Present only while the detector is on. `box` and `conf` describe the largest detection, in pixels of
+ * the uploaded frame; `input` says whether the VLM saw that crop or the full frame (nothing found, or a
+ * box too small to crop).
+ */
+export const detectionSchema = z
+  .object({
+    input: z.enum(['crop', 'full_frame']),
+    box: z.tuple([pixel, pixel, pixel, pixel]).nullable(),
+    conf: z.number().min(0).max(1).nullable(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if ((value.box === null) !== (value.conf === null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['conf'],
+        message: 'box and conf come together',
+      });
+    }
+    if (value.input === 'crop' && value.box === null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['box'], message: 'a crop needs its box' });
+    }
+  });
 
 /** Response of the Python inference service: POST /v1/classify. */
 export const inferenceResponseV1Schema = z
@@ -108,6 +137,7 @@ export const inferenceResponseV1Schema = z
     result: classificationResultSchema.nullable(),
     raw_response: z.string().nullable(),
     error_message: z.string().nullable(),
+    detection: detectionSchema.optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -183,6 +213,8 @@ export const visionResultV1Schema = z
     error_message: z.string().nullable(),
     vote: voteSchema,
     image_available: z.boolean(),
+    /** Copied from the inference response; absent while the detector is off (P2). */
+    detection: detectionSchema.optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -292,6 +324,7 @@ export type Vote = z.infer<typeof voteSchema>;
 export type Quality = z.infer<typeof qualitySchema>;
 export type ClassificationResult = z.infer<typeof classificationResultSchema>;
 export type InferenceResponseV1 = z.infer<typeof inferenceResponseV1Schema>;
+export type Detection = z.infer<typeof detectionSchema>;
 export type VisionResultV1 = z.infer<typeof visionResultV1Schema>;
 export type VisionFrameMetadata = z.infer<typeof visionFrameMetadataSchema>;
 

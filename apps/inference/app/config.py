@@ -2,6 +2,7 @@ import os
 import re
 from dataclasses import dataclass
 
+from .detector import DEFAULT_DETECTOR_CONF, DEFAULT_DETECTOR_WEIGHTS, DETECTOR_MODES
 
 # Image size limits applied before the quality gate (AUDIT R2, decision 2026-11-13). Deliberate
 # deviation from notebook 04, which works at full resolution; dataset frames (640 px) are unaffected.
@@ -34,6 +35,10 @@ class Settings:
     # None = no pin (Hub `main`), reported as whatever commit was actually loaded.
     base_revision: str | None = DEFAULT_BASE_REVISION
     adapter_revision: str | None = DEFAULT_ADAPTER_REVISION
+    # Optional detector crop before the VLM (AUDIT P2, decision 2026-11-22): "off" (default) or "crop".
+    detector: str = "off"
+    detector_weights: str = DEFAULT_DETECTOR_WEIGHTS
+    detector_conf: float = DEFAULT_DETECTOR_CONF
 
 
 def _positive_int(name: str, default: int) -> int:
@@ -80,7 +85,30 @@ def load_settings() -> Settings:
         exit_on_load_error=_bool("INFERENCE_EXIT_ON_LOAD_ERROR", default=False),
         base_revision=_revision("INFERENCE_BASE_REVISION", DEFAULT_BASE_REVISION),
         adapter_revision=_revision("INFERENCE_ADAPTER_REVISION", DEFAULT_ADAPTER_REVISION),
+        detector=_choice("INFERENCE_DETECTOR", DETECTOR_MODES, "off"),
+        detector_weights=(os.environ.get("INFERENCE_DETECTOR_WEIGHTS") or "").strip() or DEFAULT_DETECTOR_WEIGHTS,
+        detector_conf=_fraction("INFERENCE_DETECTOR_CONF", DEFAULT_DETECTOR_CONF),
     )
+
+
+def _choice(name: str, allowed: tuple[str, ...], default: str) -> str:
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    value = raw.strip().lower()
+    if value not in allowed:
+        raise ValueError(f'{name} must be one of {", ".join(allowed)}; received "{raw}".')
+    return value
+
+
+def _fraction(name: str, default: float) -> float:
+    """A decimal strictly between 0 and 1, such as 0.25."""
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    if not re.fullmatch(r"0?\.[0-9]+", raw.strip()) or not 0 < float(raw) < 1:
+        raise ValueError(f'{name} must be a decimal between 0 and 1, such as 0.25; received "{raw}".')
+    return float(raw)
 
 
 def _revision(name: str, default: str) -> str | None:

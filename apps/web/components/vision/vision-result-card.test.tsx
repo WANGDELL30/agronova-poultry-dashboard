@@ -92,6 +92,21 @@ describe('VisionResultCard', () => {
     expect(screen.queryByText('Uji coba manual')).toBeNull();
   });
 
+  it('shows which image the model judged only while the detector is on (P2)', () => {
+    renderCard({ ...failed, detection: { input: 'crop', box: [10, 20, 100, 80], conf: 0.75 } });
+    expect(screen.getByText('Input model')).toBeTruthy();
+    expect(screen.getByText('Crop ayam terbesar · conf 0,75')).toBeTruthy();
+    cleanup();
+    renderCard({ ...failed, detection: { input: 'full_frame', box: null, conf: null } });
+    expect(screen.getByText('Frame utuh (detektor tidak menemukan ayam)')).toBeTruthy();
+    cleanup();
+    renderCard({ ...failed, detection: { input: 'full_frame', box: [1, 2, 20, 20], conf: 0.3 } });
+    expect(screen.getByText(/kotak ayam terlalu kecil/)).toBeTruthy();
+    cleanup();
+    renderCard(failed);
+    expect(screen.queryByText('Input model')).toBeNull();
+  });
+
   it('uses the help icon, not a check mark, for an undefined label (K7)', () => {
     const { container } = renderCard(undetermined);
     const expected = render(<CircleHelp />)

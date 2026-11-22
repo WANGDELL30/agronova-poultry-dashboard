@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .backends import Backend, MockBackend, RealBackend
 from .config import Settings, load_settings
+from .detector import Detector, YoloDetector
 from .pipeline import BackendFailure, ClientDisconnected, GuardedBackend, classify_bytes
 from .quality import image_pixels
 
@@ -37,11 +38,20 @@ class State:
     without a supervisor the process stays up and `/health` reports the error.
     """
 
-    def __init__(self, settings: Settings, exit_process: Callable[[int], object] = os._exit) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        exit_process: Callable[[int], object] = os._exit,
+        detector_factory: Callable[[Settings], Detector] | None = None,
+    ) -> None:
         self.settings = settings
         self.status = "loading"
         self.detail: str | None = None
         self.backend: Backend | None = None
+        self.detector: Detector | None = None
+        self._detector_factory = detector_factory or (
+            lambda s: YoloDetector(s.detector_weights, s.detector_conf)
+        )
         self.loading_since: str | None = None
         self._exit_process = exit_process
         self._guard = threading.Lock()
@@ -64,6 +74,9 @@ class State:
         self.loading_since = _utc_now()
         try:
             backend = MockBackend() if self.settings.mode == "mock" else RealBackend(self.settings)
+            # Optional detector (AUDIT P2). Loaded with the model, so a missing ultralytics or weights
+            # file fails the load the same way and /health says so.
+            detector = self._detector_factory(self.settings) if self.settings.detector == "crop" else None
         except BaseException as exc:  # noqa: BLE001 - SystemExit/KeyboardInterrupt must not leave `loading`
             # The exception text can hold local paths, repo names or GPU details: log only (AUDIT S12).
             self._fail(f"{type(exc).__name__}: {exc}", public_detail=LOAD_FAILED_DETAIL)
@@ -71,7 +84,8 @@ class State:
         with self._guard:
             if self.status != "loading":  # timed out meanwhile: stay `error`
                 return
-            self.backend, self.status, self.loading_since = backend, "ready", None
+            self.backend, self.detector = backend, detector
+            self.status, self.loading_since = "ready", None
 
     def start_watchdog(self) -> None:
         timer = threading.Timer(self.settings.load_timeout_s, self._timed_out)
@@ -94,8 +108,12 @@ class State:
             self._exit_process(3)
 
 
-def create_app(settings: Settings | None = None, exit_process: Callable[[int], object] = os._exit) -> FastAPI:
-    state = State(settings or load_settings(), exit_process)
+def create_app(
+    settings: Settings | None = None,
+    exit_process: Callable[[int], object] = os._exit,
+    detector_factory: Callable[[Settings], Detector] | None = None,
+) -> FastAPI:
+    state = State(settings or load_settings(), exit_process, detector_factory)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -143,7 +161,9 @@ def create_app(settings: Settings | None = None, exit_process: Callable[[int], o
             state.backend, state.model_lock, lambda: anyio.from_thread.run(request.is_disconnected)
         )
         try:
-            return await run_in_threadpool(classify_bytes, data, backend, max_side=state.settings.max_image_side)
+            return await run_in_threadpool(
+                classify_bytes, data, backend, max_side=state.settings.max_image_side, detector=state.detector
+            )
         except BackendFailure as failure:  # generic body; the traceback is in the log (R12)
             return JSONResponse({"error": failure.code}, status_code=failure.http_status)
         except ClientDisconnected:

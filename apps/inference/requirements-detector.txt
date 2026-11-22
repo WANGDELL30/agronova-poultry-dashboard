@@ -1,0 +1,9 @@
+# Optional chicken detector for INFERENCE_DETECTOR=crop (AUDIT P2, decision 2026-11-22: off by default).
+# Install after requirements-real.txt, only where the detector is used:
+#   pip install -r requirements-real.txt -r requirements-detector.txt
+# Ultralytics and the YOLO weights are AGPL-3.0; install them only where that licence is acceptable.
+# The service imports ultralytics only when the detector is switched on.
+ultralytics==8.4.208
+# Ultralytics requires opencv-python; the same version as the pinned headless build keeps cv2, and so the
+# quality gate, unchanged. Rerun the parity check after installing this file.
+opencv-python==4.10.0.84
