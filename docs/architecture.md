@@ -129,6 +129,14 @@ authenticated camera by a minimum interval between frames (default 10 s); both a
 signature of its declared type (JPEG, PNG, WebP), else 415. Stored images are served with
 `X-Content-Type-Options: nosniff`.
 
+`camera_id` and `kandang_id` are trimmed and may only use letters, digits, `.`, `_` and `-` (at most
+64 characters), so `"cam-A "` and `"cam-A"` share one voting window; the ids in `VISION_CAMERA_KEYS`
+are checked against the same rule at startup. `captured_at` may not be earlier than
+`2020-01-01T00:00:00Z` (a camera without a set clock sends 1970) or more than 5 minutes after
+`received_at`; both answer 400 `invalid_metadata` (AUDIT R8). There is no maximum age, because a
+manual upload uses the photo's file date; the web form sends the upload time instead when that date
+is missing, in the future, or before 2020.
+
 ### Inference modes and deployment
 
 | Mode   | Use                                                           | Requirement                |
@@ -182,7 +190,8 @@ When `TELEMETRY_DEVICE_KEYS` is set, each device authenticates with its own key 
 only write its own `device_id` (403 `device_id_mismatch`), so a leaked key cannot overwrite another
 device and unregistered device ids are never stored (AUDIT S15). Empty `TELEMETRY_DEVICE_KEYS`
 leaves ingest open and logs a warning at startup; that is acceptable only while the API is not
-reachable from outside the machine. Reads (`GET /telemetry/latest`) stay open for the dashboard.
+reachable from outside the machine. Memory stays bounded either way: at most 100 devices are kept,
+and a new device id beyond that forgets the device that reported least recently. Reads (`GET /telemetry/latest`) stay open for the dashboard.
 
 ## Infrastructure
 

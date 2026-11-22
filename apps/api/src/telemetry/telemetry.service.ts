@@ -14,6 +14,13 @@ interface StoredTelemetry {
 /** message_ids kept per device to recognise retransmissions; older ones are forgotten (R5). */
 export const MESSAGE_IDS_REMEMBERED_PER_DEVICE = 1000;
 
+/**
+ * Devices kept in memory (AUDIT S15). With TELEMETRY_DEVICE_KEYS set only registered devices can
+ * write, so this is never reached; without keys anyone can invent device_ids, and the device that
+ * reported least recently is forgotten first.
+ */
+export const MAX_DEVICES_TRACKED = 100;
+
 /** Same message_id, different payload: never overwrite what was stored (R5). */
 export class DuplicateMessageIdError extends Error {
   constructor(readonly messageId: string) {
@@ -28,6 +35,7 @@ interface SeenMessage {
 
 @Injectable()
 export class TelemetryService {
+  /** Ordered by last report, oldest first, so the first key is the one to evict. */
   private readonly latestByDevice = new Map<string, StoredTelemetry>();
   /** Per device, insertion-ordered so the oldest id is evicted first. */
   private readonly seenByDevice = new Map<string, Map<string, SeenMessage>>();
@@ -63,7 +71,13 @@ export class TelemetryService {
     }
     const timestamp = receivedAt.toISOString();
     const stored = { telemetry, receivedAt: timestamp, lastSeenAt: timestamp };
+    this.latestByDevice.delete(telemetry.device_id); // re-insert: now the most recent device
     this.latestByDevice.set(telemetry.device_id, stored);
+    if (this.latestByDevice.size > MAX_DEVICES_TRACKED) {
+      const oldest = this.latestByDevice.keys().next().value as string;
+      this.latestByDevice.delete(oldest);
+      this.seenByDevice.delete(oldest);
+    }
     if (!seen) {
       seen = new Map();
       this.seenByDevice.set(telemetry.device_id, seen);

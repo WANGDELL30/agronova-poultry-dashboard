@@ -338,6 +338,38 @@ describe('VisionController (HTTP)', () => {
     expect(await status('camera_id=cam-01&limit=100')).toBe(200);
   });
 
+  it('trims camera_id, rejects odd characters and a captured_at in 1970 or the future (R8)', async () => {
+    classify.mockResolvedValueOnce(okResponse);
+    const trimmed = await upload(
+      { ...valid, camera_id: ' cam-01 ', kandang_id: 'K1 ' },
+      { data: 'a', type: 'image/jpeg' },
+    );
+    expect(trimmed.statusCode).toBe(201);
+    expect(trimmed.json()).toMatchObject({ camera_id: 'cam-01', kandang_id: 'K1' });
+
+    const rejected = async (fields: Record<string, string>) => {
+      const res = await upload(fields, { data: 'a', type: 'image/jpeg' });
+      expect(res.statusCode, JSON.stringify(fields)).toBe(400);
+      expect(res.json().error).toBe('invalid_metadata');
+      return res.json().issues[0].path[0];
+    };
+    expect(await rejected({ ...valid, camera_id: 'cam 01' })).toBe('camera_id');
+    expect(await rejected({ ...valid, camera_id: 'cam\u0000<b>' })).toBe('camera_id');
+    expect(await rejected({ ...valid, kandang_id: 'kandang/1' })).toBe('kandang_id');
+    expect(await rejected({ ...valid, captured_at: '1970-01-01T00:00:00Z' })).toBe('captured_at');
+    const future = new Date(Date.now() + 10 * 60_000).toISOString();
+    expect(await rejected({ ...valid, captured_at: future })).toBe('captured_at');
+
+    // A clock a minute ahead is tolerated.
+    const ahead = new Date(Date.now() + 60_000).toISOString();
+    classify.mockResolvedValueOnce(okResponse);
+    const tolerated = await upload(
+      { ...valid, captured_at: ahead },
+      { data: 'a', type: 'image/jpeg' },
+    );
+    expect(tolerated.statusCode).toBe(201);
+  });
+
   it('still filters by camera_id', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/vision/results?camera_id=cam-01' });
     expect(res.statusCode).toBe(200);
