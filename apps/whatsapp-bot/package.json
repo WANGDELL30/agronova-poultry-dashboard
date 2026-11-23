@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "device:fake": "node scripts/fake-device.mjs",
-    "message:fake": "node scripts/send-message.mjs"
+    "message:fake": "node scripts/send-message.mjs",
+    "frames:fake": "node scripts/send-frames.mjs"
   },
   "dependencies": {
     "@agronova/telemetry-schema": "workspace:*",

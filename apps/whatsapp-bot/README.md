@@ -17,8 +17,9 @@ WhatsApp user ⇄ Meta Cloud API ⇄ whatsapp-bot (:4100) ──GET──▶ app
 ```
 
 A step-by-step test guide in Indonesian, from a local run to real WhatsApp, is in
-[TESTING.md](TESTING.md). `device:fake` (a pretend ESP32) and `message:fake` (a simulated incoming
-message) are the helper scripts it uses.
+[TESTING.md](TESTING.md). `device:fake` (a pretend ESP32), `frames:fake` (a pretend camera that posts
+labelled chicken crops, for the vision warning) and `message:fake` (a simulated incoming message) are the
+helper scripts it uses. TESTING.md also lists the Meta template to submit for warnings.
 
 ## Run locally without a Meta account
 
@@ -139,7 +140,9 @@ Before going live, check on the real GPU:
 1. `nvidia-smi` with both the VLM (`/health` = ok) and the chat model loaded: memory must stay below
    the card's total.
 2. Upload a frame on `/vision` while a WhatsApp question is being answered: no `inference_gpu_oom`,
-   and the frame still finishes within `INFERENCE_TIMEOUT_MS`. That timeout was measured on a T4
+   and the frame still finishes within `INFERENCE_TIMEOUT_MS`. On Colab the "Uji beban bersama" cell of
+   `colab/run_llm_colab.ipynb` does this (3 frames next to 3 questions, peak GPU memory). PyTorch keeps
+   memory it has freed reserved for itself (AUDIT PV7), so measure with both models loaded and working. That timeout was measured on a T4
    without other load, so measure again.
 
 ### Borrow a Colab GPU (demo)

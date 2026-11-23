@@ -140,6 +140,65 @@ Dari HP Anda, kirim pesan WhatsApp ke nomor tes Meta, misalnya "gimana kondisi k
 Warning yang sama tidak dikirim berulang: sekali saat mulai, sekali saat pulih, dan paling banyak
 sekali per `WA_ALERT_COOLDOWN_MS` (default 15 menit) jika kondisinya bolak-balik.
 
+### 5a. Peringatan kamera end-to-end (`frames:fake`)
+
+Kamera tiruan mengirim crop ayam berlabel dari repo (`data/working/dataset/<split>/<label>`) ke
+`POST /api/v1/vision/frames`, satu per satu, lalu mencetak hasil dan vote tiap frame. Lima frame mengisi
+jendela voting; tiga suara stres memicu alert, dan bot mengirim warning kamera.
+
+```bash
+corepack pnpm --filter @agronova/whatsapp-bot frames:fake                    # 5 crop stres, tiap 11 dtk
+corepack pnpm --filter @agronova/whatsapp-bot frames:fake --label not_stress  # pembanding: tidak boleh alert
+corepack pnpm --filter @agronova/whatsapp-bot frames:fake --key <kunci cam-01> # bila VISION_CAMERA_KEYS diisi
+```
+
+| Kondisi                                   | Yang terjadi                                                                                       |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| API tanpa `VISION_CAMERA_KEYS`            | Frame tercatat `camera` dan ikut voting                                                            |
+| `VISION_CAMERA_KEYS` diisi, tanpa `--key` | Frame `manual`: diprediksi, tetapi tidak voting dan tidak pernah alert                             |
+| Inference `INFERENCE_MODE=mock`           | Label acak (bukan model); untuk melihat alert pakai `--count 15`. Warning bot menyebut "mode mock" |
+| Inference real (Colab/server)             | Label dari model; frame `undefined` tidak ikut voting, jadi bisa butuh lebih dari 5 frame          |
+
+Jeda default 11 dtk mengikuti batas satu frame per 10 dtk per kamera (`VISION_CAMERA_INTERVAL_MS`).
+Tanpa kunci kamera, `--interval 0` boleh, tetapi upload manual dibatasi 10 per jam per IP.
+
+### 5b. Template peringatan di Meta
+
+Di luar 24 jam setelah pesan terakhir penerima, WhatsApp hanya mengirim template yang sudah disetujui.
+Tanpa template, warning dicatat di log bot dan tidak terkirim. Buat sekali di **WhatsApp Manager →
+Message templates → Create template**:
+
+| Kolom                  | Isi                                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Category               | **Utility** (pemberitahuan operasional, bukan promosi)                                                                           |
+| Name                   | `agronova_peringatan` (huruf kecil dan garis bawah)                                                                              |
+| Language               | Indonesian (`id`)                                                                                                                |
+| Body                   | `Peringatan AgroNova: {{1}}`                                                                                                     |
+| Sample untuk `{{1}}`   | `Perangkat AGRONOVA-ESP32-01 OFFLINE. Terakhir terlihat 08.15. Data sensor tidak diperbarui sampai perangkat kembali terhubung.` |
+| Header, footer, tombol | Kosong                                                                                                                           |
+
+Satu parameter saja: bot mengisi `{{1}}` dengan teks warning yang sudah dijadikan satu baris (maks
+1000 karakter). Setelah statusnya **Approved**, isi di `apps/whatsapp-bot/.env` lalu restart bot:
+
+```env
+WA_ALERT_TEMPLATE=agronova_peringatan
+WA_ALERT_TEMPLATE_LANGUAGE=id
+```
+
+Uji: jangan kirim pesan ke bot selama lebih dari 24 jam (atau restart bot; bot lupa jendela 24 jam
+setelah restart), lalu picu warning, misalnya dengan menghentikan ESP32 tiruan. Pesan yang datang
+diawali "Peringatan AgroNova:". Bila Meta menolak atau mengubah kategori ke Marketing, perjelas body
+bahwa ini pemberitahuan kondisi perangkat dan ajukan ulang.
+
+### 5c. Uji beban GPU bersama (VLM + LLM)
+
+Di `colab/run_llm_colab.ipynb`, set `JALANKAN_VLM = True` lalu **Run all**. Sel "Uji beban bersama"
+menjalankan 3 frame VLM bersamaan dengan 3 pertanyaan LLM, mencatat puncak memori GPU, dan mencetak
+**LULUS** bila tidak ada `gpu_oom` atau error, serta waktu frame terlama dibanding
+`INFERENCE_TIMEOUT_MS` (60 dtk). Bila mendekati batas, naikkan `INFERENCE_TIMEOUT_MS` di
+`apps/api/.env` atau pakai model LLM lebih kecil. Di server pilot, ulangi langkah yang sama dengan
+`nvidia-smi` dan unggahan `/vision` saat bot sedang menjawab (README bot, _Before going live_).
+
 ## 6. Hal yang sering bikin bingung
 
 - **Warning tidak sampai ke HP.** WhatsApp hanya mengizinkan bot mengirim teks bebas dalam 24 jam
